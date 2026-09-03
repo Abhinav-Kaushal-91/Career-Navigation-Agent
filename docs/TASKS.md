@@ -1,0 +1,55 @@
+# Tasks
+
+## Activity Sequence
+
+- [x] Activity 0: Repository setup and scaffolding
+- [x] Activity 1: Final product definition and MVP requirements
+- [x] Activity 2: Architecture, LangGraph state, MCP boundaries, data models, and provider boundaries
+- [x] Activity 2A-1A: Define major system components and responsibilities
+- [x] Activity 2A-1B: Validate architecture boundaries
+- [x] Activity 2A-2: Architecture diagram and boundary validation
+- [x] Activity 2A: Architecture documentation
+- [x] Activity 2B: LangGraph workflow design
+- [x] Activity 2B-1: LangGraph Parent Workflow
+- [x] Activity 2B-2: Define Profile and Goal subgraph stages and decisions
+- [x] Activity 2B-3: Define the Market Intelligence workflow
+- [x] Activity 2B-3A: Define the Current Market Search workflow
+- [x] Activity 2B-3B: Historical Market Evidence Workflow
+- [x] Activity 2B-3C: Requirement Stringency and Market Verdict Workflow
+- [x] Activity 2B-3C-1: Requirement Stringency Workflow
+- [x] Activity 2B-3C-2: Market Verdict Workflow
+- [x] Activity 2B-3C: Requirement Stringency and Market Verdict Workflow
+- [x] Activity 2B-3: Market Intelligence workflow
+- [x] Activity 2B-4: Career Analysis Workflow
+- [x] Activity 2B-4A: Candidate-to-Role Comparison and Transferable Skills Workflow
+- [x] Activity 2B-4B: Gap Classification and Candidate Accessibility
+- [x] Activity 2B-4C: Bridge Role and Timeline Analysis
+- [x] Activity 2B-4: Career Analysis Workflow
+- [x] Activity 2B-5: Career Plan and Final Approval Workflow
+- [x] Activity 2B-5A: Career Plan Assembly and Roadmap Logic
+- [x] Activity 2B-5B: Final Plan Approval and Workflow Completion
+- [x] Activity 2B-5: Career Plan and Final Approval Workflow
+- [x] Activity 2B: LangGraph workflow design
+- [x] Activity 2C: Graph State and Data Ownership
+- [x] Activity 2D: Complete Conceptual Domain Data Model
+- [x] Activity 2E: MCP and Model Provider Boundaries
+- [x] Activity 2F: Reliability, Security, Confidence, and Observability
+- [x] Activity 2G: Full Architecture Consolidation Review
+- [x] V1 implementation-scope checkpoint
+- [ ] Activity 3: Configuration and provider-independent LLM adapter — In Progress
+  - [x] Activity 3A: Python Environment, Foundational Dependencies, Configuration, and Production UI Foundation
+    - [x] Production UI configuration, package boundary, and design-system foundation
+  - [ ] Activity 3B: Domain Enums and Pydantic Schemas
+- [ ] Activity 4: SQLite storage foundation
+- [ ] Activity 5: Career profile intake and confirmation flow
+- [ ] Activity 6: Market evidence and source retrieval
+- [ ] Activity 7: Career analysis and role classification
+- [ ] Activity 8: Gap analysis and timeline feasibility
+- [ ] Activity 9: Roadmap generation and explanation
+- [ ] Activity 10: LangGraph orchestration
+- [ ] Activity 11: Streamlit user interface
+- [ ] Activity 12: MCP transport and future Career Profile MCP evaluation
+- [ ] Activity 13: Cross-session memory with mem0
+- [ ] Activity 14: Testing, quality, and evaluation
+- [ ] Activity 15: Documentation and usability review
+- [ ] Activity 16: Final demo

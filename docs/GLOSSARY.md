@@ -1,0 +1,44 @@
+# Glossary
+
+- **Direct-fit role:** A role reasonably targetable now with limited gaps.
+- **Adjacent role:** A different title or domain with meaningful transferable overlap.
+- **Bridge role:** An attainable intermediate role that uses strengths, adds target capabilities, reduces significant gaps, is market-supported, and is reasonably achievable.
+- **Aspirational role:** A longer-term role requiring substantial additional capability, experience, scope, or evidence.
+- **Poor-fit role:** A role with significant blockers or weak overlap.
+- **Insufficient-evidence role:** A role lacking enough market or candidate evidence for credible classification.
+- **Transferable skill:** A capability that can create meaningful value in another role or domain.
+- **Role family:** A normalized group of related occupational responsibilities and titles.
+- **Title normalization:** Mapping varied titles into comparable role families without assuming equivalence.
+- **Requirement stringency:** Explained severity and frequency of requirements and blockers across postings.
+- **Market verdict:** Evidence-based description of market breadth, persistence, volatility, concentration, or direction.
+- **Candidate-accessibility verdict:** Assessment of the user's current ability to target a role.
+- **Skill gap:** Missing knowledge or technical capability.
+- **Experience gap:** Missing appropriate applied evidence.
+- **Leadership/scope gap:** Missing people, portfolio, budget, vendor, strategy, architecture, influence, or organizational scope.
+- **Evidence gap:** Missing proof through outcomes, metrics, deliverables, achievements, references, cases, or portfolio.
+- **Credential/prerequisite gap:** Missing formal degree, certification, license, clearance, authorization, language, or other prerequisite.
+- **Hard blocker:** A mandatory requirement materially preventing immediate eligibility.
+- **Exposure:** Encountered or studied a concept.
+- **Demonstrated:** Produced project or portfolio evidence.
+- **Applied:** Used a capability in internship, freelance, volunteer, or limited work.
+- **Production:** Used a capability in a live business or operational environment.
+- **Leadership:** Led people, decisions, architecture, delivery, or outcomes involving a capability.
+- **Market evidence:** Retrieved and retained job or labor-market observations with source and date.
+- **Agent inference:** A model-generated hypothesis derived from evidence and awaiting user confirmation where it concerns the profile.
+- **Confirmed fact:** A user-provided or user-corrected profile fact approved for storage.
+- **User intent:** A user-confirmed desired future direction, preference, constraint, or target; authoritative as a record of what the user wants, not an objective fact about the user or market.
+- **Confirmed candidate profile:** The versioned, user-approved record of candidate facts and evidence.
+- **Evidence item:** A record supporting a capability, experience, responsibility, or outcome.
+- **Career goal:** An approved user objective and related preferences, not an objective candidate fact.
+- **Retained evidence:** Original source or posting records preserved with retrieval and provenance metadata.
+- **Derived analysis:** A run-scoped interpretation of facts or evidence, authoritative only as a record of that run's conclusion.
+- **Market snapshot:** A derived summary of validated current-market observations.
+- **Historical market signal:** A derived interpretation of historical market evidence with explicit scope and limitations.
+- **Graph run:** A retained audit record of workflow execution, distinct from temporary graph state.
+- **Approval record:** An audit record linking a user action to the exact entity version presented.
+- **MCP boundary:** A standardized tool interface for a justified external or independently deployable capability.
+- **Model Gateway:** The provider-independent interface between domain services and hosted LLM adapters.
+- **Provider adapter:** A boundary translating the Model Gateway contract to one hosted model provider.
+- **Extraction model:** A logical model role for grounded structured extraction.
+- **Reasoning model:** A logical model role for grounded interpretation and planning.
+- **Validation model:** An optional logical model role for independent critique or grounding checks.
