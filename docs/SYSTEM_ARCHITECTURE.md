@@ -1,5 +1,13 @@
 # System Architecture
 
+## Activity 8 market provider boundary
+
+The Market Intelligence Service owns provider selection. Adzuna is the structured posting adapter;
+You.com MCP is the concurrent web-discovery and bounded enrichment adapter. Both are independently
+normalized and validated before conservative merging. Streamlit and LangGraph do not call either
+provider directly, and no provider SDK type enters graph state or downstream career-analysis
+services.
+
 ## 1. Architecture Purpose
 
 This document defines the provisional high-level system boundaries for the AI Career Strategy & Market Navigator. The product is a market-grounded career intelligence and strategy agent for users at any career stage. It compares confirmed candidate evidence with current market evidence and credible historical market evidence when available to produce explainable role assessments, gap analysis, timeline feasibility, and career planning.

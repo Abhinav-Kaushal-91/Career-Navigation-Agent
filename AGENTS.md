@@ -42,10 +42,16 @@ Refer to these documents instead of duplicating their complete requirements:
 
 ## Development Rules
 
+- Adzuna structured search and You.com ATS-focused discovery are first-class V1 job-evidence
+  sources. Provider clients stay behind the Market Intelligence Service; normalization,
+  deduplication, graph state, and downstream career logic remain provider-neutral.
+
 - During V1 implementation, `docs/MVP_IMPLEMENTATION_SCOPE.md` determines which frozen-architecture capabilities are active. Do not implement deferred V2/V3 capabilities without explicit approval.
 - Access environment configuration through `Settings`; business code must not read provider credentials directly.
 - Never print or log secrets. Add and justify dependencies only when the current implementation activity requires them.
 - UI development must follow `docs/UI_DESIGN_SYSTEM.md`. Prefer reusable UI components and never target generated Streamlit CSS classes.
+- UI components use centralized design patterns, and synthetic values belong in `ui/demo_data.py`.
+- Streamlit session state is temporary UI state only. Business rules do not belong in UI components.
 - Never commit secrets, API keys, unsupported claims, or invented user experience.
 - Get approval before adding major dependencies or changing the architecture.
 - Record significant product or architecture changes in `docs/DECISIONS.md`.
@@ -72,6 +78,9 @@ Refer to these documents instead of duplicating their complete requirements:
 	the MVP. Domain services use the Model Gateway, not provider SDKs.
 - Provider choice is configuration-driven and workflow-facing model output
 	requires schema validation. Retrieved external content is untrusted data.
+- Provider SDK types must not escape provider adapters.
+- Chain-of-thought and provider reasoning traces must never be stored or logged.
+- Structured model output must be validated before workflow or domain use.
 - Secrets must never enter state, logs, prompts, SQLite, or mem0. Detailed MCP
 	rules live in `docs/MCP_BOUNDARIES.md`; model/provider rules live in
 	`docs/PROVIDER_STRATEGY.md`.

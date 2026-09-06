@@ -1,5 +1,20 @@
 # Conceptual Domain Data Model
 
+## Activity 8 market provenance
+
+`SourceRecord.source_type` distinguishes `ADZUNA` primary records from `YOU` supporting records.
+The service-level `MarketPostingEvidence` groups a posting, its primary source/content, supporting
+sources/contents, enrichment status, and limitations without expanding the durable career domain.
+Requirement provenance continues from `RoleRequirement.posting_id` through this evidence chain.
+
+## Activity 8 market provenance
+
+`SourceRecord.source_type` distinguishes `ADZUNA` primary records from `YOU` supporting records.
+The service-level `MarketPostingEvidence` groups one posting, its primary source/content, optional
+supporting sources/content, enrichment status, and limitations. Requirement provenance continues
+from `RoleRequirement.posting_id` through this evidence chain; the durable career domain is not
+expanded.
+
 ## 1. Purpose
 
 This document defines the conceptual MVP domain model. It separates confirmed candidate facts and retained evidence from derived analysis, planning records, and workflow/audit records. It does not define SQL types, tables, migrations, ORM syntax, Pydantic models, or implementation code.
@@ -57,7 +72,7 @@ The authority distinction is: `CONFIRMED_FACT` records what the user has done or
 
 **Purpose:** Represents the user's confirmed career profile.
 
-**Key fields:** `profile_id` (identifier, required), `user_id` (identifier, required), `profile_version` (version, required), `career_stage` (bounded classification, required), `professional_summary` (text, optional), `current_role` (text, optional), `current_seniority` (classification, optional), `current_location` (structured value, optional), `work_authorization_status` (sensitive classification, optional and voluntary), collections of education/employment/internship/project/volunteer/certification/capability/leadership references, `portfolio_links` (references, optional), `profile_status` (bounded classification, required), timestamps, and `supersedes_profile_id` (reference, optional).
+**Key fields:** `profile_id` (identifier, required), `user_id` (identifier, required), `profile_version` (version, required), `career_stage` (bounded classification, required), `professional_summary` (text, optional), `core_competencies` (candidate-entered text, optional), `current_role` (text, optional), `current_seniority` (classification, optional), `current_location` (structured value, optional), `work_authorization_status` (sensitive classification, optional and voluntary), collections of education/employment/internship/project/volunteer/certification/capability/leadership references, `portfolio_links` (references, optional), `profile_status` (bounded classification, required), timestamps, and `supersedes_profile_id` (reference, optional).
 
 **Validation:** A confirmed profile is complete enough for its stated analysis; inferred capabilities are not silently facts; sensitive fields are minimized; status transitions are valid; referenced evidence belongs to the profile.
 
@@ -141,23 +156,37 @@ The authority distinction is: `CONFIRMED_FACT` records what the user has done or
 
 ### RoleRequirement
 
-**Purpose:** Structured extraction of a requirement from a retained job posting. It is derived market interpretation, not original evidence.
+**Purpose:** Structured extraction of one grounded statement from a retained job posting. It is derived market interpretation, not original evidence.
 
-**Key fields:** `requirement_id`, `posting_id`, category, original requirement text, normalized capability, mandatory/preferred flags, years required, maturity expected, frequency within sample, extraction confidence, and hard-blocker candidate flag.
+**Key fields:** `requirement_id`, `posting_id`, statement type (`ROLE_RESPONSIBILITY`, `HIRING_CAPABILITY`, `PREREQUISITE`, `PREFERENCE`, or `METADATA_NON_REQUIREMENT`), category, original text, normalized capability, mandatory/preferred flags, years required, maturity expected, frequency within sample, and extraction confidence.
 
 **Validation:** Posting reference is required; original text is retained; mandatory and preferred remain distinct; frequency is limited to the analyzed sample; extraction uncertainty is visible.
 
 **Authority and approval:** SQLite with source posting reference. Usually non-PII. No user approval. Classification: `DERIVED_ANALYSIS`.
 
-**Relationships/versioning:** Belongs to one posting and may be included in comparisons, gaps, and stringency analysis. Re-extraction creates a new interpretation version while retaining the source.
+**Relationships/versioning:** Belongs to one posting. Only hiring capabilities and prerequisites may enter comparison; responsibilities and preferences remain canonical role context. Re-extraction creates a new interpretation version while retaining the source.
+
+### CanonicalTargetRoleProfile
+
+**Purpose:** Consolidates posting-level evidence into an auditable role baseline without confusing
+role duties with candidate qualifications.
+
+**Key fields:** role responsibilities, hiring requirements, prerequisites, preferences, optional
+and related context, responsibility and qualification support counts, independent employer and
+posting counts, exact/variant/related support, provider/source provenance, source quotes,
+confidence, and profile status.
+
+**Validation:** One real cross-source job contributes one posting and one employer signal while
+retaining multiple provenance records. Standard-level evidence defines an unspecified-seniority
+baseline. Background guides and responsibility-only statements cannot enter comparison.
 
 ### MarketSnapshot
 
 **Purpose:** Calculated summary of validated current postings for a search run.
 
-**Key fields:** `snapshot_id`, `search_plan_id`, role family, geography, snapshot date, exact and related posting counts, validated count, distinct employers, location/work-mode distributions, stringency, consistency, current availability, evidence confidence, source IDs, and limitations.
+**Key fields:** `snapshot_id`, `search_plan_id`, role family, geography, snapshot date, exact and related posting counts, validated count, distinct and normalized employer counts, Opportunity Availability, Employer Diversity, Market Concentration, Evidence Confidence, search/content retrieval counts, duplicate count, source IDs, and limitations. Historical persistence and higher-order Market Verdict are not current-snapshot fields.
 
-**Validation:** Counts reflect validated searched results, not total market jobs; deduplication precedes counts; exact and related scopes remain distinct; source and limitation references are present.
+**Validation:** Counts reflect validated searched results, not total market jobs; deduplication precedes counts; exact and related scopes remain distinct; signal labels retain their supporting posting, employer, retrieval, and duplicate counts; source and limitation references are present.
 
 **Authority and approval:** SQLite as a retained market-analysis record. No PII unless linked to a user. No user approval. Classification: `DERIVED_ANALYSIS`.
 
@@ -286,6 +315,10 @@ The authority distinction is: `CONFIRMED_FACT` records what the user has done or
 **Validation:** Feedback is attributed to the user action and target entity/version; it is not silently converted into fact; sensitive text is minimized.
 
 **Authority and approval:** SQLite if retained. Career-sensitive. User action is the source; no additional approval. Classification: `WORKFLOW_AUDIT` / contextual input.
+
+Activity 7B implements a narrower `WorkflowActionRecord` in checkpoint state with action ID, run
+ID, exact plan ID/version, bounded action, and aware timestamp. It does not replace the conceptual
+durable `ApprovalRecord` described below.
 
 **Relationships/versioning:** Belongs to a run and references the affected entity. Append-only audit record.
 
@@ -435,3 +468,9 @@ Future validation should ensure:
 - Multi-user isolation
 - Database migration technology
 - ORM choice
+# Market location distribution
+
+`CurrentMarketSnapshot.location_posting_counts` stores the observed, posting-grounded location
+strings and their counts for validated postings. The sum cannot exceed the validated posting count.
+It is evidence for Market-page geographic presentation only; it does not replace each posting's
+original location, requested scope, matched scope, or location evidence text.

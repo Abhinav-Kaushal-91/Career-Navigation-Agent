@@ -2,6 +2,11 @@
 
 ## 1. Purpose
 
+Activity 8 uses Adzuna as the structured current-posting lane through a direct HTTP adapter and
+You.com as a concurrent web-discovery lane through the justified MCP boundary. You.com may also
+provide bounded matching-page enrichment. LangGraph calls the provider-neutral Market Intelligence
+Service and never either provider directly.
+
 MCP is used for capabilities that are external, independently deployable, naturally represented as tools, and useful through a standardized interface. It is not required for every internal function.
 
 ## 2. MCP Principles
@@ -22,6 +27,17 @@ You.com MCP is a remote HTTP/streamable external service. Expected MVP-visible c
 - `you-contents`: Retrieve selected job pages, employer/ATS pages, reports, and public evidence pages.
 
 The application retains query planning, relevance, deduplication, title normalization, requirement extraction, market metrics, evidence sufficiency, market verdicts, and career reasoning. You.com provides evidence/tool capability, not orchestration or reasoning.
+
+You.com source responses may represent direct job pages, aggregators, or mixed content. The MCP
+adapter preserves provider-neutral page content; internal market processing classifies and segments
+that content. One MCP result is never assumed to equal one posting, and aggregator-reported totals
+never become validated market counts.
+
+Activity 5A implements this boundary with the official Python MCP SDK and the hosted
+`https://api.you.com/mcp` Streamable HTTP endpoint. Authentication uses the environment-backed
+`YDC_API_KEY` through `Settings`. The adapter applies both the `tools` query parameter and
+`X-Allowed-Tools` header for `you-search,you-contents`, verifies the discovered tool set, and
+rejects calls to any other tool.
 
 ## 4. Tool Allowlist
 
@@ -78,7 +94,6 @@ Additional MCP boundaries require a real external or independently deployed capa
 
 ## 12. Open Questions
 
-- Exact You.com MCP client implementation
-- Exact connection/session lifecycle
+- Whether production deployment should pool sessions beyond one bounded market run
 - Whether another external MCP server is needed later
-- Exact retry counts and timeout values
+- Whether retry counts and timeout defaults need calibration from production observations

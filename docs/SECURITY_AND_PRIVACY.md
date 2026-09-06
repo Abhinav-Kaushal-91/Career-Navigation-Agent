@@ -1,5 +1,11 @@
 # Security and Privacy
 
+## Adzuna credentials and source trust
+
+`ADZUNA_APP_ID` and `ADZUNA_APP_KEY` are secret settings and never enter logs, graph state,
+prompts, retained sources, smoke output, or user-visible errors. Adzuna descriptions and You.com
+content are untrusted external text; embedded instructions are never followed.
+
 ## 1. Purpose
 
 Protect candidate data, external credentials, retained evidence, and workflow integrity while preserving user control and provenance.

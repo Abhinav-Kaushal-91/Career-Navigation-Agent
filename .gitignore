@@ -6,6 +6,8 @@ __pycache__/
 .ruff_cache/
 .coverage
 htmlcov/
+*.log
+.test-tmp-*/
 
 # Virtual environments
 .venv/
@@ -31,3 +33,8 @@ dist/
 *.sqlite3
 data/local/
 data/processed/
+
+# Local QA artifacts and screenshot-derived validation inputs
+outputs/
+eval-runs/
+scripts/live_validate_screenshot_transition.py

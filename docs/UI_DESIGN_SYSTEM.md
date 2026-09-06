@@ -4,7 +4,7 @@
 
 The Career Navigator UI is a production-quality user interface for evidence-based career decisions. Its direction is a clean, professional AI SaaS product with the clarity and restraint expected in financial-services software.
 
-This document defines the visual and interaction foundation. Activity 3A establishes configuration and structure only. Activity 3C will build the production UI shell; functional workflow pages come later.
+This document defines the visual and interaction foundation. Activity 3A established configuration and structure. Activity 3C implements the production UI shell with synthetic views and temporary UI interactions; live workflow behavior remains deferred.
 
 ## 2. Design Principles
 
@@ -16,7 +16,7 @@ This document defines the visual and interaction foundation. Activity 3A establi
 6. **Native where suitable.** Prefer accessible Streamlit controls. Add project-owned components only when they improve consistency or comprehension.
 7. **Honest system state.** Loading, partial evidence, uncertainty, failure, and approval state are always explicit.
 
-Avoid default-looking Streamlit pages, excessive sidebar navigation, loose widget collections, emoji-heavy presentation, decorative gradients, generated Streamlit CSS class selectors, and unnecessary custom HTML.
+Avoid default-looking Streamlit pages, sprawling or duplicated navigation, loose widget collections, emoji-heavy presentation, decorative gradients, generated Streamlit CSS class selectors, and unnecessary custom HTML.
 
 ## 3. Design Tokens
 
@@ -46,7 +46,7 @@ Do not create arbitrary spacing when an existing token is suitable.
 
 ### Color
 
-The base interface uses a white surface, a subtle cool-gray secondary surface, dark blue-gray text, and a restrained blue accent. Semantic color communicates state, not decoration.
+The base interface uses a warm off-white canvas (`#f7f7f5`), white content surfaces, a dark evidence rail (`#12161f`), near-black text, and a restrained blue accent. Semantic color communicates state, not decoration.
 
 | State | Meaning |
 | --- | --- |
@@ -60,7 +60,7 @@ Every semantic treatment includes text or an icon with an accessible label. Colo
 
 ## 4. Typography Hierarchy
 
-Use the configured sans-serif system font for legibility and predictable rendering.
+Use Source Sans 3 with a system-sans fallback for readable product copy. IBM Plex Mono is reserved for compact evidence labels, stage metadata, and numeric display values.
 
 | Style | Suggested size | Weight | Use |
 | --- | ---: | ---: | --- |
@@ -107,6 +107,12 @@ Use “15 validated postings” rather than “15 jobs.” Market counts must st
 
 Progress bars are allowed only when backed by a documented measure. Qualitative evidence labels are preferred when no defensible numeric scale exists.
 
+Market and analysis pages use a visual-first reading order. Charts show only existing validated
+counts, frequencies, and classifications; they must not derive an undisclosed readiness score.
+Requirement-frequency bars, title-mix segments, employer concentration, comparison outcomes, and
+gap distributions appear before detailed summary cards. Every chart includes a text label and its
+scope so that color or shape is never the only carrier of meaning.
+
 ## 8. Button Hierarchy
 
 - **Primary:** The single main forward action, such as `Confirm Profile` or `Approve and Save Plan`.
@@ -124,9 +130,9 @@ The primary workflow is:
 Profile → Goal → Market → Analysis → Plan
 ```
 
-A horizontal stepper shows completed, current, and upcoming stages. The current stage uses `aria-current="step"`; completed stages include a textual or icon cue in addition to color. Navigation follows application and LangGraph state rather than unrestricted sidebar links.
+A compact evidence rail shows completed, current, and upcoming stages on desktop. It is the only primary workflow navigation and therefore does not duplicate a horizontal application stepper. The current stage uses a filled treatment; completed stages include a check and text cue in addition to color. Navigation follows application and LangGraph reached-state rules rather than unrestricted links. A small normal-flow context row identifies the current stage without duplicating navigation actions; sticky positioning is avoided because it is unreliable across Streamlit releases.
 
-On narrow screens, use a compact form such as `Step 3 of 5 — Market`. Users may return only to stages supported by workflow rules, with downstream invalidation explained before changes are applied.
+On narrow screens, the rail collapses to Streamlit's accessible menu control and the context bar remains compact. Users may return only to stages supported by workflow rules, with downstream invalidation explained before changes are applied.
 
 ## 10. System States
 
@@ -178,13 +184,15 @@ Allow workflow navigation to compact or scroll without clipping. Tables must ref
 - Keep model, MCP, persistence, and career logic out of UI components.
 - Use reusable project-owned components for cards, badges, metrics, evidence, timelines, and navigation.
 - Target only stable Streamlit selectors such as documented attributes when necessary; never target generated classes such as `.css-1x8cf1d`.
-- Use project-owned CSS classes for custom presentation.
-- Reserve `unsafe_allow_html=True` for static, application-owned markup and styles. Never inject resume text, job content, or other untrusted values into raw HTML.
+- Follow the final native-Streamlit handoff: do not inject a custom stylesheet into the portal.
+- Use Plotly for quantitative graphics and native Streamlit primitives for structure and state.
+- Compatibility markup helpers must never receive untrusted content without escaping it and are not
+  used for active portal rendering.
 - Do not implement functional pages or the complete UI during Activity 3A.
 
 ## 14. Planned UI Package
 
-Activity 3A creates the package boundary only. The intended later structure is:
+Activity 3C uses this package structure for the synthetic product shell:
 
 ```text
 src/ai_career_navigator/ui/
@@ -206,4 +214,4 @@ src/ai_career_navigator/ui/
 └── styles.css
 ```
 
-These files are not created until their implementation activity begins.
+The modules contain presentation behavior only. Live orchestration, persistence, integrations, and domain services remain outside the UI layer.

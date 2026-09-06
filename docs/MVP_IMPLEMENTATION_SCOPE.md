@@ -15,10 +15,14 @@ Only selected capabilities from the frozen architecture are activated in V1.
 ## V1 User Flow
 
 ```text
-Resume or manual profile
-→ Structured profile extraction
+Structured manual onboarding
+→ Profile review
 → Human confirmation
+→ AI capability inference
+→ Human inference review
 → Career goal
+→ Goal review
+→ Human goal confirmation
 → Current market search
 → Requirement extraction
 → Candidate-to-role comparison
@@ -33,32 +37,34 @@ Resume or manual profile
 
 ## V1 — Implement Now
 
-1. Resume upload and manual profile input
-2. Resume text extraction
-3. Structured profile extraction
+1. Structured manual profile onboarding
+2. Deterministic profile assembly from user-entered facts
+3. Explicit evidence mapping from structured skills and capabilities
 4. Profile confirmation
-5. Goal confirmation
-6. Current market search through You.com MCP
-7. Exact-title searches
-8. Related-title searches
-9. Basic posting validation
-10. Deduplication
-11. Job-page retrieval
-12. Requirement extraction
-13. Basic title normalization
-14. Requirement comparison
-15. Transferable-skill analysis
-16. Five gap categories: `SKILL`, `EXPERIENCE`, `LEADERSHIP_SCOPE`, `EVIDENCE`, and `CREDENTIAL_PREREQUISITE`
-17. Candidate Accessibility: `APPLY_NOW`, `APPLY_SELECTIVELY`, `NEAR_TERM_TARGET`, `ASPIRATIONAL`, `POOR_FIT`, and `INSUFFICIENT_CANDIDATE_EVIDENCE`
-18. Bridge-role analysis
-19. Timeline feasibility
-20. Career-plan generation
-21. Human approval
-22. SQLite persistence
-23. LangGraph checkpointing
-24. Basic logging and traceability
-25. Basic error recovery
-26. mem0 integration after the core end-to-end workflow works
+5. AI capability inference from approved explicit evidence
+6. Per-capability human inference review
+7. Deterministic career-goal capture and human confirmation
+8. Current structured market search through Adzuna, with bounded You.com supporting evidence
+9. Exact-title searches
+10. Related-title searches
+11. Basic posting validation
+12. Deduplication
+13. Job-page retrieval
+14. Requirement extraction
+15. Basic title normalization
+16. Requirement comparison
+17. Transferable-skill analysis
+18. Five gap categories: `SKILL`, `EXPERIENCE`, `LEADERSHIP_SCOPE`, `EVIDENCE`, and `CREDENTIAL_PREREQUISITE`
+19. Candidate Accessibility: `APPLY_NOW`, `APPLY_SELECTIVELY`, `NEAR_TERM_TARGET`, `ASPIRATIONAL`, `POOR_FIT`, and `INSUFFICIENT_CANDIDATE_EVIDENCE`
+20. Bridge-role analysis
+21. Timeline feasibility
+22. Career-plan generation
+23. Human approval
+24. SQLite persistence
+25. LangGraph checkpointing
+26. Basic logging and traceability
+27. Basic error recovery
+28. mem0 integration after the core end-to-end workflow works
 
 Frozen rules remain in force, including separation of confirmed facts from inferences, separate market and candidate conclusions, evidence provenance, human approval, provider-independent domain logic, and safe insufficient-evidence outcomes.
 
@@ -77,7 +83,7 @@ V1 current-market analysis provides only:
 - Search limitations
 - Evidence confidence
 
-V1 may use the simple current-market descriptions `BROAD`, `MODERATE`, `NICHE`, and `INSUFFICIENT_EVIDENCE`. These are lightweight V1 summaries, not replacements for the full historical Market Verdict classifications in the frozen architecture.
+V1 reports four separate current-market signals: Opportunity Availability, Employer Diversity, Market Concentration, and Evidence Confidence. It does not use one `BROAD` / `MODERATE` / `NICHE` label to combine posting volume, employer participation, concentration, and evidence quality. Current searches do not classify an occupation as intrinsically common, specialized, niche, or emerging. Historical Market Verdict remains deferred to V2.
 
 Counts describe unique validated postings found through the searched sources as of the recorded date. They are not complete market totals. Exact-title and related-title results remain separate.
 
@@ -150,19 +156,24 @@ Do not implement yet:
 - Recruiter outreach
 - Interview preparation
 
-## Resume-Processing Decision
+## V1 Profile-Acquisition Decision
 
-V1 does not use RAG for a single resume. Use:
+V1 uses structured manual onboarding:
 
 ```text
-Resume
-→ Text extraction
-→ Structured LLM extraction
-→ Validation
+About You
+→ Experience
+→ Skills and Competencies
+→ Projects and Achievements
+→ Education and Certifications
+→ Review
 → Human confirmation
 ```
 
-Preserve evidence references where practical. Do not introduce Pinecone or embeddings for resume processing.
+Document import is not part of the current V1 implementation. DOCX import is a deferred
+convenience input that may later pre-fill the same structured profile. PDF import, parsing,
+OCR, and resume-extraction prompts are not part of the current V1 scope. Do not introduce
+document libraries, Pinecone, or embeddings for profile acquisition.
 
 ## V1 Technology Stack
 
@@ -193,8 +204,8 @@ Provider selection remains configuration-driven and evaluation-based. You.com re
 
 The MVP is successful when a user can:
 
-1. Upload or enter a career profile.
-2. Confirm the extracted information.
+1. Build a career profile through structured manual onboarding.
+2. Review and confirm the entered information.
 3. Enter a target role or exploration goal.
 4. Retrieve current market evidence.
 5. See matched and transferable capabilities.
@@ -209,4 +220,57 @@ Target end-to-end completion time: under five minutes, excluding external provid
 
 ## Implementation Rule
 
+### Activity 8 market source update
+
+Adzuna structured discovery and You.com MCP web discovery run concurrently in V1. Both lanes are
+bounded and independently validated, then merged with cross-source deduplication. Adzuna structured
+fields are retained when both lanes identify the same posting. A provider outage lowers
+source-coverage confidence but does not discard healthy evidence from the other lane. Both
+providers remain behind the Market Intelligence Service; LangGraph and downstream career logic
+remain provider-neutral.
+
 The frozen architecture remains the long-term reference. This document controls which frozen-architecture capabilities are activated during V1. Deferred V2 and V3 capabilities require explicit approval before implementation.
+
+## Activity 6A Activation
+
+V1 requirement comparison and transferable-skill analysis are implemented through
+`CANDIDATE_COMPARISON_READY`. The implementation produces posting-grounded direct, transferable,
+partial, no-confirmed-match, and insufficient results without an overall fit percentage. Gap
+classification and candidate accessibility remain the next implementation activity.
+
+## Activity 6B Activation
+
+The five V1 gap categories, transparent severity policy, hard-prerequisite detection, qualitative
+candidate accessibility, and `RoleAssessment` assembly are implemented through
+`CANDIDATE_ASSESSMENT_READY`. Gaps are deduplicated without discarding requirement provenance.
+Opportunity availability remains independent from candidate accessibility. Bridge-role and timeline
+assessment remain deferred to Activity 6C, and career planning remains deferred to Activity 7.
+
+## Activity 6C Activation
+
+Observed-market bridge-role evaluation and qualitative timeline assessment are implemented through
+`CAREER_PATH_ASSESSMENT_READY`. Bridge candidates must be observed related titles and must reduce
+specific material gap IDs; no additional market search is performed. Timeline conclusions use the
+four approved classifications and preserve missing evidence and user constraints without numeric
+probabilities or completion-date predictions. CareerPlan and milestone generation remain deferred
+to Activity 7A.
+
+## Activity 7A Activation
+
+V1 career-plan generation is implemented through `CAREER_PLAN_READY`. Plans use the existing
+`DIRECT`, `BRIDGE`, `MULTIPLE_PATHS`, `EXPLORATION`, and `NO_CREDIBLE_PATH` classifications and
+remain unapproved drafts. Milestones are gap-driven, measurable, evidence-oriented, dependency-
+validated, and bounded by the requested timeline when one exists. Optional model wording cannot
+change target roles, bridge roles, gap IDs, phases, milestone types, dependencies, credentials,
+risks, or assumptions; invalid output falls back safely. Approval and persistence remain deferred
+to Activity 7B and later persistence work.
+
+## Activity 7B Activation
+
+V1 final human review is implemented as a LangGraph interrupt after `CAREER_PLAN_READY`. A typed
+request must match the exact checkpointed plan ID and version. Terminal actions produce
+`COMPLETED`, `COMPLETED_WITH_LIMITATIONS`, `SAVED_AS_DRAFT`, or `USER_CANCELLED`; an unavailable
+responsible plan produces `INSUFFICIENT_EVIDENCE`. Revision actions stop in explicit profile, goal,
+market, or career-analysis reassessment states after centralized dependency-aware invalidation.
+Approval and action records are checkpoint/session scoped only. SQLite repositories, durable plan
+history, user accounts, mem0, and historical market intelligence remain outside this activation.

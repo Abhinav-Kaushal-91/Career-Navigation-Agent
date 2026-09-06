@@ -2,8 +2,8 @@
 
 ## MVP Features
 
-- Resume upload and manual profile input, including users without formal employment.
-- Structured profile extraction, correction, confirmation, and persistent saving.
+- Structured manual profile onboarding, including students and users without formal employment.
+- Profile review, correction, confirmation, and persistent saving.
 - Support for every career stage, including open exploration and reassessment.
 - Target role, seniority, timeline, location, work mode, industry, preferences, and exclusions.
 - Current market analysis using exact and related titles, selected full-content retrieval, deduplication, title normalization, employer counts, requirement extraction, and limitations.
@@ -17,6 +17,8 @@
 
 ## Non-goals for the MVP
 
+- Resume upload, PDF/DOCX parsing, OCR, or document-extraction prompts. DOCX import may later
+  pre-fill the same structured profile as a convenience input.
 - Automatic applications, ATS form filling, browser automation, recruiter outreach, or email sending.
 - Resume tailoring, cover-letter generation, interview preparation, or salary negotiation.
 - Voice interface, course marketplace, learning-management system, or social networking.

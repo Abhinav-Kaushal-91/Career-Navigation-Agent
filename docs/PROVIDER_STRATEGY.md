@@ -1,5 +1,22 @@
 # Provider Strategy
 
+## Structured extraction reliability
+
+Structured output remains subject to strict Pydantic validation. When the first response is
+invalid, the gateway may make one replacement-only retry with sanitized field paths and validation
+error types. The rejected response is never echoed into the retry prompt or accepted. Transient
+provider failures use the same configured retry budget. Activity 8 live extraction uses one retry
+and a bounded 90-second timeout; reasoning remains disabled for extraction requests.
+
+## Market providers
+
+Adzuna structured discovery and You.com web discovery run as concurrent, independently validated
+evidence lanes. Results merge only after title, posting, geography, freshness, and deduplication
+checks. Adzuna fields remain authoritative for a cross-source duplicate; You.com may still provide
+bounded thin-record enrichment when its content matches the same posting. Raw provider payloads
+and credentials never escape their adapters. The Market Intelligence Service emits only
+project-owned market models.
+
 ## 1. Purpose
 
 Hosted model access remains provider-independent and configuration-driven. The final model/provider is not selected in Step 2.
@@ -79,3 +96,20 @@ Replacing Fireworks with NVIDIA NIM must require only configuration/adapter chan
 - Hugging Face Router necessity
 - Cost ceiling and latency target
 - Value of a validation model
+
+## 17. Activity 4A Implementation Decision
+
+Activity 4A implements Fireworks as the first development adapter without selecting it as the permanent provider winner. Fireworks was chosen for the initial adapter because its hosted OpenAI-compatible chat-completions endpoint supports JSON Schema response formatting and configurable model identifiers with a small integration surface.
+
+The adapter uses Python standard-library HTTPS rather than adding the alpha Fireworks SDK or another provider SDK. This keeps Python 3.14 compatibility within the standard library and introduces no new runtime dependency. Transport code is isolated inside the adapter and can be replaced later without changing the gateway or domain contracts.
+
+NVIDIA NIM and Hugging Face remain future adapters. Selecting either before its adapter exists raises a typed configuration error. Structured output is validated by the gateway with the caller-supplied Pydantic model even when the provider constrains generation. Provider reasoning fields are not normalized, returned, stored, or logged. No Activity 4A implementation performs a live call automatically.
+
+## 18. Activity 4C Capability-Inference Decision
+
+Capability inference uses `ModelRole.EXTRACTION` because V1 requires schema-constrained
+interpretation of supplied confirmed evidence. The inference service never calls Fireworks or
+another provider directly. Every proposal must contain structurally valid evidence IDs, and the
+service validates those IDs again against the exact evidence set sent to the model. Full evidence
+text, summaries, and secrets are excluded from logs; only safe counts and normalized response
+metadata are recorded.

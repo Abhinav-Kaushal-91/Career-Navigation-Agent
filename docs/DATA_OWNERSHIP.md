@@ -74,7 +74,8 @@ Only the minimum required PII should be sent to remote models.
 - Goal draft: non-authoritative.
 - Confirmed goal: authoritative after approval.
 - Career-plan draft: non-authoritative.
-- Approved plan: authoritative after user approval.
+- Approved plan: authoritative after user approval; in Activity 7B it exists only in the active
+  workflow checkpoint and is not durably stored as a business record.
 - Market records: authoritative retained evidence records with source, quality, and confidence metadata.
 - Derived analysis: authoritative record of the system's conclusion during that run, not a candidate fact or objective market fact.
 - Model interpretation: never automatically authoritative.

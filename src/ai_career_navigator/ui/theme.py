@@ -1,7 +1,4 @@
-"""Foundational UI design tokens.
-
-No Streamlit rendering or custom CSS belongs in this Activity 3A module.
-"""
+"""Central design tokens and semantic presentation helpers."""
 
 from types import MappingProxyType
 from typing import Final
@@ -35,3 +32,35 @@ SEMANTIC_STATES: Final = MappingProxyType(
         "information": "Guidance or current workflow state",
     }
 )
+
+BADGE_TONES: Final = MappingProxyType(
+    {
+        "HIGH": "success",
+        "MODERATE": "information",
+        "LOW": "warning",
+        "INSUFFICIENT": "critical",
+        "STRONG": "success",
+        "LIMITED": "warning",
+        "SPARSE": "warning",
+        "INSUFFICIENT_EVIDENCE": "critical",
+        "INFERRED_PENDING": "warning",
+        "CONFIRMED_INFERENCE": "success",
+        "REJECTED_INFERENCE": "critical",
+        "APPLY_NOW": "success",
+        "APPLY_SELECTIVELY": "information",
+        "NEAR_TERM_TARGET": "warning",
+        "ASPIRATIONAL": "warning",
+        "POOR_FIT": "critical",
+        "SKILL": "information",
+        "EXPERIENCE": "warning",
+        "LEADERSHIP_SCOPE": "neutral",
+        "EVIDENCE": "information",
+        "CREDENTIAL_PREREQUISITE": "neutral",
+    }
+)
+
+
+def badge_tone(label: str) -> str:
+    """Return a semantic tone without encoding meaning in color alone."""
+
+    return BADGE_TONES.get(label.upper(), "neutral")

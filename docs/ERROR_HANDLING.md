@@ -1,5 +1,21 @@
 # Error Handling
 
+## Structured model extraction
+
+An invalid structured response may receive one controlled schema-repair attempt. Repeated invalid
+responses fail that posting safely. A transient timeout may receive one retry in the Activity 8 QA
+configuration; repeated timeouts also fail safely. Failed postings do not enter the requirement
+frequency denominator. Logs and QA output contain only typed failure categories, never rejected
+model content, job descriptions, secrets, or reasoning traces.
+
+## Activity 8 market-source failures
+
+Adzuna and You.com authentication, rate-limit, timeout, transport, and malformed-response failures
+map into the existing market error hierarchy. Failure of one concurrent lane preserves validated
+evidence from the other and lowers source-coverage confidence. A You.com enrichment failure does
+not discard a healthy Adzuna posting, and a conflict rejects supporting evidence rather than
+overwriting structured primary fields.
+
 ## 1. Purpose
 
 Errors are classified consistently, handled safely, and exposed through user-safe messages without leaking secrets or unsupported conclusions.

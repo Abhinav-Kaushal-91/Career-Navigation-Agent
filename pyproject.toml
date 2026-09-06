@@ -4,6 +4,11 @@ version = "0.1.0"
 description = "AI Career Strategy & Market Navigator"
 requires-python = ">=3.11"
 dependencies = [
+    "httpx>=0.27,<1",
+    "httpx2>=2.5,<3",
+    "langgraph>=1.2,<2",
+    "mcp>=2.1.1,<3",
+    "plotly>=6,<7",
     "pydantic>=2.10,<3",
     "pydantic-settings>=2.7,<3",
     "python-dotenv>=1.0,<2",

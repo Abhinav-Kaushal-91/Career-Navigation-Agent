@@ -1,5 +1,19 @@
 # LangGraph Parent Workflow
 
+## Activity 8 market-provider wiring
+
+The coarse market-retrieval node remains provider-neutral. Runtime context delegates provider
+selection to the Market Intelligence Service, which coordinates Adzuna primary retrieval and
+optional You.com support. Provider clients, sessions, credentials, and raw responses never enter
+graph state.
+
+## Activity 8 market-provider wiring
+
+The coarse market-retrieval node keeps its existing responsibility. Runtime context delegates
+provider selection to the Market Intelligence Service, which coordinates Adzuna primary retrieval
+and optional You.com support. No provider-specific graph nodes, clients, credentials, or raw
+responses enter graph state.
+
 ## Scope
 
 This document defines the parent workflow and major stages for the AI Career Strategy & Market Navigator. It does not define individual graph nodes, graph state fields, database schemas, MCP tool schemas, approval payloads, or implementation details.
@@ -244,6 +258,133 @@ flowchart TD
     goal_confirm -->|Confirmed| ready
     goal_confirm -->|Cancel| cancelled
 ```
+
+## Activity 5C Implemented Orchestration Boundary
+
+The first executable LangGraph slice ends at `MARKET_READY`:
+
+```mermaid
+flowchart TD
+    start([START]) --> initialize[initialize_run]
+    initialize --> profile[profile_ready]
+    profile -->|Missing| profile_input([READY_FOR_PROFILE])
+    profile -->|Approved| inference[capability_inference]
+    inference -->|Pending inference| review[capability_inference_review interrupt]
+    review -->|Reviewed profile| goal[goal_ready]
+    inference -->|Empty, skipped, or degraded| goal
+    goal -->|Missing| goal_input([READY_FOR_GOAL])
+    goal -->|No target role| discovery([ROLE_DISCOVERY_REQUIRED])
+    goal -->|Confirmed target| retrieval[market_retrieval]
+    retrieval -->|Succeeded or limited| processing[market_processing]
+    retrieval -->|Unrecoverable error| failed([FAILED])
+    processing -->|Succeeded, partial, or empty| ready([MARKET_READY])
+    processing -->|Complete failure| failed
+```
+
+`capability_inference_review` uses a dynamic LangGraph interrupt and resumes with a reviewed
+`CandidateProfile`. Code before the interrupt has no side effects, so the preceding inference call
+is not repeated. Missing profile, missing goal, and no-target role discovery return control through
+explicit terminal statuses because their forms remain outside the graph in Activity 5C.
+
+Nodes receive `ModelGateway`, market-client construction, service callables, `Settings`, logging,
+clock, and transient raw-content storage through `WorkflowRuntimeContext`. They do not store these
+dependencies in checkpoint state. Existing services retain all capability-inference, search,
+segmentation, validation, extraction, and aggregation business logic. Service-level bounded retries
+remain authoritative; the graph records exhausted attempts but does not stack another retry loop.
+
+The graph is compiled with an in-memory checkpoint saver for the current foundation. `thread_id`
+selects checkpoint history and `run_id` identifies one analysis attempt. SQLite business storage,
+durable production checkpointing, candidate comparison, gaps, accessibility, bridges, timelines,
+plans, historical analysis, and mem0 remain outside Activity 5C.
+
+## Activity 6A Candidate Comparison Extension
+
+The executable V1 slice now continues from market readiness into one coarse career-analysis node:
+
+```mermaid
+flowchart LR
+    market([MARKET_READY]) --> compare[candidate_requirement_comparison]
+    compare --> ready([CANDIDATE_COMPARISON_READY])
+```
+
+The node delegates all comparison behavior to the career comparison service. That service admits
+only approved explicit or confirmed-inference evidence, evaluates deterministic matches first,
+and uses `ModelRole.REASONING` only for bounded semantic transferability. Posting-level
+requirements retain exact-target or combined-related scope. Invalid evidence references and
+individual model failures become typed limitations rather than invented matches. Gap generation,
+candidate accessibility, bridge analysis, timeline assessment, and planning are not part of this
+node.
+
+## Activity 6B Gap and Accessibility Extension
+
+```mermaid
+flowchart LR
+    comparison([CANDIDATE_COMPARISON_READY]) --> gaps[gap_and_accessibility_analysis]
+    gaps --> assessment([CANDIDATE_ASSESSMENT_READY])
+```
+
+The new node delegates to a deterministic policy service. Posting-level comparisons remain intact,
+while user-facing gaps are consolidated by normalized capability and category with all contributing
+requirement IDs retained. Exact-target requirements drive primary severity and accessibility;
+related-only differences are advisory and cannot become `HIGH` solely from related-title volume.
+Candidate accessibility is explained through gap severity, blockers, supported exact-target
+requirements, and evidence sufficiency. It is not derived from market availability and has no
+percentage score. The graph stops before bridge and timeline analysis.
+
+## Activity 6C Bridge and Timeline Extension
+
+```mermaid
+flowchart LR
+    assessment([CANDIDATE_ASSESSMENT_READY])
+    assessment -->|Bridge may help| bridge[bridge_role_assessment]
+    assessment -->|Bridge unnecessary or evidence insufficient| timeline[timeline_assessment]
+    bridge --> timeline
+    timeline --> ready([CAREER_PATH_ASSESSMENT_READY])
+```
+
+Bridge candidates are limited to titles already observed in retained related-title evidence. A
+candidate must reduce at least one material gap and retains the exact reduced gap IDs. Apply-ready
+candidates bypass substantive bridge evaluation; unwilling users receive no primary bridge
+recommendation. Timeline classification uses accessibility, material gaps, blockers, bridge value,
+the requested timeline, and user constraints. Missing timelines and unsupported prerequisite
+durations return `UNSUPPORTED_INSUFFICIENT_EVIDENCE`. No CareerPlan or roadmap node is active.
+
+## Activity 7A Career Plan Extension
+
+```mermaid
+flowchart LR
+    path([CAREER_PATH_ASSESSMENT_READY]) --> plan[career_plan_generation]
+    plan --> ready([CAREER_PLAN_READY])
+```
+
+The plan node delegates to a path-aware planning service. It maps bridge and accessibility
+conclusions to an existing `PathType`, creates only milestones supported by gaps, bridge evidence,
+timeline prerequisites, or the confirmed goal, and validates every gap and dependency reference.
+Month ranges remain within the requested timeline; a missing timeline is preserved rather than
+replaced with a default. The generated plan is version 1 with `DRAFT` plan and approval status.
+Optional reasoning-model wording is input-minimized and strictly validated; failure retains the
+deterministic draft with a limitation. The workflow stops before human plan approval or saving.
+
+## Activity 7B Final Plan Review Extension
+
+```mermaid
+flowchart TD
+    ready([CAREER_PLAN_READY]) --> review[final_plan_review interrupt]
+    review -->|approve / draft / reject / cancel| finalize[finalize_workflow]
+    finalize --> terminal([FINALIZED])
+    review -->|edit profile| profile([PROFILE_REVISION_READY])
+    review -->|revise goal| goal([GOAL_REVISION_READY])
+    review -->|reassess market| market([MARKET_REASSESSMENT_REQUESTED])
+    review -->|reassess analysis| analysis([CAREER_ANALYSIS_REASSESSMENT_REQUESTED])
+```
+
+The interrupt exposes safe metadata and requires a typed action bound to the exact plan ID and
+version in the checkpoint. The controller rejects stale submissions and returns the existing
+result for a repeated identical terminal action. Approval produces an approved plan copy and uses
+`COMPLETED_WITH_LIMITATIONS` when meaningful upstream limitations remain. Revision routing applies
+one centralized invalidation policy and stops in an explicit handoff state; it does not
+automatically rerun providers. All action records and draft-saving semantics are checkpoint/session
+scoped until business persistence is implemented.
 
 ### Student Example
 

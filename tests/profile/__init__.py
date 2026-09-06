@@ -1,0 +1,1 @@
+"""Structured profile onboarding tests."""

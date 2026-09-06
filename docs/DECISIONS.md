@@ -1,5 +1,14 @@
 # Decisions
 
+## Activity 8: Parallel Adzuna and You.com discovery
+
+Adzuna structured discovery and You.com MCP web discovery run concurrently as independent bounded
+lanes. Each lane applies posting, title, geography, freshness, and deduplication validation before
+merge. Cross-source duplicates retain Adzuna's structured fields, while matching You.com content
+may enrich a thin record. One failed lane preserves healthy evidence from the other but lowers the
+separate source-coverage confidence. Provider selection remains internal to the Market Intelligence
+Service, preserving provider-neutral graph and career-analysis boundaries.
+
 ## 0. Provider-independent hosted LLM architecture
 
 **Status:** Accepted for initial planning
@@ -191,3 +200,473 @@ The system retains structured outputs, explanations intended for users or system
 **Status:** Accepted for Activity 2G
 
 The Step 2 architecture is frozen for MVP implementation. Minor implementation details may evolve; major boundary, authority, provider, MCP, security, or workflow changes require an ADR and explicit review.
+
+## 32. V1 profile acquisition uses structured manual onboarding
+
+**Status:** Accepted for Activity 4B
+
+V1 captures candidate facts through a guided six-stage onboarding workflow and maps only
+explicit user-entered skills and capabilities into confirmed evidence. DOCX import is deferred
+as a possible convenience input to the same profile structure. Resume upload, PDF/DOCX parsing,
+OCR, and document-extraction prompts are outside the current V1 scope. This changes the active
+implementation scope without replacing the frozen long-term architecture boundaries.
+
+## 33. Target requirements follow the selected goal interaction
+
+**Status:** Accepted for Activity 4D
+
+`TARGET_CAREER_PATH` requires a target in the durable `CareerGoal` model. The current
+`ROLE_TRANSITION` interaction also requires a named role, but that rule remains in the V1 intent
+policy so a future open-transition interaction is not blocked by the durable model. Current-market
+analysis, career exploration, leadership progression, and reassessment may omit a target. This is
+a validation correction and adds no durable fields or entities.
+
+## 34. V1 current-market interpretation uses separate explainable signals
+
+**Status:** Accepted for Activity 5A
+
+The active V1 `CurrentMarketSnapshot` reports Opportunity Availability, Employer Diversity,
+Market Concentration, and Evidence Confidence independently. It retains the validated posting,
+normalized employer, top-employer, search, retrieval, and duplicate counts used by the transparent
+heuristics. `MarketBreadth` remains only as a compatibility enum and is not silently repurposed as
+availability. Role specificity, historical persistence, trend, seasonality, and the higher-order
+Market Verdict remain deferred to V2.
+
+## 35. V1 market requirements use posting candidates, not source pages
+
+**Status:** Accepted for Activity 5B
+
+A retrieved source page may contain one posting, multiple postings, or mixed non-job content.
+Activity 5B therefore classifies each retained source and creates source-grounded posting
+candidates before title, geography, or requirement analysis. Obvious structures are segmented
+deterministically; irregular aggregator content may use the extraction model through
+`ModelGateway`, but every model-created candidate must match exact source text. Requirement
+extraction receives one bounded posting candidate per call. Frequencies use successfully analyzed
+posting candidates as their denominator and retain exact-title and related-title counts separately.
+Page-level claims such as "31 jobs" never become validated market counts.
+
+## 36. Activity 5C uses in-memory workflow checkpoints and transient raw-content handoff
+
+**Status:** Accepted for Activity 5C
+
+The initial executable graph uses LangGraph's official `InMemorySaver` for workflow pause/resume
+and test checkpointing. It is not authoritative business persistence. Runtime services are supplied
+through LangGraph context and never enter state. Because market processing needs retrieved page
+content while checkpoints must remain small, an injected process-local content buffer holds bounded
+source content by run ID and the state retains only source IDs and validated summaries. Durable
+checkpoint storage, raw-content retention, and SQLite business repositories remain future work.
+
+## 37. Activity 6A comparisons retain posting and title-scope provenance
+
+**Status:** Accepted for Activity 6A
+
+The existing `RequirementComparison` is narrowed for executable use by adding the originating
+posting ID and an `EXACT_TARGET` or `COMBINED_RELATED` scope. Its match type may be absent only for
+an explicitly `INSUFFICIENT` comparison after semantic evaluation fails; the system does not
+fabricate a match merely to fill a result table. Detailed 5B analysis is handed to the comparison
+node through the injected process-local run store, while checkpoint state retains the resulting
+typed comparisons and limitations. This does not create business persistence or an overall score.
+
+## 38. Activity 6B uses deterministic, provenance-preserving gap policy
+
+**Status:** Accepted for Activity 6B
+
+V1 maps normalized requirement frequency into explicit bands using centralized thresholds:
+`COMMON >= 0.60`, `FREQUENT >= 0.35`, `OCCASIONAL >= 0.15`, and `RARE` below that; unavailable
+frequency is `INSUFFICIENT_EVIDENCE`. These bands affect gap priority but never change comparison
+match type. Duplicate posting differences produce one gap that retains every contributing
+requirement ID. Exact-target evidence is primary and related-only severity is capped below `HIGH`.
+Accessibility uses explainable rule inputs and remains independent of Opportunity Availability.
+No model call or percentage score is used for gap/accessibility classification.
+
+## 39. Activity 6C bridge titles must be observed and gap-reducing
+
+**Status:** Accepted for Activity 6C
+
+V1 bridge candidates come only from related titles already present in the current-market snapshot
+and retained posting analysis. A candidate is rejected unless its observed requirements reduce at
+least one material target gap. Ranking uses ordered, explainable dimensions—gap reduction,
+confirmed-strength overlap, observed posting support, and title—without a displayed score. The
+policy requires no new provider call or market search. Timeline assessment uses broad qualitative
+rules and permits a missing requested timeline only with
+`UNSUPPORTED_INSUFFICIENT_EVIDENCE`. Detailed milestones and CareerPlan remain inactive.
+
+## 40. Activity 7A uses a deterministic plan skeleton with optional validated wording
+
+**Status:** Accepted for Activity 7A
+
+Path selection, phase allocation, IDs, milestone traceability, timing, evidence artifacts, risks,
+assumptions, confidence, and draft status are deterministic business rules. Optional
+`ModelRole.REASONING` assistance receives only the bounded deterministic draft and may refine
+wording without changing its target, bridge roles, milestone structure, gap IDs, dependencies,
+credentials, risks, or assumptions. Invalid output or provider failure retains the deterministic
+plan and records a limitation. The active graph does not require this optional call. Final approval,
+persistence, revision history, and market reassessment remain outside Activity 7A.
+
+## 41. Activity 7B approval is exact-version and checkpoint scoped
+
+**Status:** Accepted for Activity 7B
+
+Final review is a true LangGraph interrupt and resumes only through the controller with a bounded
+action matching the checkpointed plan ID and version. Approval creates a new approved model copy;
+the reviewed draft object is not edited in place. Human actions are recorded with safe metadata in
+workflow state, and duplicate identical terminal submissions return the existing final result.
+Revision actions use one dependency-aware invalidation policy and stop in explicit handoff states
+without automatically calling market or model providers. These semantics do not constitute
+business persistence, approval history, or versioned plan storage.
+
+## 42. Activity 8 geographic discovery is explicit and permission bounded
+
+**Status:** Accepted for Activity 8 live QA
+
+V1 records `STRICT_CITY`, `METRO_AREA`, `PROVINCE`, `COUNTRY`, and `COUNTRY_REMOTE` as distinct
+search scopes. A goal defaults to strict city; wider scopes must be selected explicitly, and
+an explicit Canada location defaults naturally to `COUNTRY`. Country-wide remote additionally
+requires Remote as an accepted work mode. Toronto search phrases
+are deterministic and bounded. Retained postings preserve the requested query scope, the scope
+matched from posting-level evidence, the grounded location, and its evidence text. A generic
+`COUNTRY` accepts explicit Canadian cities, provinces, or Canada itself, while a generic "Remote"
+label is not sufficient evidence of Canadian eligibility, and rejected or unclear
+geography is never relaxed to meet the live-QA posting gate.
+
+## 43. Activity 8 target-title variants are lexical and separately counted
+
+**Status:** Accepted for Activity 8 live QA
+
+The discovery sequence is exact title, deterministic target-title variants, then permission-gated
+related roles. The V1 variant policy is deliberately small: Solution/Solutions, configured AI/ML,
+and Generative AI/GenAI forms with punctuation normalization. Variants are never counted as exact
+titles, and related roles remain separate. Variant discovery uses bounded You.com searches with
+direct employer/ATS-oriented query terms; no ATS is scraped directly and no model invents titles.
+Requirement aggregation retains exact-only and exact-plus-variant frequencies independently.
+
+## 44. The final portal handoff uses native Streamlit plus Plotly
+
+**Status:** Accepted for the final V1 visual implementation
+
+The supplied Streamlit-ready handoff supersedes the earlier custom dark evidence rail. The active
+portal uses a light native sidebar with `st.radio`, native containers and status components, and
+Plotly for quantitative graphics. No global custom stylesheet is injected by the application;
+the live-progress component may include its own scoped motion and state styling. Synthetic
+demo scores and route alternatives remain explicitly labelled and isolated in demo presentation;
+live pages render only workflow-produced facts and retain honest insufficient-evidence states.
+
+## 45. Live portal requirement analysis is bounded to five postings
+
+**Status:** Accepted for Activity 8 live reliability
+
+Market retrieval may retain a wider validated snapshot, but one interactive workflow run sends at
+most five postings through requirement extraction. This preserves the 3-posting gate while
+bounding latency, retries, and provider calls. `PostingRequirementResult` remains strictly
+validated; prompt wording explicitly assigns CAPABILITY, PREREQUISITE_CONDITION, and
+METADATA_NON_REQUIREMENT to `item_type`, while `category` uses the separate requirement taxonomy.
+Logs may record sanitized schema field/error types but never full posting descriptions, rejected
+model output, secrets, or reasoning traces.
+
+## 46. Live analysis uses a dedicated stage-mapped transition
+
+**Status:** Accepted for the production portal
+
+The live workflow is launched only after Streamlit reruns into a dedicated progress view. The UI
+maps graph completions to seven stable product stages and derives bar advancement from completed
+stages, so it does not display raw node names or fabricated percentages. Active-run session flags
+disable sidebar navigation and prevent duplicate starts. Successful display-ready results navigate
+automatically to Market; a run without a usable snapshot returns safe Retry and Back to goal
+actions. The motion treatment is component-scoped, restrained, and disabled when the browser
+requests reduced motion.
+
+## 47. Profile strengths are inferred after evidence capture and confirmed once
+
+**Status:** Accepted for the production portal
+
+The live profile sequence collects experience, portfolio projects, education, and certifications
+before automatically invoking grounded capability inference. One native multi-select chip control
+combines conservatively deduplicated literal evidence, prior explicit strengths, AI inferences, and
+user-entered exceptions. AI inferences are active by default. The single confirmation maps retained
+inferences to `CONFIRMED_INFERENCE`, removed inferences to `REJECTED_INFERENCE`, and new manual items
+to `EXPLICIT`; rejected records retain their original supporting provenance but are not eligible for
+downstream analysis. Technical punctuation is presentation data and is not tokenized or rewritten.
+
+Profile dates use a rolling current-year-minus-60 history boundary. Employment cannot start or end
+in the future and must retain start/end ordering; a current role has no end date. Education may use
+a future completion year only when explicitly marked expected, certification issue years cannot be
+future years, and certification expiration cannot precede issue.
+
+## 48. Market, analysis, and plan use presentation view models and strict approval gating
+
+**Status:** Accepted for the production portal
+
+Validated domain and LangGraph objects remain the source of truth, but production pages no longer
+decode those objects into long prose inline. Presentation-only view models translate enum labels,
+prepare chart/table datasets, state sample denominators, and synthesize safe limitations without
+changing business classifications. Market answers what was observed, Analysis answers how confirmed
+candidate evidence compares, and Plan shows only evidence-supported route choices and milestones.
+
+Plan approval is rendered only for a draft plan with a target, current-role starting point,
+supported timeline, candidate assessment, non-insufficient confidence, credible path type, and
+evidence-linked milestones. Missing inputs produce corrective actions instead of an approval-ready
+roadmap. Multiple-path selection filters an existing engine-generated bridge branch; the UI never
+invents additional routes or success probabilities. Raw compensation/benefit fragments and
+requirement-processing diagnostics are not eligible as plan risks or limitations.
+
+## 49. Analysis uses reconciled comparisons and guarded product transfer
+
+**Status:** Accepted for the production Analysis page
+
+All Analysis summary counts derive from the same usable `RequirementComparison` collection:
+direct, transferable, partial, and no-confirmed match remain mutually exclusive and reconcile to
+the displayed total. Partial matches are not described as covered, and the page does not compute a
+fit percentage. Material gaps include moderate, high, and blocking severities; presentation may
+group them into career-level themes only when every underlying `GapItem` identifier is retained.
+
+Readiness is qualitative and derived from the categorized comparison outcomes rather than a
+synthetic radar score. A semantic transferable result for product vision, strategy, roadmap,
+lifecycle, KPI, or adoption ownership is downgraded to partial unless supporting evidence explicitly
+demonstrates that ownership. Process discovery may still transfer to product discovery because the
+workflow and outcome are adjacent, but discovery alone never proves product-direction ownership.
+
+## 50. An approved no-fixed-timeline goal produces an untimed, approval-eligible plan
+
+**Status:** Accepted for the production Plan page
+
+`NO_FIXED_TIMELINE` is a first-class timeline classification, distinct from
+`UNSUPPORTED_INSUFFICIENT_EVIDENCE`. It is valid only when the goal itself is approved; the same
+missing numeric duration on a draft goal remains incomplete. Untimed plans preserve real milestone
+dependencies but present them as `NOW`, `NEXT`, optional `BRIDGE` or `BUILD EVIDENCE`, and `TARGET`.
+They never display zero-month ranges or infer a duration.
+
+Plan approval remains blocked when candidate evidence or market comparison is genuinely
+insufficient, no credible path exists, or critical upstream artifacts are missing. Current role is
+resolved from the explicit About field first, then from the most recent active employment entry.
+The UI renders only paths and bridge roles produced by the engine, uses qualitative effort/risk,
+and creates action cards only from material `GapItem` records with retained identifiers and stated
+evidence needs. Missing gaps are not invented merely to fill the requested three-to-five range.
+
+## 51. Market dimensions are presentation classifications over validated evidence
+
+**Status:** Accepted for the production Market page
+
+Opportunity availability continues to use the existing market policy. Employer diversity combines
+the existing `EmployerDiversity` and `MarketConcentration` outcomes into broadly distributed,
+moderately concentrated, concentrated, or limited-evidence language. Title consistency is derived
+only from exact-target, target-variant, and related-title counts: at least 70% exact is high
+consistency; at least 50% exact-plus-variant is moderate variation; otherwise it is low consistency.
+This is a presentation metric, not a new market ontology.
+
+`CurrentMarketSnapshot.location_posting_counts` retains normalized, posting-grounded location
+strings and counts. The UI groups them into recognizable Canadian provinces/regions, remote, or
+Canada-wide categories without hard-coding a preferred city. Requirement themes are deterministic
+labels over the names actually present in `MarketRequirementSummary`; the UI cannot add a theme
+capability that extraction did not support. Every frequency states `N of M` and the analyzed sample
+denominator. Raw provider validation diagnostics and metadata debris are replaced with concise,
+user-relevant limitations.
+
+## 52. Career-level synthesis is semantic-only and preserves raw analysis provenance
+
+**Status:** Accepted for the production Analysis and Plan workflow
+
+The workflow inserts a generic `CareerAssessmentSynthesis` after deterministic requirement
+comparison and raw gap construction, before bridge-role, timeline, and plan decisions. The model
+may group related findings and write concise explanations, but it cannot set severity, market
+frequency, accessibility, confidence, counts, timelines, bridge roles, certifications, or source
+identifiers. Those values are computed or validated deterministically.
+
+Every grouped gap must cover existing material `GapItem` identifiers exactly once. Every advantage
+and transferable strength must cite eligible comparisons and approved evidence already present in
+the bounded input. Unknown or contradictory model output fails closed to deterministic grouping.
+Analysis renders the validated synthesis; downstream planning may use its grouped priority and
+accessibility rationale, while milestones continue to reference raw gap identifiers. No target-role
+special cases are permitted, and optional plan model refinement remains disabled.
+
+## 53. Accessibility uses weighted primary evidence and independent severe dimensions
+
+**Status:** Accepted for calibrated career synthesis
+
+Target-role accessibility uses exact-target and target-variant comparisons as its primary evidence.
+Related-title comparisons remain available for interpretation and bridge analysis but cannot inflate
+target readiness. Internal evidence weights are `DIRECT_MATCH = 1.0`,
+`TRANSFERABLE_MATCH = 0.70`, `PARTIAL_MATCH = 0.35`, and `NO_CONFIRMED_MATCH = 0.0`.
+The weighted value is one policy input only and is never presented as a candidate fit score.
+
+Material gaps are classified into structured, role-neutral dimensions from requirement category,
+gap type, maturity difference, match type, and bounded requirement semantics. Generic gap prose is
+not a primary classification input. Accessibility considers independent high/blocking dimensions,
+not a raw high-gap threshold: two or more independent severe dimensions are aspirational; one severe
+dimension is near-term when weighted primary support is at least 0.50 and aspirational otherwise.
+A 75% unmatched primary share with a high gap is poor fit, and any hard/blocking prerequisite remains
+poor fit. Moderate-only gaps can support selective application when weighted support is at least
+0.65 and direct share at least 0.40. Apply-now requires no material gap, at least 0.60 direct share,
+at least 0.75 weighted support, and no unmatched primary requirement.
+
+At least half insufficient primary comparisons yield insufficient candidate evidence. Low role or
+primary-comparison confidence caps a result at near-term; moderate confidence caps it at apply
+selectively. Grouped gaps retain raw identifiers plus underlying count, high/blocking count,
+mandatory/preferred composition, and affected dimensions. These controls are deterministic and
+remain independent of model wording or grouping.
+
+## 54. Analysis presents Career Assessment Synthesis as its sole career interpretation
+
+**Status:** Accepted for the production Analysis page
+
+The Analysis view model requires `CareerAssessmentSynthesis` and does not derive a parallel career
+story from raw requirement comparisons or gaps. Synthesis supplies accessibility, confidence,
+advantages, transfer mappings, grouped gaps, summaries, rationales, structured dimensions, and the
+canonical match counts. Raw comparisons, gaps, and evidence remain available only for bounded
+supporting excerpts, provenance, reconciliation, and administrative debugging.
+
+The page shows a count-based match-mix visual rather than a fit score. Grouped gap cards disclose
+their underlying and severe requirement burden, mandatory/preferred composition, and affected
+dimensions without displaying identifiers. If synthesis is absent, Analysis fails closed with a
+preserved-evidence message instead of reconstructing an interpretation from lower-level objects.
+
+## 55. Plan actions consolidate synthesized career gaps while preserving raw provenance
+
+**Status:** Accepted for the production Plan page
+
+Plan uses synthesis for accessibility, strengths, grouped career gaps, rationale, and the transition
+story. Each displayed action corresponds to one prioritized grouped gap and retains every valid raw
+`GapItem` identifier represented by that group. Milestone artifacts remain the evidence proof when
+available. Bridge titles and route structure continue to come only from deterministic bridge and
+path assessments; plan model refinement remains disabled.
+
+An untimed approved goal is a valid planning mode and renders ordinal `NOW`, `NEXT`,
+`BUILD / BRIDGE`, and `TARGET` stages without month estimates. Plan approval requires a credible
+path, sufficient synthesis confidence, no unresolved blocking prerequisite, and valid milestone gap
+provenance. Current role resolution uses the explicit profile role, then the most recent active
+employment entry, then the most recent completed employment entry.
+
+Observed related titles above the target role's conservative seniority band are not eligible bridge
+roles. This is a generic title-order safeguard: it prevents a director, vice-president, or other
+higher-seniority role from being presented as an intermediate step toward a lower target. When an
+aspirational assessment has no valid bridge, the UI presents the deterministic evidence-closure
+plan as a longer development route rather than calling it a direct selective transition.
+
+## 56. Market separates exact-target evidence from expanded market evidence
+
+**Status:** Accepted for the production Market page
+
+Market remains independent of candidate synthesis and readiness. It displays exact-target,
+target-variant, related-title, and expanded totals separately. Availability wording explicitly says
+when the signal uses the expanded target and related-title scope, and related-title evidence is
+described as secondary context for downstream candidate analysis.
+
+Requirement themes use extracted requirement categories rather than target-role-specific labels.
+Every requirement observation retains the successfully analyzed posting denominator. Geographic
+and employer conclusions use validated snapshot counts, and the market handoff contains no
+candidate strengths, gaps, accessibility, or provider diagnostics.
+
+## 57. Demonstrated strength is independent of complete target satisfaction
+
+**Status:** Accepted for career synthesis and the production Analysis page
+
+Approved candidate evidence may represent a meaningful demonstrated capability when its target
+comparison is direct, transferable, or partial. A partial comparison therefore contributes both a
+demonstrated-strength record and an explicit remaining difference; it does not increase the match
+weight or accessibility classification. No-confirmed-match comparisons cannot create strengths.
+
+Analysis presents demonstrated strengths, target alignments, and remaining gaps as separate layers.
+Grouped gaps retain deterministic internal dimensions and raw gap IDs, while their primary display
+titles and disclosed underlying requirement names come from validated requirement semantics. Broad
+dimension labels are secondary metadata rather than the main career-gap name.
+
+## 58. Candidate comparison uses a canonical target-role profile
+
+**Status:** Accepted
+
+Posting extraction remains source-specific and auditable, but candidate comparison no longer runs
+once per extracted sentence. A deterministic consolidation layer groups supported equivalents,
+counts each known employer once, and separates exact/variant evidence from related-title context.
+Exact and target-variant evidence determine `CORE`, `SECONDARY`, and `PREREQUISITE` comparison
+requirements; one-off signals and related-only context remain available for audit.
+
+The profile is `STABLE` only with at least five analyzed primary postings, three independent primary
+employer identities, and repeated-employer agreement on at least half of comparison requirements.
+Two or more primary postings may form a `PROVISIONAL` profile at reduced confidence; fewer than two
+or no usable comparison requirements is `INSUFFICIENT`. Core support requires two independent
+primary identities and a 0.50 support ratio; secondary support requires 0.30 or a majority mandatory
+signal. Known employer identities form the denominator, with posting identity as the fallback.
+
+Every canonical requirement retains source requirement, posting, employer, quote, and title-scope
+provenance. `RequirementComparison` and `GapItem` preserve the canonical ID plus all raw source
+requirement IDs. Bounded audits are checkpointed while full posting bodies remain transient.
+Semantic alignment rejects clearly unrelated quote-to-capability mappings. Synthesis and
+accessibility policy are unchanged.
+
+## 59. Target-title expansion is observed, bounded, validated, and fail-closed
+
+**Status:** Accepted for the final V1 structural pass
+
+Controlled title expansion runs only when the initial canonical target-role profile is
+`INSUFFICIENT`, the goal permits related-title expansion, and observed related titles exist. One
+cycle considers at most five distinct observed titles and at most five additional postings. It
+never recursively creates title families. Deterministic normalization, duplicate removal,
+exact-title exclusion, and seniority checks run before one bounded `ModelRole.VALIDATION` request.
+
+A title is promoted only when the model returns that exact observed title, cites at least one of
+its supplied posting IDs, classifies it as `VALID_TARGET_VARIANT`, aligns seniority, rates function,
+ownership, scope, and outcome overlap at 0.70 or higher, and the posting has accepted grounded
+requirements. Missing, invalid, or ungrounded output leaves the title `RELATED_TITLE`. The model
+cannot create titles, postings, requirements, or evidence. Every decision retains its posting IDs,
+overlap findings, seniority, confidence, and reason.
+
+The canonical profile is rebuilt once using exact targets plus validated variants as primary
+evidence; ordinary related titles remain secondary context. Exact and variant employer and posting
+support are tracked separately. Variant-heavy profiles cannot become `STABLE` and generally remain
+low-confidence `PROVISIONAL`. Existing accessibility policy is unchanged. If the rebuilt profile
+is still insufficient, the graph ends successfully at `MARKET_READY` with
+`INSUFFICIENT_EVIDENCE`; it creates no candidate accessibility, gaps, synthesis, or career plan.
+Market, Analysis, and Plan then show concise evidence-limited guidance rather than an error.
+
+The live runtime maps a blank optional validation-model setting to the configured reasoning model
+on the same provider. This is model-role routing, not a provider fallback, and prevents a blank
+`VALIDATION_MODEL` from silently disabling semantic validation.
+
+## 60. Adzuna and You.com ATS discovery are first-class market sources
+
+**Status:** Accepted
+
+Live target-role retrieval runs Adzuna structured discovery and You.com discovery concurrently.
+The You.com lane issues one dynamically constructed ATS query over Greenhouse, Lever, Ashby, and
+Workday, processes at most ten results independently, and permits one fallback search only when
+fewer than three usable postings survive. Generic guides, job indexes, aggregators, and other
+non-posting pages remain bounded audit context and cannot create canonical requirements, candidate
+gaps, accessibility, or Plan actions.
+
+Both lanes normalize into `MarketPostingEvidence`. Cross-source duplicates count as one posting and
+one employer while preserving all provider provenance. Direct employer content outranks direct ATS
+content, which outranks structured descriptions and aggregator snippets; qualification and
+responsibility sections, identity clarity, and freshness break ties. Primary analysis selects at
+most ten postings by exact-title scope, seniority alignment, employer diversity, content quality,
+freshness, and provider diversity. One employer cannot dominate the sample.
+
+Canonical requirements separately count employer, posting, Adzuna, You.com, exact, variant, and
+related support. Cross-source agreement requires independent employer evidence across both
+providers; duplicate provider observations of one employer never increase employer support.
+Work arrangement, compensation, contract metadata, and marketing copy are excluded before
+canonicalization. Role responsibilities remain role-context evidence but cannot become hiring
+qualifications, candidate gaps, accessibility inputs, or Plan actions unless the posting separately
+states the capability as a candidate requirement. Bounded retrieval and requirement audits are
+checkpointed and persisted without full posting bodies or reasoning traces.
+
+## 61. Posting meaning and source lineage remain explicit through canonicalization
+
+**Status:** Accepted
+
+Posting extraction classifies each grounded statement as `ROLE_RESPONSIBILITY`,
+`HIRING_CAPABILITY`, `PREREQUISITE`, `PREFERENCE`, or `METADATA_NON_REQUIREMENT`. The canonical
+target-role profile presents both what the role does and what candidates are expected to possess,
+but only supported hiring capabilities and prerequisites enter comparison. Preferences remain
+visible without defining baseline gaps. Every canonical item retains separate responsibility and
+qualification posting counts, employer and posting support, provider identities, source locators,
+source quotes, and raw requirement IDs.
+
+Target-role relevance and seniority precede employer diversity, content quality, freshness, and
+provider diversity when selecting up to ten postings. When target seniority is unspecified,
+standard-level roles define the baseline and materially junior, senior, or staff roles remain
+scope context. Internship exclusions derive only from the requested role and seniority: explicitly
+junior, entry-level, new-graduate, or internship targets may retain early-career evidence.
+
+A cross-source duplicate remains one posting and one employer signal with multiple provenance
+records. Occupational guides and career articles remain `BACKGROUND_CONTEXT`; they cannot enter
+requirement extraction, comparison, gaps, accessibility, or planning. These retrieval and
+canonicalization rules do not change the generic comparison or accessibility policies.

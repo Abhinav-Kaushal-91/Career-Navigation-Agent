@@ -21,9 +21,9 @@ People must combine fragmented job searching, title-based matching, and generic 
 
 ## Functional Requirements
 
-- Accept resume upload and manual profile input, including users without formal employment.
+- Accept structured manual profile input, including students and users without formal employment.
 - Capture career stage, current and target roles, seniority, timeline, location, work mode, industry, education, projects, work, skills, leadership, preferences, exclusions, and relevant voluntary context.
-- Extract a structured profile, let the user correct it, and preserve confirmed facts separately from inferences.
+- Assemble a structured profile from guided user input, let the user revise it, and preserve confirmed facts separately from later inferences.
 - Support open exploration, target-role analysis, transition, progression, and reassessment.
 - Search exact and related titles, retrieve selected posting content, deduplicate results, normalize role families, and extract requirements.
 - Produce market and candidate assessments, gap analysis, timeline feasibility, a phased roadmap, sources, retrieval dates, limitations, confidence, and approval status.
@@ -51,4 +51,4 @@ Never invent facts, fabricate counts, guarantee outcomes, hide uncertainty, use 
 
 ## MVP Scope and Non-goals
 
-MVP scope is the functionality listed in `docs/MVP_ACCEPTANCE_CRITERIA.md`. Non-goals include automatic applications, ATS/browser automation, resume tailoring, cover letters, outreach, email, interview preparation, salary negotiation, voice, course or learning-management products, social networking, multi-user authentication, enterprise tenancy, exact applicant prediction, guaranteed coverage, offer prediction, Pinecone, scheduled n8n refresh, ElevenLabs, and Lyzr.
+MVP scope is the functionality listed in `docs/MVP_ACCEPTANCE_CRITERIA.md`. Non-goals include resume upload or parsing, PDF/DOCX/OCR ingestion, automatic applications, ATS/browser automation, resume tailoring, cover letters, outreach, email, interview preparation, salary negotiation, voice, course or learning-management products, social networking, multi-user authentication, enterprise tenancy, exact applicant prediction, guaranteed coverage, offer prediction, Pinecone, scheduled n8n refresh, ElevenLabs, and Lyzr. DOCX import may be reconsidered later only as a convenience that pre-fills the same structured profile.

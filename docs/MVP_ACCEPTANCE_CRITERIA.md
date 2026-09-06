@@ -4,7 +4,7 @@ The MVP must satisfy the following testable criteria. A criterion is not complet
 
 ## Functional Criteria
 
-- [ ] **AC-PROFILE-01:** The user can upload a resume or enter a profile manually.
+- [x] **AC-PROFILE-01:** The user can build a profile through guided structured manual onboarding.
 - [ ] **AC-PROFILE-02:** Users without formal employment history can complete profile intake.
 - [ ] **AC-PROFILE-03:** The system captures education, projects, work, skills, preferences, target, seniority, location, and timeline.
 - [ ] **AC-STAGE-01:** The workflow supports student, early-career, mid-career, senior-leadership, explorer, and returnee contexts.
@@ -34,7 +34,7 @@ The MVP must satisfy the following testable criteria. A criterion is not complet
 
 ## Reliability Criteria
 
-- [ ] **AC-FAILURE-01:** Resume parsing failure is explained and supports manual continuation or safe retry.
+- [x] **AC-FAILURE-01:** Invalid profile entries are explained inline without discarding valid onboarding progress.
 - [ ] **AC-FAILURE-02:** Search timeout supports retry, partial evidence, lower confidence, or a safe failure result.
 - [ ] **AC-FAILURE-03:** Duplicate and inaccessible postings do not inflate counts and are disclosed.
 - [ ] **AC-FAILURE-04:** Invalid structured model output is retried safely without saving invalid data.
