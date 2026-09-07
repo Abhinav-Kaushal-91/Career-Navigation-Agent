@@ -1,5 +1,6 @@
 """Provider-neutral schemas for capability inference and human decisions."""
 
+import re
 from enum import StrEnum
 from uuid import UUID
 
@@ -17,7 +18,7 @@ class InferredCapability(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    capability: str = Field(min_length=1)
+    capability: str = Field(min_length=1, max_length=80)
     description: str = Field(min_length=1)
     supporting_evidence_ids: list[UUID] = Field(min_length=1)
     proposed_maturity: EvidenceMaturity
@@ -32,6 +33,17 @@ class InferredCapability(BaseModel):
         if not cleaned:
             raise ValueError("must not be blank")
         return cleaned
+
+    @field_validator("capability")
+    @classmethod
+    def atomic_capability_name(cls, value: str) -> str:
+        if len(value.split()) > 6 or re.match(
+            r"(?i)^(?:ability to|experience (?:in|with)|knowledge of|"
+            r"strong |reusable |various |general )",
+            value,
+        ):
+            raise ValueError("use a concise atomic professional capability name")
+        return value
 
     @field_validator("supporting_evidence_ids")
     @classmethod

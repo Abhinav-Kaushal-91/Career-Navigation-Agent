@@ -222,7 +222,7 @@ def test_evidence_and_leadership_gaps_create_correct_applied_milestones() -> Non
     assert milestones[0].milestone_type is MilestoneType.EVIDENCE
     assert "Produce direct evidence" in milestones[0].action
     assert milestones[1].milestone_type is MilestoneType.LEADERSHIP_SCOPE
-    assert "Own the relevant technical decisions" in milestones[1].action
+    assert "required personal ownership and scope" in milestones[1].action
 
 
 def test_ranges_are_ordered_and_bounded_by_requested_timeline() -> None:
@@ -450,3 +450,139 @@ def test_model_failure_preserves_deterministic_plan() -> None:
     assert result.status is PlanGenerationStatus.SUCCEEDED_WITH_FALLBACK
     assert result.plan.path_type is PathType.DIRECT
     assert result.limitations
+
+
+@pytest.mark.parametrize("months", [None, 6, 24])
+def test_ready_candidate_has_no_invented_development_wait(months) -> None:
+    result = generate(
+        CandidateAccessibility.APPLY_NOW,
+        [],
+        BridgeOutcome.RECOMMENDED_BRIDGE,
+        [bridge("Unneeded intermediate role", [])],
+        timeline_assessment=timeline(
+            months,
+            TimelineClassification.REALISTIC
+            if months
+            else TimelineClassification.NO_FIXED_TIMELINE,
+        ),
+    )
+    plan = result.plan
+    assert plan.path_type is PathType.DIRECT
+    assert not plan.bridge_roles
+    assert len(plan.milestones) == 1
+    action = plan.milestones[0]
+    assert action.milestone_type is MilestoneType.APPLICATION_READINESS
+    assert (action.month_start, action.month_end) == (0, 0)
+    assert not action.linked_gap_ids
+    assert plan.source_goal_id and plan.source_assessment_id
+    assert action.basis
+
+
+def test_all_material_gaps_reach_the_plan_without_a_silent_quota() -> None:
+    gaps = [gap(f"Independent requirement {index}") for index in range(9)]
+    result = generate(
+        CandidateAccessibility.NEAR_TERM_TARGET, gaps, BridgeOutcome.NO_BRIDGE_REQUIRED
+    )
+    assert {value for item in result.plan.milestones for value in item.linked_gap_ids} == {
+        item.gap_id for item in gaps
+    }
+    for item in result.plan.milestones[:-1]:
+        assert item.linked_requirement_ids
+        assert item.residual_difference
+
+
+def test_harmless_wording_paraphrase_is_allowed_without_loss_of_conditions() -> None:
+    def paraphrase(payload):
+        item = payload["milestones"][0]
+        item["action"] = item["action"].replace("Demonstrate", "Show")
+
+    result = generate(
+        CandidateAccessibility.NEAR_TERM_TARGET,
+        [gap("Data visualization", category=GapCategory.SKILL)],
+        BridgeOutcome.NO_BRIDGE_REQUIRED,
+        model_gateway=gateway(mutation=paraphrase),
+    )
+    assert not result.fallback_used
+    assert result.plan.milestones[0].action.startswith("Show")
+
+
+def test_model_cannot_remove_the_practical_context_from_an_action() -> None:
+    def remove_context(payload):
+        payload["milestones"][0]["action"] = "Demonstrate Data visualization."
+
+    result = generate(
+        CandidateAccessibility.NEAR_TERM_TARGET,
+        [gap("Data visualization", category=GapCategory.SKILL)],
+        BridgeOutcome.NO_BRIDGE_REQUIRED,
+        model_gateway=gateway(mutation=remove_context),
+    )
+    assert result.fallback_used
+    assert "applied solution" in result.plan.milestones[0].action
+
+
+def test_optional_employer_preference_is_a_check_not_forced_training() -> None:
+    preference = gap("Cloud specialization").model_copy(update={"required_status": "PREFERRED"})
+    result = generate(
+        CandidateAccessibility.APPLY_SELECTIVELY,
+        [preference],
+        BridgeOutcome.NO_BRIDGE_REQUIRED,
+    )
+    action = result.plan.milestones[0]
+    assert "each selected posting" in action.action
+    assert "training" not in action.action
+    assert action.linked_requirement_ids == [preference.requirement_id]
+
+
+def test_employer_specific_prerequisite_is_an_eligibility_check_not_universal_training():
+    prerequisite = gap(
+        "Professional license", category=GapCategory.CREDENTIAL_PREREQUISITE
+    ).model_copy(update={"required_status": "MANDATORY", "employer_specific": True})
+    result = generate(
+        CandidateAccessibility.APPLY_SELECTIVELY,
+        [prerequisite],
+        BridgeOutcome.NO_BRIDGE_REQUIRED,
+    )
+    action = result.plan.milestones[0]
+    assert "employers that explicitly require" in action.action
+    assert "obtain" not in action.action.casefold()
+    assert action.linked_requirement_ids == [prerequisite.requirement_id]
+
+
+def test_unknown_prerequisite_requests_the_specific_fact() -> None:
+    prerequisite = gap(
+        "Professional license", category=GapCategory.CREDENTIAL_PREREQUISITE
+    ).model_copy(
+        update={
+            "evidence_status": "UNKNOWN",
+            "clarification_needed": "Do you currently hold the required professional license?",
+        }
+    )
+    result = generate(
+        CandidateAccessibility.INSUFFICIENT_CANDIDATE_EVIDENCE,
+        [prerequisite],
+        BridgeOutcome.INSUFFICIENT_EVIDENCE,
+    )
+    assert len(result.plan.milestones) == 1
+    assert prerequisite.clarification_needed in result.plan.milestones[0].action
+    assert "obtain" not in result.plan.milestones[0].action.casefold()
+
+
+def test_gap_action_keeps_confirmed_strengths_and_requirement_provenance() -> None:
+    candidate = profile()
+    evidence_id = candidate.approved_evidence_items[0].evidence_id
+    residual = gap("API architecture ownership").model_copy(
+        update={"current_evidence_ids": [evidence_id]}
+    )
+    result = generate_career_plan(
+        candidate,
+        goal(),
+        role(CandidateAccessibility.NEAR_TERM_TARGET, [residual]),
+        [],
+        BridgeOutcome.NO_BRIDGE_REQUIRED,
+        timeline(),
+    )
+    milestone = result.plan.milestones[0]
+    assert milestone.supporting_evidence_ids == [evidence_id]
+    assert milestone.demonstrated_strength == "REST APIs"
+    assert milestone.residual_difference == residual.remaining_difference
+    assert milestone.linked_requirement_ids == [residual.requirement_id]

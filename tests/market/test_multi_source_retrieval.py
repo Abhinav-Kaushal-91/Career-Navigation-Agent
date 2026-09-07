@@ -56,7 +56,7 @@ def _page(url: str, title: str = "AI Engineer", employer: str = "Employer"):
 def test_ats_query_is_dynamic_and_excludes_internships() -> None:
     query = build_you_ats_query("AI Engineer", "Canada")
 
-    assert query.startswith('"AI Engineer" Canada')
+    assert query.startswith('"AI Engineer" "Canada"')
     assert "site:boards.greenhouse.io" in query
     assert "site:jobs.lever.co" in query
     assert "site:jobs.ashbyhq.com" in query
@@ -82,8 +82,7 @@ def test_you_processes_up_to_ten_results_as_individual_postings() -> None:
     client = FakeMarketSearchClient(
         search_outcomes=[results],
         content_outcomes={
-            item.url: _page(item.url, employer=f"Employer {i}")
-            for i, item in enumerate(results)
+            item.url: _page(item.url, employer=f"Employer {i}") for i, item in enumerate(results)
         },
     )
 
@@ -101,19 +100,19 @@ def test_you_processes_up_to_ten_results_as_individual_postings() -> None:
     assert result.you_direct_posting_count == 10
     assert len(client.content_calls) == 10
     assert result.search_passes[0].pass_type is SearchPassType.ATS_PRIMARY
-    assert result.you_fallback_triggered is False
+    assert len(client.search_calls) == 2  # Complementary employer search also runs.
+    assert result.budget_deferred_result_count == 1
 
 
 def test_generic_guide_is_context_only_and_cannot_become_posting_evidence() -> None:
     url = "https://example.com/guides/ai-engineer-career-guide"
     client = FakeMarketSearchClient(
-        search_outcomes=[[MarketSearchResult(title="AI Engineer", url=url)], []],
+        # A custom domain is eligible only in the open-employer second pass.
+        search_outcomes=[[], [MarketSearchResult(title="AI Engineer", url=url)]],
         content_outcomes={url: _page(url)},
     )
 
-    result = asyncio.run(
-        retrieve_current_market(_goal(), client, now=NOW, ats_primary=True)
-    )
+    result = asyncio.run(retrieve_current_market(_goal(), client, now=NOW, ats_primary=True))
 
     assert result.postings == []
     assert result.you_context_result_count == 1
@@ -129,9 +128,7 @@ def test_unspecified_seniority_keeps_staff_posting_as_related_context() -> None:
         content_outcomes={url: _page(url, title="Staff AI Engineer")},
     )
 
-    result = asyncio.run(
-        retrieve_current_market(_goal(), client, now=NOW, ats_primary=True)
-    )
+    result = asyncio.run(retrieve_current_market(_goal(), client, now=NOW, ats_primary=True))
 
     assert len(result.postings) == 1
     assert result.posting_audits[0].title_classification == "RELATED_TITLE"

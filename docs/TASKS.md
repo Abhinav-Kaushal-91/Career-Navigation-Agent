@@ -1,5 +1,46 @@
 # Tasks
 
+## GitHub handoff checks — September 7, 2026
+
+- [x] Re-run the full offline suite before publication: 791 passed
+- [x] Lint all source, test and diagnostic scripts
+- [x] Explicitly exclude local test/artifact directories from version control
+- [x] Preserve documented live retrieval limitations; do not label the checkpoint release-ready
+
+## Retrieval improvement — September 7, 2026
+
+- [x] Strict ATS and complementary employer discovery with pre-fetch domain enforcement
+- [x] Normalize Contents metadata, HTML and observed MCP response envelopes
+- [x] Retain vacancy qualifications/responsibilities across section headings
+- [x] Mark search excerpts; reject false completion and unknown identity
+- [x] Prefer better bodies and deduplicate resolved vacancies after completion
+- [x] Record bounded live failures and public query experiments separately
+- [x] Quote geography and widen later index passes without relaxing posting age
+- [ ] Recover usable current full descriptions across independent in-scope employers
+- [ ] Revalidate final retrieval live before re-running candidate analysis
+
+## V1 reliability implementation — September 7, 2026
+
+- [x] Generic decorated-title equivalence with original titles and evidence-preserving provenance
+- [x] Shared complementary discovery budgets, currentness audit and employer-diverse selection
+- [x] Primary-cohort-only baseline qualifiers; representative quote and expectation agreement
+- [x] Separate duties, hiring capabilities, prerequisites, preferences and non-requirement metadata
+- [x] Preserve OR alternatives, optionality and employer-specific qualification scope
+- [x] Reject ownership inflation and unsupported positive/negative prerequisite assertions
+- [x] Preserve demonstrated strengths, uncertainty and generic accessibility calibration
+- [x] Render actual validated plan milestones; no invented bridge or mandatory deadline
+- [x] Shared website/diagnostic gateway, opt-in local inspection and sanitized error field paths
+- [x] Twelve frozen cases across all six goal types with explicit original/revised expected rubrics
+- [x] Real browser QA of full/provisional/safe-stop Market → Analysis → Plan presentation
+- [x] Preserve the actual failed bounded live run and resulting source/extraction diagnostics
+- [x] Align content-completion budget with the primary sample and retain per-post failure reasons
+- [x] Exclude all-ungrounded model responses from successful-analysis frequency denominators
+- [x] Excel expected/actual record plus preserved historical 100-question expectations
+- [ ] Pass a new bounded real-provider happy path after usable-content improvements
+- [ ] Establish live semantic quality across the golden scenarios before release certification
+
+Passing offline checks is not completion of the two live acceptance tasks above.
+
 ## Analysis synthesis presentation
 
 - [x] Separate demonstrated candidate strength from target-requirement completeness
@@ -295,6 +336,10 @@
 - [x] Live-QA AI Engineer/Canada for both successful multi-source and insufficient-evidence paths
 - [x] Lock the 20-posting/17-employer/22%-top-three market classification to high diversity, low
   concentration, and the `Broadly distributed` presentation label
+- [x] Run the reviewed 10-case Career Navigator Baseline V1 through the live workflow and LangSmith
+- [x] Record actual Baseline V1 predictions, operational metrics, trace IDs, and failure annotations
+- [x] Implement one focused V2 change for market-evidence validation attrition and rerun all 10 cases
+- [x] Compare Baseline V1 with V2 using verdict accuracy, completion rate, and failure movement
 - [ ] Generate real portal or backend candidate answers and run the semantic evaluation gate
 - [ ] Activity 10: LangGraph orchestration
 - [ ] Activity 11: Streamlit user interface

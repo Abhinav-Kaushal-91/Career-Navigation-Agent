@@ -740,7 +740,7 @@ def test_transferable_evidence_has_less_policy_weight_than_direct_evidence() -> 
     assert transferable.accessibility is CandidateAccessibility.NEAR_TERM_TARGET
 
 
-def test_low_confidence_caps_an_otherwise_apply_now_result() -> None:
+def test_low_confidence_comparisons_require_clarification_not_development() -> None:
     profile, role, analysis = build_scenario(SCENARIOS[4])
     direct_role = role.model_copy(
         update={
@@ -760,7 +760,33 @@ def test_low_confidence_caps_an_otherwise_apply_now_result() -> None:
 
     result = synthesize_career_assessment(profile, direct_role, analysis, None)
 
-    assert result.accessibility is CandidateAccessibility.NEAR_TERM_TARGET
+    assert result.accessibility is CandidateAccessibility.INSUFFICIENT_CANDIDATE_EVIDENCE
+    assert not result.grouped_gaps
+    assert "low confidence" in result.accessibility_rationale
+
+
+def test_weak_market_confidence_does_not_invent_candidate_development_barrier() -> None:
+    profile, role, analysis = build_scenario(SCENARIOS[4])
+    direct_role = role.model_copy(
+        update={
+            "requirement_comparisons": [
+                item.model_copy(
+                    update={
+                        "match_type": MatchType.DIRECT_MATCH,
+                        "confidence": ConfidenceLevel.HIGH,
+                    }
+                )
+                for item in role.requirement_comparisons
+            ],
+            "gaps": [],
+            "confidence": ConfidenceLevel.LOW,
+        }
+    )
+    result = synthesize_career_assessment(profile, direct_role, analysis, None)
+    assert result.accessibility is CandidateAccessibility.APPLY_NOW
+    assert result.confidence is ConfidenceLevel.LOW
+    assert not result.grouped_gaps
+    assert "tentative" in result.accessibility_rationale
 
 
 def test_maturity_shortfall_remains_partial_and_groups_as_maturity() -> None:

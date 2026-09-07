@@ -190,6 +190,10 @@ def _payload(
                 "scope_alignment": item.scope_alignment.value,
                 "maturity_alignment": item.maturity_alignment.value,
                 "production_context_difference": item.production_context_difference.value,
+                "outcome_alignment": item.outcome_alignment.value,
+                "evidence_status": item.evidence_status,
+                "clarification_needed": item.clarification_needed,
+                "matched_alternative": item.matched_alternative,
                 "partial_match_subtype": (
                     item.partial_match_subtype.value if item.partial_match_subtype else None
                 ),
@@ -220,6 +224,8 @@ def _payload(
                     for value in _gap_dimensions(item, requirements, comparison_by_requirement)
                 ],
                 "severity": item.severity.value,
+                "evidence_status": item.evidence_status,
+                "clarification_needed": item.clarification_needed,
                 "requirement_frequency": item.requirement_frequency.value,
                 "mandatory": any(
                     requirements[value].mandatory
@@ -810,15 +816,28 @@ def _accessibility(
     requirements, _ = _requirement_maps(analysis)
     comparison_by_requirement = {item.requirement_id: item for item in role.requirement_comparisons}
     primary = [
-        item for item in role.requirement_comparisons if item.comparison_scope in _PRIMARY_SCOPES
+        item
+        for item in role.requirement_comparisons
+        if item.comparison_scope in _PRIMARY_SCOPES
+        and item.requirement_id in requirements
+        and not requirements[item.requirement_id].employer_specific
     ]
+    employer_specific_checks = sum(
+        item.comparison_scope in _PRIMARY_SCOPES
+        and item.requirement_id in requirements
+        and requirements[item.requirement_id].employer_specific
+        and item.match_type not in {MatchType.DIRECT_MATCH, MatchType.TRANSFERABLE_MATCH}
+        for item in role.requirement_comparisons
+    )
     counts = {match: sum(item.match_type is match for item in primary) for match in MatchType}
     insufficient = sum(
         item.match_type is None or item.confidence is ConfidenceLevel.INSUFFICIENT
         for item in primary
     )
     primary_gaps = [
-        item for item in material_gaps(role.gaps) if item.comparison_scope in _PRIMARY_SCOPES
+        item
+        for item in material_gaps(role.gaps)
+        if item.comparison_scope in _PRIMARY_SCOPES and not item.employer_specific
     ]
     gap_dimensions = {
         item.gap_id: _gap_dimensions(item, requirements, comparison_by_requirement)
@@ -859,8 +878,15 @@ def _accessibility(
         "partial_capability_present_count": 0,
         "partial_adjacent_count": 0,
         "partial_ownership_scope_count": 0,
+        "employer_specific_checks": employer_specific_checks,
     }
     if not primary or insufficient * 2 >= len(primary):
+        return CandidateAccessibility.INSUFFICIENT_CANDIDATE_EVIDENCE, diagnostics
+    if sum(item.confidence is ConfidenceLevel.LOW for item in primary) * 2 >= len(primary):
+        diagnostics["confidence_note"] = (
+            "Most primary comparisons have low confidence; stronger comparison evidence is "
+            "needed before assigning an application recommendation."
+        )
         return CandidateAccessibility.INSUFFICIENT_CANDIDATE_EVIDENCE, diagnostics
     if blocking_count:
         return CandidateAccessibility.POOR_FIT, diagnostics
@@ -930,26 +956,18 @@ def _accessibility(
     else:
         result = CandidateAccessibility.ASPIRATIONAL
 
-    rank = {
-        CandidateAccessibility.APPLY_NOW: 0,
-        CandidateAccessibility.APPLY_SELECTIVELY: 1,
-        CandidateAccessibility.NEAR_TERM_TARGET: 2,
-        CandidateAccessibility.ASPIRATIONAL: 3,
-        CandidateAccessibility.POOR_FIT: 4,
-        CandidateAccessibility.INSUFFICIENT_CANDIDATE_EVIDENCE: 5,
-    }
+    if result is CandidateAccessibility.APPLY_NOW and employer_specific_checks:
+        result = CandidateAccessibility.APPLY_SELECTIVELY
+        diagnostics["employer_specific_note"] = (
+            "Some observed employers have additional requirements to check; "
+            "these do not define an unmet requirement for every target opening."
+        )
     primary_confidences = {item.confidence for item in primary}
-    ceiling = None
     if role.confidence is ConfidenceLevel.LOW or ConfidenceLevel.LOW in primary_confidences:
-        ceiling = CandidateAccessibility.NEAR_TERM_TARGET
-    elif (
-        role.confidence is ConfidenceLevel.MODERATE
-        or ConfidenceLevel.MODERATE in primary_confidences
-    ):
-        ceiling = CandidateAccessibility.APPLY_SELECTIVELY
-    if ceiling is not None and rank[result] < rank[ceiling]:
-        result = ceiling
-        diagnostics["confidence_ceiling"] = ceiling
+        diagnostics["confidence_note"] = (
+            "This assessment is tentative because evidence confidence is low; "
+            "that uncertainty is not an additional candidate capability gap."
+        )
     return result, diagnostics
 
 
@@ -970,7 +988,12 @@ def _rationale(
         diagnostics["raw_blocking_gap_count"]
     )
     mandatory = int(diagnostics["mandatory_severe_requirement_count"])
-    if dimensions:
+    if accessibility is CandidateAccessibility.INSUFFICIENT_CANDIDATE_EVIDENCE:
+        burden = (
+            "The comparison is incomplete; missing information is not a demonstrated "
+            "capability deficit."
+        )
+    elif dimensions:
         dimension_names = ", ".join(_DIMENSION_LABELS[item] for item in dimensions)
         dimension_label = "dimension" if len(dimensions) == 1 else "dimensions"
         gap_label = "gap" if high_or_blocking == 1 else "gaps"
@@ -1012,13 +1035,18 @@ def _rationale(
         ),
     }
     second = f"{burden} {conclusions[accessibility]}"
-    return f"{first} {second}"
+    return (
+        f"{first} {second} {diagnostics.get('confidence_note', '')} "
+        f"{diagnostics.get('employer_specific_note', '')}"
+    ).strip()
 
 
 def _assessment_summary(
     demonstrated: list[DemonstratedStrength],
     alignments: list[TargetAlignment],
     gaps: list[GroupedCareerGap],
+    *,
+    complete: bool = True,
 ) -> str:
     strength_names = ", ".join(item.title for item in demonstrated[:3])
     if strength_names:
@@ -1043,8 +1071,12 @@ def _assessment_summary(
     if gaps:
         missing = " and ".join(item.display_title for item in gaps[:2])
         gap_story = f"The main evidence still to build is {missing}."
-    else:
+    elif complete:
         gap_story = "No material target-role evidence gap remains in the usable comparison."
+    else:
+        gap_story = (
+            "The available comparison is incomplete, so target-role gaps cannot yet be settled."
+        )
     return _bounded_text(f"{opening} {alignment_story} {gap_story}", 900)
 
 
@@ -1185,7 +1217,18 @@ def synthesize_career_assessment(
         strongest_advantages=advantages,
         transferable_strengths=transfers,
         grouped_gaps=grouped,
-        assessment_summary=_assessment_summary(demonstrated, target_alignments, grouped),
+        assessment_summary=_assessment_summary(
+            demonstrated,
+            target_alignments,
+            grouped,
+            complete=accessibility is not CandidateAccessibility.INSUFFICIENT_CANDIDATE_EVIDENCE
+            and bool(role.requirement_comparisons)
+            and all(
+                item.match_type is not None
+                for item in role.requirement_comparisons
+                if item.comparison_scope in _PRIMARY_SCOPES
+            ),
+        ),
         accessibility_rationale=_rationale(accessibility, demonstrated, grouped, diagnostics),
         source_comparison_ids=source_comparisons,
         source_gap_ids=source_gaps,

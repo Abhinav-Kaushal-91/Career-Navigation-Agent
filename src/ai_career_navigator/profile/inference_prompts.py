@@ -4,7 +4,7 @@ import json
 
 from ai_career_navigator.profile.inference_schemas import CapabilityInferenceContext
 
-PROMPT_VERSION = "capability-inference-v1"
+PROMPT_VERSION = "capability-inference-v2"
 
 SYSTEM_PROMPT = """You identify transferable capabilities from confirmed career evidence.
 
@@ -17,6 +17,12 @@ Follow these rules:
 - Do not infer protected or personal characteristics, motivations, personality, or intent.
 - Do not make career recommendations, compare the person with jobs, or analyze the market.
 - Infer capabilities, not mere keyword variations. Do not repeat an explicitly listed capability.
+- Use an atomic professional capability name (at most six words, 80 characters), not a sentence
+  or a compound summary. For example use "Automation Framework Design" when supported, not
+  "Reusable framework and standards development". Put detail in the description. Do not
+  strengthen participation into ownership, task delivery into leadership, or reuse into design.
+- Prefer no suggestion to a vague, redundant, or ungrounded capability. The description must
+  describe only the demonstrated actions behind this capability, not generic career advice.
 - Treat the professional summary and core competencies as candidate-provided context. Use them
   together with the supplied experience, project, education, and certification evidence; do not
   treat either profile field as a second evidence source or repeat it verbatim as a capability.

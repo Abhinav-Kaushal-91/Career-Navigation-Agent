@@ -2,9 +2,11 @@
 
 import logging
 import re
+import unicodedata
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from hashlib import sha256
 
 from ai_career_navigator.domain import (
     ConfidenceLevel,
@@ -13,11 +15,13 @@ from ai_career_navigator.domain import (
     RequirementStatementType,
     RoleRequirement,
 )
+from ai_career_navigator.market.deduplication import same_vacancy
 from ai_career_navigator.market.normalization import normalize_employer, normalize_title
 from ai_career_navigator.market.processing import (
     assess_candidate,
     assess_title,
     classify_and_segment_source,
+    classify_seniority,
 )
 from ai_career_navigator.market.requirement_prompts import (
     PROMPT_VERSION,
@@ -195,12 +199,21 @@ def _item_group(item: ExtractedRequirement) -> RequirementItemType:
         item.normalized_capability or ""
     ):
         return RequirementItemType.METADATA_NON_REQUIREMENT
+    if re.search(
+        r"(?i)\bno\s+(?:(?:prior|previous|formal)\s+)?"
+        r"(?:degree|education|certification|licen[cs]e|experience)\s+(?:is\s+)?"
+        r"(?:required|necessary)\b|\bnot\s+(?:strictly\s+)?required\b",
+        item.source_quote,
+    ):
+        return RequirementItemType.METADATA_NON_REQUIREMENT
+    if item.item_type is RequirementItemType.PREFERENCE or item.preferred:
+        return RequirementItemType.PREFERENCE
+    if re.search(r"(?i)\b(?:preferred|optional|nice.to.have|bonus)\b", item.source_quote):
+        return RequirementItemType.PREFERENCE
     if item.category in PREREQUISITE_CATEGORIES:
         return RequirementItemType.PREREQUISITE
     if item.item_type is RequirementItemType.PREREQUISITE:
         return RequirementItemType.PREREQUISITE
-    if item.item_type is RequirementItemType.PREFERENCE or item.preferred:
-        return RequirementItemType.PREFERENCE
     is_responsibility = RESPONSIBILITY_PATTERN.search(item.source_quote.strip())
     if is_responsibility and not QUALIFICATION_PATTERN.search(item.source_quote):
         return RequirementItemType.ROLE_RESPONSIBILITY
@@ -212,6 +225,23 @@ def _item_group(item: ExtractedRequirement) -> RequirementItemType:
     ) and not QUALIFICATION_PATTERN.search(item.source_quote):
         return RequirementItemType.METADATA_NON_REQUIREMENT
     return RequirementItemType.HIRING_CAPABILITY
+
+
+def _grounded_alternatives(item: ExtractedRequirement) -> bool:
+    """An AND requirement must not be weakened to any one option by model labeling."""
+    if item.relationship != "ANY_OF":
+        return not item.capability_options
+    options = [normalize_requirement(option) for option in item.capability_options]
+    quote = normalize_requirement(item.source_quote)
+    if len(set(options)) != len(options) or any(not option for option in options):
+        return False
+    matches = [re.search(r"\b" + re.escape(option) + r"\b", quote) for option in options]
+    if not all(matches):
+        return False
+    fragment = quote[
+        min(match.start() for match in matches) : max(match.end() for match in matches)
+    ]
+    return bool(re.search(r"\bor\b", fragment)) and not bool(re.search(r"\band\b", fragment))
 
 
 def _statement_type(group: RequirementItemType) -> RequirementStatementType:
@@ -230,7 +260,13 @@ def normalize_requirement(value: str) -> str:
 
 
 def _contains_quote(quote: str, text: str) -> bool:
-    return " ".join(quote.split()).casefold() in " ".join(text.split()).casefold()
+    def grounding_tokens(value: str) -> str:
+        normalized = unicodedata.normalize("NFKC", value).casefold()
+        return " ".join(re.findall(r"[a-z0-9+#]+", normalized))
+
+    normalized_quote = grounding_tokens(quote)
+    normalized_text = grounding_tokens(text)
+    return bool(normalized_quote) and normalized_quote in normalized_text
 
 
 def _body_title_mismatch(title: str, posting_text: str) -> str | None:
@@ -258,6 +294,14 @@ def _posting(candidate: PostingCandidate, *, retrieved_at: datetime) -> JobPosti
         location_evidence_text=candidate.location_evidence_text,
         retrieved_at=retrieved_at,
         active_status="OBSERVED",
+        requisition_id=candidate.requisition_id,
+        canonical_job_url=candidate.canonical_job_url,
+        content_fingerprint=candidate.content_fingerprint
+        or (
+            sha256(candidate.posting_text.encode()).hexdigest()
+            if len(candidate.posting_text.strip()) >= 100
+            else None
+        ),
         extraction_confidence=candidate.extraction_confidence,
     )
 
@@ -265,16 +309,42 @@ def _posting(candidate: PostingCandidate, *, retrieved_at: datetime) -> JobPosti
 def _deduplicate_assessments(
     assessments: list[PostingCandidateAssessment],
 ) -> list[PostingCandidateAssessment]:
-    retained: dict[tuple[str, str, str], PostingCandidateAssessment] = {}
+    retained: list[PostingCandidateAssessment] = []
+    identities: list[JobPosting] = []
     for assessment in assessments:
         candidate = assessment.candidate
-        key = (
-            normalize_requirement(candidate.title),
-            normalize_requirement(candidate.employer or ""),
-            normalize_requirement(candidate.location or ""),
+        identity = _posting(candidate, retrieved_at=datetime.now(UTC))
+        duplicate_index = next(
+            (index for index, prior in enumerate(identities) if same_vacancy(prior, identity)), None
         )
-        retained.setdefault(key, assessment)
-    return list(retained.values())
+        if duplicate_index is None:
+            retained.append(assessment)
+            identities.append(identity)
+        else:
+            prior = retained[duplicate_index]
+            retained[duplicate_index] = prior.model_copy(
+                update={
+                    "candidate": prior.candidate.model_copy(
+                        update={
+                            "provider_sources": list(
+                                dict.fromkeys(
+                                    [*prior.candidate.provider_sources, *candidate.provider_sources]
+                                )
+                            ),
+                            "source_provenance": list(
+                                dict.fromkeys(
+                                    [
+                                        *prior.candidate.source_provenance,
+                                        *candidate.source_provenance,
+                                        *([candidate.source_url] if candidate.source_url else []),
+                                    ]
+                                )
+                            ),
+                        }
+                    )
+                }
+            )
+    return retained
 
 
 def _assessment_from_evidence(
@@ -334,6 +404,9 @@ def _assessment_from_evidence(
         ),
         title_classification=evidence.title_classification,
         posting_date=posting.posting_date,
+        requisition_id=posting.requisition_id,
+        canonical_job_url=posting.canonical_job_url,
+        content_fingerprint=posting.content_fingerprint,
     )
     return PostingCandidateAssessment(
         candidate=candidate,
@@ -359,7 +432,10 @@ def _scope_order(assessment: PostingCandidateAssessment) -> int:
 
 
 def _select_employer_diverse(
-    assessments: list[PostingCandidateAssessment], limit: int
+    assessments: list[PostingCandidateAssessment],
+    limit: int,
+    target_role: str | None = None,
+    target_seniority: str | None = None,
 ) -> list[PostingCandidateAssessment]:
     """Select bounded posting evidence without allowing one employer to dominate."""
 
@@ -374,18 +450,28 @@ def _select_employer_diverse(
         PostingTitleMatch.RELATED_TITLE: 1,
         PostingTitleMatch.IRRELEVANT: 0,
     }
+    desired_seniority = classify_seniority(target_seniority or target_role or "").value
+    if desired_seniority == "UNKNOWN":
+        desired_seniority = "STANDARD"
+
+    def seniority_rank(item: PostingCandidateAssessment) -> int:
+        observed = (
+            item.candidate.seniority_classification
+            or classify_seniority(item.candidate.title).value
+        )
+        return 2 if observed == desired_seniority else 1 if observed == "UNKNOWN" else 0
+
     while remaining and len(selected) < limit:
         remaining.sort(
             key=lambda item: (
                 title_rank[item.title_match],
-                int(item.candidate.seniority_classification in {None, "STANDARD"}),
+                seniority_rank(item),
                 int(
-                    (normalize_employer(item.candidate.employer) or "").casefold()
-                    not in employers
+                    (normalize_employer(item.candidate.employer) or "").casefold() not in employers
                 ),
                 quality_rank.get(item.candidate.retrieval_quality, 0),
                 len(item.candidate.posting_text),
-                int(item.candidate.posting_date is not None),
+                item.candidate.posting_date.toordinal() if item.candidate.posting_date else 0,
                 int(any(value not in providers for value in item.candidate.provider_sources)),
             ),
             reverse=True,
@@ -406,6 +492,20 @@ def _quality_and_audit(
     enrichment_used: bool,
 ) -> tuple[PostingExtractionQuality, PostingRequirementAudit]:
     candidate = assessment.candidate
+    grounding_failed = bool(
+        not outcome.failure_category and outcome.unsupported_count and not outcome.requirements
+    )
+    quality_limitations = list(outcome.limitations)
+    if grounding_failed:
+        quality_limitations.append(
+            "All proposed requirements lacked accepted source support; this posting is excluded "
+            "from the successfully analyzed requirement-frequency denominator."
+        )
+    elif not outcome.failure_category and outcome.raw_count == 0:
+        quality_limitations.append(
+            "No requirement observations were returned for the supplied text. "
+            "This does not establish that the full vacancy has no requirements."
+        )
     return (
         PostingExtractionQuality(
             posting_id=candidate.posting_id,
@@ -414,6 +514,7 @@ def _quality_and_audit(
             employer=candidate.employer,
             input_description_characters=len(candidate.posting_text),
             enrichment_used=enrichment_used,
+            schema_valid_response=not bool(outcome.failure_category),
             raw_extracted_item_count=outcome.raw_count,
             accepted_capability_requirement_count=outcome.capability_count,
             accepted_role_responsibility_count=outcome.responsibility_count,
@@ -421,8 +522,8 @@ def _quality_and_audit(
             prerequisite_condition_count=outcome.prerequisite_count,
             rejected_metadata_non_requirement_count=outcome.rejected_count,
             unsupported_grounding_count=outcome.unsupported_count,
-            failure_category=outcome.failure_category,
-            limitations=outcome.limitations,
+            failure_category="GROUNDING_FAILED" if grounding_failed else outcome.failure_category,
+            limitations=quality_limitations,
         ),
         PostingRequirementAudit(
             posting_id=candidate.posting_id,
@@ -433,7 +534,9 @@ def _quality_and_audit(
             provider=candidate.provider,
             source_reference=candidate.source_reference,
             extraction_status=(
-                RequirementAuditStatus.FAILED
+                RequirementAuditStatus.GROUNDING_FAILED
+                if grounding_failed
+                else RequirementAuditStatus.FAILED
                 if outcome.failure_category
                 else RequirementAuditStatus.SUCCEEDED
             ),
@@ -490,11 +593,37 @@ def extract_posting_requirements(
     responsibility_count = 0
     preference_count = 0
     prerequisite_count = 0
-    seen: set[tuple[str, str]] = set()
+    seen: set[tuple[object, ...]] = set()
     audit_items: list[PostingRequirementAuditItem] = []
     conflicting_body_role = _body_title_mismatch(candidate.title, candidate.posting_text)
     for item in extracted.requirements:
-        if not _contains_quote(item.source_quote, candidate.posting_text):
+        if not _grounded_alternatives(item):
+            rejected += 1
+            audit_items.append(
+                PostingRequirementAuditItem(
+                    source_quote=item.source_quote,
+                    normalized_capability=(item.normalized_capability or "")[:120] or None,
+                    category=item.category,
+                    item_type=item.item_type,
+                    accepted=False,
+                    final_classification="REJECTED_UNSUPPORTED_ALTERNATIVES",
+                    rejection_or_override_reason=(
+                        "The source does not establish these distinct capabilities as alternatives."
+                    ),
+                )
+            )
+            continue
+        if (
+            not _contains_quote(item.source_quote, candidate.posting_text)
+            or any(
+                not _contains_quote(quote, candidate.posting_text)
+                for quote in item.qualifier_quotes
+            )
+            or any(
+                not quote_capability_alignment(item.source_quote, option)[0]
+                for option in item.capability_options
+            )
+        ):
             unsupported += 1
             audit_items.append(
                 PostingRequirementAuditItem(
@@ -580,7 +709,17 @@ def extract_posting_requirements(
                 )
             )
             continue
-        key = (group.value, item.category.value, normalize_requirement(capability))
+        key = (
+            group.value,
+            item.category.value,
+            normalize_requirement(capability),
+            item.years_required,
+            item.maturity_expected,
+            item.mandatory,
+            item.preferred,
+            item.relationship,
+            tuple(sorted(item.capability_options)),
+        )
         if not key[1] or key in seen:
             audit_items.append(
                 PostingRequirementAuditItem(
@@ -618,6 +757,15 @@ def extract_posting_requirements(
             statement_type=_statement_type(group),
             requirement_text=item.source_quote.strip(),
             normalized_capability=capability,
+            source_section=(
+                item.source_section
+                if item.source_section
+                and _contains_quote(item.source_section, candidate.posting_text)
+                else None
+            ),
+            qualifier_quotes=item.qualifier_quotes,
+            relationship=item.relationship,
+            capability_options=item.capability_options,
             mandatory=item.mandatory if comparison_eligible else False,
             preferred=preferred,
             years_required=item.years_required,
@@ -655,6 +803,33 @@ def extract_posting_requirements(
         unsupported_count=unsupported,
         audit_items=audit_items,
     )
+
+
+def _extraction_quality_counts(extracted, posting_quality) -> dict[str, int]:
+    """Separate transport/schema success from accepted source-grounded hiring evidence."""
+    hiring_types = {
+        RequirementStatementType.HIRING_CAPABILITY,
+        RequirementStatementType.PREREQUISITE,
+    }
+    return {
+        "schema_valid_extraction_count": sum(
+            item.schema_valid_response is True for item in posting_quality
+        ),
+        "postings_with_accepted_hiring_requirements": sum(
+            any(item.statement_type in hiring_types for item in requirements)
+            for _, requirements in extracted
+        ),
+        "postings_with_accepted_role_responsibilities": sum(
+            any(
+                item.statement_type is RequirementStatementType.ROLE_RESPONSIBILITY
+                for item in requirements
+            )
+            for _, requirements in extracted
+        ),
+        "rejected_grounding_item_count": sum(
+            item.unsupported_grounding_count for item in posting_quality
+        ),
+    }
 
 
 def _aggregate(
@@ -953,6 +1128,7 @@ def analyze_market_requirements(
     sources: list[RetainedSourceContent] | list[MarketPostingEvidence],
     *,
     target_role: str,
+    target_seniority: str | None = None,
     geography: str,
     model_gateway: ModelGateway,
     allow_related_titles: bool = True,
@@ -1016,7 +1192,7 @@ def analyze_market_requirements(
         all_eligible.sort(key=_scope_order)
     eligible = list(all_eligible)
     if posting_limit is not None:
-        eligible = _select_employer_diverse(eligible, posting_limit)
+        eligible = _select_employer_diverse(eligible, posting_limit, target_role, target_seniority)
 
     extracted: list[tuple[PostingCandidateAssessment, list[RoleRequirement]]] = []
     posting_quality: list[PostingExtractionQuality] = []
@@ -1032,7 +1208,8 @@ def analyze_market_requirements(
         )
         posting_quality.append(quality)
         posting_audits.append(audit)
-        if outcome.failure_category:
+        limitations.extend(quality.limitations)
+        if quality.failure_category:
             failed_extraction_count += 1
             continue
         extracted.append((assessment, outcome.requirements))
@@ -1046,6 +1223,7 @@ def analyze_market_requirements(
         item.title_match is PostingTitleMatch.RELATED_TITLE for item, _ in extracted
     )
     initial_summary = MarketRequirementSummary(
+        **_extraction_quality_counts(extracted, posting_quality),
         target_role=target_role,
         geography=geography,
         source_page_count=len(sources),
@@ -1082,7 +1260,7 @@ def analyze_market_requirements(
     )
     if expansion_attempted:
         groups = _observed_variant_groups(all_eligible, target_role)
-        already_extracted = {item.candidate.posting_id for item, _ in extracted}
+        already_extracted = {item.posting_id for item in posting_quality}
         extra_candidates = [
             assessment
             for _, supporting in groups
@@ -1099,8 +1277,9 @@ def analyze_market_requirements(
             )
             posting_quality.append(quality)
             posting_audits.append(audit)
+            limitations.extend(quality.limitations)
             eligible.append(assessment)
-            if outcome.failure_category:
+            if quality.failure_category:
                 failed_extraction_count += 1
             else:
                 extracted.append((assessment, outcome.requirements))
@@ -1184,6 +1363,7 @@ def analyze_market_requirements(
         item.title_match is PostingTitleMatch.RELATED_TITLE for item, _ in extracted
     )
     summary = MarketRequirementSummary(
+        **_extraction_quality_counts(extracted, posting_quality),
         target_role=target_role,
         geography=geography,
         source_page_count=len(sources),

@@ -35,6 +35,43 @@ def _standard_http_post(url: str, headers: dict[str, str], body: bytes, timeout:
         return typed_response.read()
 
 
+def build_nvidia_payload(
+    request: ModelRequest, model: str, output_schema: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    """Build the exact credential-free wire body, shared with the local inspector."""
+
+    messages = []
+    if request.system_prompt:
+        messages.append({"role": "system", "content": request.system_prompt})
+    if output_schema is not None:
+        schema_name = request.response_schema_name or "structured_response"
+        messages.append(
+            {
+                "role": "system",
+                "content": (
+                    "Return one JSON object matching this JSON Schema exactly. "
+                    "Do not add keys outside the schema. Schema name: "
+                    f"{schema_name}. JSON Schema: "
+                    f"{json.dumps(output_schema, separators=(',', ':'))}"
+                ),
+            }
+        )
+    messages.append({"role": "user", "content": request.user_prompt})
+    payload = {
+        "model": model,
+        "messages": messages,
+        "temperature": 0.0
+        if request.role in {ModelRole.EXTRACTION, ModelRole.VALIDATION}
+        else request.temperature,
+        "max_tokens": request.max_tokens,
+        "stream": False,
+        "chat_template_kwargs": {"enable_thinking": False},
+    }
+    if output_schema is not None:
+        payload["response_format"] = {"type": "json_object"}
+    return payload
+
+
 class NvidiaNimProvider(BaseModelProvider):
     """Translate neutral requests to NVIDIA NIM and discard private reasoning traces."""
 
@@ -60,19 +97,11 @@ class NvidiaNimProvider(BaseModelProvider):
         output_schema: dict[str, Any],
         timeout_seconds: float,
     ) -> ModelResponse:
-        schema_name = request.response_schema_name or "structured_response"
-        schema_instruction = (
-            "Return one JSON object matching this JSON Schema exactly. "
-            "Do not add keys outside the schema. Schema name: "
-            f"{schema_name}. JSON Schema: "
-            f"{json.dumps(output_schema, separators=(',', ':'))}"
-        )
         return self._generate(
             request=request,
             model=model,
             timeout_seconds=timeout_seconds,
-            response_format={"type": "json_object"},
-            schema_instruction=schema_instruction,
+            output_schema=output_schema,
         )
 
     def _generate(
@@ -81,29 +110,9 @@ class NvidiaNimProvider(BaseModelProvider):
         request: ModelRequest,
         model: str,
         timeout_seconds: float,
-        response_format: dict[str, str] | None = None,
-        schema_instruction: str | None = None,
+        output_schema: dict[str, Any] | None = None,
     ) -> ModelResponse:
-        messages = []
-        if request.system_prompt:
-            messages.append({"role": "system", "content": request.system_prompt})
-        if schema_instruction:
-            messages.append({"role": "system", "content": schema_instruction})
-        messages.append({"role": "user", "content": request.user_prompt})
-
-        extraction_mode = request.role in {ModelRole.EXTRACTION, ModelRole.VALIDATION}
-        payload: dict[str, Any] = {
-            "model": model,
-            "messages": messages,
-            "temperature": 0.0 if extraction_mode else request.temperature,
-            "max_tokens": request.max_tokens,
-            "stream": False,
-            # Nemotron can place a visible thinking trace in normal content. Keep the
-            # reasoning role, but use NVIDIA's supported control to request final content only.
-            "chat_template_kwargs": {"enable_thinking": False},
-        }
-        if response_format is not None:
-            payload["response_format"] = response_format
+        payload = build_nvidia_payload(request, model, output_schema)
 
         started = time.perf_counter()
         try:

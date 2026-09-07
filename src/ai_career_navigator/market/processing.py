@@ -38,6 +38,16 @@ NON_POSTING_HEADINGS = re.compile(
     r"\b(salary|salaries|faq|frequently asked|career advice|job alert|related jobs)\b",
     re.IGNORECASE,
 )
+POSTING_SECTION_HEADING = re.compile(
+    r"^(?:what|who|how|why|about|our|your|meet)\b|"
+    r"\b(?:responsibilities|qualifications|requirements|duties|skills)\s*:?$",
+    re.IGNORECASE,
+)
+PAGE_FOOTER_HEADING = re.compile(
+    r"\b(?:related jobs|similar jobs|recommended jobs|other opportunities|career advice|"
+    r"job alerts?|privacy policy|cookie policy|terms of (?:use|service))\b",
+    re.IGNORECASE,
+)
 AGGREGATOR_CLAIM = re.compile(r"\b([\d,]+)(?:\+)?\s+(?:open\s+)?jobs?\b", re.IGNORECASE)
 HEADING = re.compile(r"^\s{0,3}#{1,4}\s+(.+?)\s*$")
 STRONG_HEADING = re.compile(r"^\s*\*\*(.+?)\*\*\s*$")
@@ -124,6 +134,43 @@ def _headings(markdown: str) -> list[tuple[int, str]]:
     return found
 
 
+def _is_posting_heading(heading: str) -> bool:
+    return bool(
+        ROLE_WORDS.search(heading)
+        and not NON_POSTING_HEADINGS.search(heading)
+        and not POSTING_SECTION_HEADING.search(heading)
+        and not PAGE_FOOTER_HEADING.search(heading)
+    )
+
+
+def _heading_depth(line: str) -> int:
+    match = re.match(r"^\s{0,3}(#{1,4})\s", line)
+    # Bold-only headings have no hierarchy: the next bold/Markdown section is a peer.
+    return len(match.group(1)) if match else 1
+
+
+def _posting_section_lines(lines: list[str]) -> list[str]:
+    """Keep vacancy subsections, excluding page-footer and non-posting sections."""
+    headings = _headings("\n".join(lines))
+    omitted: set[int] = set()
+    for position, (start, heading) in enumerate(headings):
+        if PAGE_FOOTER_HEADING.search(heading):
+            return [line for index, line in enumerate(lines[:start]) if index not in omitted]
+        if not NON_POSTING_HEADINGS.search(heading):
+            continue
+        depth = _heading_depth(lines[start])
+        end = next(
+            (
+                next_start
+                for next_start, next_heading in headings[position + 1 :]
+                if _heading_depth(lines[next_start]) <= depth or _is_posting_heading(next_heading)
+            ),
+            len(lines),
+        )
+        omitted.update(range(start, end))
+    return [line for index, line in enumerate(lines) if index not in omitted]
+
+
 def _split_posting_heading(heading: str) -> tuple[str, str | None, str | None]:
     parts = [normalize_whitespace(part) for part in TITLE_SEPARATOR.split(heading) if part]
     title = parts[0] if parts else normalize_whitespace(heading)
@@ -185,15 +232,26 @@ def _deterministic_candidates(
     markdown = item.content.markdown
     lines = markdown.splitlines()
     headings = _headings(markdown)
+    footer_start = next(
+        (start for start, heading in headings if PAGE_FOOTER_HEADING.search(heading)),
+        len(lines),
+    )
+    posting_headings = [
+        (start, heading)
+        for start, heading in headings
+        if start < footer_start and _is_posting_heading(heading)
+    ]
     candidates: list[PostingCandidate] = []
     segmented_count = 0
     rejected_url_like = 0
     rejected_search_heading = 0
-    for position, (start, heading) in enumerate(headings):
-        if NON_POSTING_HEADINGS.search(heading) or not ROLE_WORDS.search(heading):
-            continue
-        end = headings[position + 1][0] if position + 1 < len(headings) else len(lines)
-        section_lines = lines[start:end]
+    for position, (start, heading) in enumerate(posting_headings):
+        end = (
+            posting_headings[position + 1][0]
+            if position + 1 < len(posting_headings)
+            else footer_start
+        )
+        section_lines = _posting_section_lines(lines[start:end])
         section = "\n".join(section_lines).strip()
         if not _looks_like_posting(heading, section):
             continue
@@ -234,7 +292,7 @@ def _deterministic_candidates(
 
 def _direct_candidate(item: RetainedSourceContent) -> PostingCandidate | None:
     source_page_title = item.content.title or item.source.title
-    text = item.content.markdown.strip()
+    text = "\n".join(_posting_section_lines(item.content.markdown.splitlines())).strip()
     if not text or not _looks_like_posting(source_page_title, text):
         return None
     title, title_employer, title_location = _split_posting_heading(source_page_title)
@@ -352,8 +410,9 @@ def classify_and_segment_source(
 ) -> SourceProcessingResult:
     """Segment obvious structures deterministically, with an optional grounded fallback."""
 
+    posting_scope_text = "\n".join(_posting_section_lines(item.content.markdown.splitlines()))
     claim_match = AGGREGATOR_CLAIM.search(
-        " ".join((item.source.title, item.content.title or "", item.content.markdown[:5000]))
+        " ".join((item.source.title, item.content.title or "", posting_scope_text[:5000]))
     )
     reported_text = claim_match.group(1).replace(",", "") if claim_match else ""
     reported_count = int(reported_text) if reported_text.isdigit() else None
@@ -401,6 +460,23 @@ def classify_and_segment_source(
             else SourceContentType.INSUFFICIENT_JOB_CONTENT
         )
 
+    if len(candidates) == 1 and content_type is SourceContentType.DIRECT_JOB_PAGE:
+        candidate = candidates[0]
+        metadata_title, _, _ = _split_posting_heading(item.content.title or item.source.title)
+        if normalized_comparison(candidate.title) == normalized_comparison(metadata_title):
+            # A heading-based vacancy still belongs to this page's structured metadata.
+            # Never copy page-level fields into individual cards from a jobs listing.
+            candidates = [
+                candidate.model_copy(
+                    update={
+                        "employer": candidate.employer or item.content.employer,
+                        "location": candidate.location or item.content.location,
+                        "location_evidence_text": candidate.location_evidence_text
+                        or item.content.location,
+                    }
+                )
+            ]
+
     if reported_count is not None:
         limitations.append(
             f"The source reported {reported_count} jobs; this page-level claim was not counted."
@@ -420,12 +496,14 @@ def classify_and_segment_source(
     )
 
 
-def assess_title(title: str, target_role: str) -> PostingTitleMatch:
+def assess_title(
+    title: str, target_role: str, posting_text: str | None = None
+) -> PostingTitleMatch:
     from ai_career_navigator.market.validation import is_exact_title
 
     if is_exact_title(title, target_role):
         return PostingTitleMatch.EXACT_TARGET
-    if is_target_title_variant(title, target_role):
+    if is_target_title_variant(title, target_role, posting_text=posting_text):
         return PostingTitleMatch.TARGET_VARIANT
     if title_is_relevant(title, target_role):
         return PostingTitleMatch.RELATED_TITLE
@@ -468,10 +546,11 @@ def classify_title_for_seniority(
     title: str,
     target_role: str,
     target_seniority: str | None,
+    posting_text: str | None = None,
 ) -> PostingTitleMatch:
     """Keep materially junior/senior variants secondary when no level was requested."""
 
-    classification = assess_title(title, target_role)
+    classification = assess_title(title, target_role, posting_text=posting_text)
     if classification is PostingTitleMatch.IRRELEVANT:
         return classification
     explicit_target_level = target_seniority or (
@@ -569,5 +648,6 @@ def assess_candidate(
             candidate.title,
             target_role,
             target_seniority,
+            posting_text=candidate.posting_text,
         ),
     )

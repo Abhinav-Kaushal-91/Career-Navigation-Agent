@@ -2,6 +2,7 @@
 
 import re
 from datetime import UTC, date, datetime
+from hashlib import sha256
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from pydantic import ValidationError
@@ -99,7 +100,7 @@ def create_job_posting(
     *,
     retrieved_at: datetime | None = None,
 ) -> JobPosting:
-    original_title = normalize_title(page.title or candidate.title)
+    original_title = normalize_whitespace(page.title or candidate.title)
     return JobPosting(
         source_id=source.source_id,
         original_title=original_title,
@@ -115,5 +116,21 @@ def create_job_posting(
         closing_date=_parse_date(page.closing_date),
         retrieved_at=retrieved_at or datetime.now(UTC),
         active_status=normalize_whitespace(page.active_status) if page.active_status else None,
+        requisition_id=page.requisition_id,
+        canonical_job_url=canonicalize_url(page.canonical_job_url or page.url),
+        content_fingerprint=(
+            sha256(normalize_whitespace(page.markdown).encode()).hexdigest()
+            if len(page.markdown.strip()) >= 100
+            else None
+        ),
+        discovered_at=retrieved_at or datetime.now(UTC),
+        currentness_checked_at=retrieved_at or datetime.now(UTC),
+        currentness_basis=(
+            "EMPLOYER_VERIFIED_OPEN"
+            if page.active_status == "VERIFIED_OPEN"
+            else "RETRIEVED_PAGE_STATUS"
+            if page.active_status
+            else "UNKNOWN"
+        ),
         extraction_confidence=ConfidenceLevel.HIGH if page.title else ConfidenceLevel.MODERATE,
     )

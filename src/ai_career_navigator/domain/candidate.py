@@ -67,6 +67,7 @@ class CandidateProfile(BaseModel):
     profile_id: UUID = Field(default_factory=uuid4)
     profile_version: int = Field(default=1, ge=1)
     career_stage: CareerStage
+    years_professional_experience: float | None = Field(default=None, ge=0, le=80)
     professional_summary: str | None = None
     core_competencies: str | None = None
     current_role: str | None = None

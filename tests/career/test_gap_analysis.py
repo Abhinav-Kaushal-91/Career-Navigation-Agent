@@ -176,6 +176,9 @@ def inputs(
 )
 def test_gap_categories(category, match, difference, expected) -> None:
     args = inputs([category], [match], differences=[difference])
+    if match is MatchType.NO_CONFIRMED_MATCH:
+        # These cases describe a confirmed deficit, not an unmentioned profile field.
+        args[-1][0] = args[-1][0].model_copy(update={"evidence_status": "CONFIRMED_UNMET"})
     result = assess_candidate_accessibility(*args)
     assert result.role_assessment.gaps[0].category is expected
 
@@ -205,13 +208,69 @@ def test_duplicate_posting_gaps_consolidate_and_preserve_all_requirement_ids() -
     assert len(result.role_assessment.gaps[0].requirement_ids) == 8
 
 
-def test_missing_mandatory_license_is_blocking() -> None:
+def test_explicitly_unmet_mandatory_license_is_blocking() -> None:
     args = inputs(
         [RequirementCategory.CREDENTIAL], [MatchType.NO_CONFIRMED_MATCH], capability="CPA"
+    )
+    args[-1][0] = args[-1][0].model_copy(
+        update={
+            "evidence_status": "CONFIRMED_UNMET",
+            "grounded_evidence_quotes": [
+                {"evidence_id": str(uuid4()), "quote": "I do not hold CPA."}
+            ],
+        }
     )
     gap = assess_candidate_accessibility(*args).role_assessment.gaps[0]
     assert gap.hard_blocker
     assert gap.severity is GapSeverity.BLOCKING
+
+
+def test_unmentioned_mandatory_license_does_not_prove_ineligibility() -> None:
+    args = inputs(
+        [RequirementCategory.CREDENTIAL], [MatchType.NO_CONFIRMED_MATCH], capability="CPA"
+    )
+    assessment = assess_candidate_accessibility(*args).role_assessment
+    assert not assessment.gaps[0].hard_blocker
+    assert assessment.gaps[0].category is GapCategory.EVIDENCE
+    assert "Document" in assessment.gaps[0].possible_action
+
+
+def test_one_employer_prerequisite_does_not_block_otherwise_supported_target() -> None:
+    from ai_career_navigator.career.synthesis import synthesize_career_assessment
+
+    args = inputs(
+        [RequirementCategory.TECHNICAL] * 3 + [RequirementCategory.CREDENTIAL],
+        [MatchType.DIRECT_MATCH] * 3 + [MatchType.NO_CONFIRMED_MATCH],
+    )
+    market = args[3]
+    requirements = [
+        item.model_copy(update={"normalized_capability": f"Capability {index}"})
+        for index, item in enumerate(market.requirements)
+    ]
+    requirements[-1] = requirements[-1].model_copy(
+        update={
+            "normalized_capability": "CPA",
+            "requirement_text": "CPA required",
+            "employer_specific": True,
+        }
+    )
+    args = (*args[:3], market.model_copy(update={"requirements": requirements}), args[-1])
+    args[-1][-1] = args[-1][-1].model_copy(
+        update={
+            "evidence_status": "CONFIRMED_UNMET",
+            "grounded_evidence_quotes": [
+                {"evidence_id": str(uuid4()), "quote": "I do not hold CPA."}
+            ],
+        }
+    )
+    role = assess_candidate_accessibility(*args).role_assessment
+    assert not any(item.hard_blocker for item in role.gaps)
+    assert role.candidate_accessibility is CandidateAccessibility.APPLY_SELECTIVELY
+    assert role.gaps[0].employer_specific
+    assert role.gaps[0].severity is GapSeverity.MODERATE
+    synthesis = synthesize_career_assessment(args[0], role, args[3], None)
+    assert synthesis.accessibility is CandidateAccessibility.APPLY_SELECTIVELY
+    assert "Some observed employers" in synthesis.accessibility_rationale
 
 
 def test_related_only_requirement_cannot_become_high_severity() -> None:

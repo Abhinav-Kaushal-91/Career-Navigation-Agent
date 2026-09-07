@@ -4,6 +4,7 @@ import re
 
 from ai_career_navigator.market.normalization import normalized_comparison
 from ai_career_navigator.market.schemas import MarketPageContent, MarketSearchResult
+from ai_career_navigator.market.source_registry import looks_like_individual_job_url
 
 REJECT_PATTERNS = (
     "salary guide",
@@ -16,16 +17,6 @@ REJECT_PATTERNS = (
     "/blog/",
     "/news/",
     "/articles/",
-)
-JOB_URL_SIGNALS = (
-    "/job/",
-    "/jobs/",
-    "/careers/",
-    "greenhouse.io",
-    "lever.co",
-    "myworkdayjobs.com",
-    "smartrecruiters.com",
-    "workable.com",
 )
 HIRING_SIGNALS = (
     "apply now",
@@ -118,7 +109,9 @@ def is_promising_search_result(result: MarketSearchResult, target_title: str) ->
         return False
     if not title_is_relevant(result.title, target_title):
         return False
-    return any(signal in combined for signal in JOB_URL_SIGNALS + HIRING_SIGNALS)
+    return looks_like_individual_job_url(result.url) or any(
+        signal in combined for signal in HIRING_SIGNALS
+    )
 
 
 def is_plausible_current_job_page(
@@ -155,6 +148,11 @@ def target_title_variants(target_title: str) -> list[str]:
 
     title = " ".join(target_title.split())
     variants: list[str] = []
+    for long_form, short_form in (("Senior", "Sr."), ("Junior", "Jr.")):
+        if re.search(rf"\b{long_form}\b", title, re.I):
+            variants.append(re.sub(rf"\b{long_form}\b", short_form, title, flags=re.I))
+        elif re.search(rf"\b{short_form[:2]}\.?\s", title, re.I):
+            variants.append(re.sub(rf"\b{short_form[:2]}\.?", long_form, title, flags=re.I))
     if re.search(r"\bSolutions\b", title, re.IGNORECASE):
         variants.append(re.sub(r"\bSolutions\b", "Solution", title, count=1, flags=re.I))
     elif re.search(r"\bSolution\b", title, re.IGNORECASE):
@@ -185,7 +183,57 @@ def target_title_variants(target_title: str) -> list[str]:
     return list(unique.values())
 
 
-def is_target_title_variant(candidate_title: str, target_title: str) -> bool:
+def title_equivalence_reason(
+    candidate_title: str, target_title: str, posting_text: str | None = None
+) -> str | None:
+    """Explain equivalent wording without erasing role or seniority distinctions."""
+    if is_exact_title(candidate_title, target_title):
+        return "LITERAL_EXACT"
+    if normalized_comparison(candidate_title) == normalized_comparison(target_title):
+        return "LEXICAL_EQUIVALENCE"
+    if not posting_text:
+        return None
+    parts = re.split(r"\s+[—–|\-]\s+", candidate_title, maxsplit=1)
+    if len(parts) != 2 or normalized_comparison(parts[0]) != normalized_comparison(target_title):
+        return None
+    # A suffix describing authority/function/level must never be discarded as decoration.
+    if re.search(
+        r"\b(?:lead|manager|management|director|head|staff|principal|chief|supervisor|"
+        r"junior|senior|intern|architect|analyst|consultant|engineer|developer)\b",
+        parts[1],
+        re.I,
+    ):
+        return None
+    body = normalized_comparison(posting_text)
+    body = body.replace(normalized_comparison(candidate_title), "")
+    suffix = set(normalized_comparison(parts[1]).split()) - {"and", "with", "in", "using"}
+    body_tokens = set(body.split())
+    descriptor_supported = all(
+        token in body_tokens
+        or (token.endswith("s") and len(token) > 3 and token[:-1] in body_tokens)
+        or f"{token}s" in body_tokens
+        for token in suffix
+    )
+    # The exact base title establishes role and level. A descriptor must also occur
+    # independently in substantive work/qualification text, not only in that heading.
+    # The body need not repeat the entire job title a second time (many employers do not).
+    has_work_context = bool(
+        re.search(
+            r"\b(?:qualifications|requirements|skills|experience|responsibilities|duties|"
+            r"stack|technologies|technology|using|provides|develop|work with)\b",
+            body,
+        )
+    )
+    if suffix and len(suffix) <= 8 and descriptor_supported and has_work_context:
+        return "DESCRIPTIVE_SUFFIX_GROUNDED"
+    return None
+
+
+def is_target_title_variant(
+    candidate_title: str, target_title: str, posting_text: str | None = None
+) -> bool:
+    if title_equivalence_reason(candidate_title, target_title, posting_text):
+        return not is_exact_title(candidate_title, target_title)
     candidate = _strict_title_key(candidate_title)
     return candidate in {
         _strict_title_key(variant) for variant in target_title_variants(target_title)

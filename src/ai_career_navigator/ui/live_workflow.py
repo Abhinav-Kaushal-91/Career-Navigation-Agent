@@ -8,7 +8,8 @@ from ai_career_navigator.market import (
     build_enrichment_market_client,
     build_primary_market_client,
 )
-from ai_career_navigator.models import ModelGateway, ModelRole
+from ai_career_navigator.models import ModelGateway
+from ai_career_navigator.models.protocols import ModelProvider
 from ai_career_navigator.models.providers import configured_provider
 from ai_career_navigator.models.tracking import ModelUsage, TrackingModelProvider
 from ai_career_navigator.orchestration import (
@@ -35,22 +36,13 @@ def load_live_settings() -> Settings:
     return Settings(_env_file=env_file if env_file.is_file() else None)
 
 
-def build_live_workflow_runtime(settings: Settings) -> LiveWorkflowRuntime:
+def build_live_workflow_runtime(
+    settings: Settings, *, provider_override: ModelProvider | None = None
+) -> LiveWorkflowRuntime:
     """Build an isolated in-memory graph runtime using configured production providers."""
 
-    tracked = TrackingModelProvider(configured_provider(settings))
-    gateway = ModelGateway(
-        provider=tracked,
-        models={
-            ModelRole.EXTRACTION: settings.extraction_model,
-            ModelRole.REASONING: settings.reasoning_model,
-            # Validation is an optional specialization. The live runtime must still route
-            # bounded validation tasks when only the primary reasoning model is configured.
-            ModelRole.VALIDATION: settings.validation_model or settings.reasoning_model,
-        },
-        timeout_seconds=settings.model_timeout_seconds,
-        max_retries=1,
-    )
+    tracked = TrackingModelProvider(provider_override or configured_provider(settings))
+    gateway = ModelGateway.from_settings(settings, providers={tracked.provider_name: tracked})
     context = WorkflowRuntimeContext(
         settings=settings,
         model_gateway=gateway,

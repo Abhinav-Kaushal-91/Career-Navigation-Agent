@@ -40,41 +40,53 @@ from .plan_schemas import (
 from .synthesis_schemas import CareerAssessmentSynthesis
 
 logger = logging.getLogger(__name__)
-_MATERIAL_GAP_LIMIT = 6
 _SAFE_WORDING_TOKENS = {
     "a",
     "an",
     "and",
-    "applied",
     "as",
-    "build",
-    "completed",
-    "create",
-    "created",
-    "decision",
-    "decisions",
-    "deliver",
-    "delivery",
-    "demonstrate",
-    "demonstrates",
-    "document",
-    "documented",
-    "evidence",
     "for",
-    "gain",
     "in",
-    "one",
-    "outcome",
-    "produce",
-    "project",
-    "responsibility",
-    "reviewable",
-    "shows",
-    "solution",
     "the",
     "through",
     "using",
     "with",
+    "to",
+    "of",
+    "your",
+    "that",
+    "which",
+    "it",
+    "by",
+    "is",
+    "are",
+}
+_WORDING_EQUIVALENTS = {
+    "show": "demonstrate",
+    "shows": "demonstrate",
+    "demonstrates": "demonstrate",
+    "demonstrating": "demonstrate",
+    "demonstrated": "demonstrate",
+    "record": "document",
+    "recorded": "document",
+    "documented": "document",
+    "documenting": "document",
+    "documentation": "document",
+    "complete": "completed",
+    "finish": "completed",
+    "finished": "completed",
+    "develop": "build",
+    "developing": "build",
+    "building": "build",
+    "produce": "create",
+    "creating": "create",
+    "created": "create",
+    "verify": "check",
+    "validate": "check",
+    "confirm": "check",
+    "checking": "check",
+    "reviewable": "reviewable",
+    "inspectable": "reviewable",
 }
 
 
@@ -108,6 +120,31 @@ def _current_role(profile: CandidateProfile) -> str | None:
 def _gap_action(gap: GapItem) -> tuple[str, str, list[str]]:
     target = gap.target_expectation
     evidence = gap.evidence_needed or f"Documented evidence of {target}"
+    if getattr(gap, "employer_specific", False):
+        return (
+            f"Check {target} eligibility for the employers that explicitly require it.",
+            f"Selected postings identify where {target} is required "
+            "and whether your evidence satisfies it.",
+            ["Employer-specific eligibility check"],
+        )
+    if getattr(gap, "clarification_needed", None):
+        return (
+            f"Clarify {target}: {gap.clarification_needed}",
+            f"A confirmed answer resolves the uncertainty about {target}.",
+            [evidence],
+        )
+    if getattr(gap, "required_status", None) == "PREFERRED":
+        return (
+            f"Check whether {target} is preferred or essential in each selected posting.",
+            f"Relevant postings are separated by their stated expectation for {target}.",
+            ["Posting-specific requirement check"],
+        )
+    if gap.possible_action:
+        return (
+            gap.possible_action,
+            f"Reviewable evidence demonstrates {target} and resolves: {gap.remaining_difference}",
+            [evidence],
+        )
     if gap.category is GapCategory.SKILL:
         return (
             f"Demonstrate {target} in an applied solution.",
@@ -122,8 +159,8 @@ def _gap_action(gap: GapItem) -> tuple[str, str, list[str]]:
         )
     if gap.category is GapCategory.LEADERSHIP_SCOPE:
         return (
-            f"Own the relevant technical decisions and stakeholder alignment for {target}.",
-            f"One delivery records decision ownership and cross-functional scope for {target}.",
+            f"Demonstrate the required personal ownership and scope for {target}.",
+            f"One documented example identifies your decisions, scope and outcome for {target}.",
             [evidence],
         )
     if gap.category is GapCategory.CREDENTIAL_PREREQUISITE:
@@ -141,7 +178,7 @@ def _gap_action(gap: GapItem) -> tuple[str, str, list[str]]:
 
 def _gap_milestones(gaps: Sequence[GapItem], *, phase: str, month_end: int) -> list[PlanMilestone]:
     milestones = []
-    for gap in gaps[:_MATERIAL_GAP_LIMIT]:
+    for gap in gaps:
         action, outcome, evidence = _gap_action(gap)
         milestones.append(
             PlanMilestone(
@@ -151,6 +188,12 @@ def _gap_milestones(gaps: Sequence[GapItem], *, phase: str, month_end: int) -> l
                 milestone_type=milestone_type_for(gap.category),
                 action=action,
                 linked_gap_ids=[gap.gap_id],
+                linked_requirement_ids=list(
+                    dict.fromkeys([gap.requirement_id, *gap.requirement_ids])
+                ),
+                supporting_evidence_ids=list(gap.current_evidence_ids),
+                basis="Validated residual target requirement",
+                residual_difference=gap.remaining_difference,
                 measurable_outcome=outcome,
                 evidence_to_create=evidence,
             )
@@ -179,7 +222,7 @@ def _path_milestones(
     foundation_end, bridge_end, total = phase_boundaries(timeline.requested_months, path_type)
     material = [item for item in role.gaps if item.severity.value != "LOW" or item.hard_blocker]
     if path_type is PathType.DIRECT:
-        selected = material[:5]
+        selected = material
         milestones = _gap_milestones(selected, phase="Evidence closure", month_end=foundation_end)
         dependencies = [str(item.milestone_id) for item in milestones]
         milestones.append(
@@ -189,12 +232,17 @@ def _path_milestones(
                 month_end=total,
                 milestone_type=MilestoneType.APPLICATION_READINESS,
                 action=(
-                    f"Begin selective applications for {role.target_role} using confirmed evidence."
+                    f"Pursue {role.target_role} postings whose requirements are supported by "
+                    "your confirmed evidence; check each employer's remaining conditions."
                 ),
                 measurable_outcome=(
                     "A role-specific evidence package is used for selective applications."
                 ),
                 evidence_to_create=["Role-specific evidence summary"],
+                linked_requirement_ids=[
+                    item.requirement_id for item in role.requirement_comparisons
+                ],
+                basis="Confirmed goal and validated target-role comparison",
                 dependencies=dependencies,
             )
         )
@@ -207,23 +255,37 @@ def _path_milestones(
             month_end=total,
         )
     if path_type is PathType.EXPLORATION:
+        clarification_gaps = [
+            item for item in role.gaps if getattr(item, "clarification_needed", None)
+        ]
+        if clarification_gaps:
+            return _gap_milestones(clarification_gaps, phase="Evidence clarification", month_end=0)
+        compared = bool(role.requirement_comparisons)
         return [
             PlanMilestone(
                 phase="Evidence clarification",
                 month_start=0,
                 month_end=total,
                 milestone_type=MilestoneType.REASSESSMENT,
-                action="Gather the missing candidate or market evidence before selecting a path.",
+                action=(
+                    "Provide a work example addressing the unresolved target expectations: "
+                    + "; ".join(item.remaining_difference for item in role.gaps)
+                    if compared and role.gaps
+                    else "Retrieve usable target-role posting content for the confirmed goal, "
+                    "then repeat the comparison. Review the search scope if content "
+                    "remains unavailable."
+                ),
                 measurable_outcome=(
                     "The unresolved evidence areas are documented and the target path is "
                     "reassessed."
                 ),
                 evidence_to_create=["Updated evidence inventory", "Refreshed path assessment"],
+                basis=role.explanation,
             )
         ]
 
     if path_type is PathType.DEVELOPMENT:
-        selected = material[:_MATERIAL_GAP_LIMIT]
+        selected = material
         milestones = _gap_milestones(
             selected,
             phase="Capability and maturity development",
@@ -288,7 +350,7 @@ def _path_milestones(
             action=(
                 f"Reassess {role.target_role} readiness using the evidence created along the path."
             ),
-            linked_gap_ids=[item.gap_id for item in material[:_MATERIAL_GAP_LIMIT]],
+            linked_gap_ids=[item.gap_id for item in material],
             measurable_outcome=(
                 "A refreshed gap and market assessment supports the next application decision."
             ),
@@ -314,7 +376,7 @@ def _risks(
         BridgeOutcome.MULTIPLE_PLAUSIBLE_BRIDGES,
     }:
         risks.append("Observed bridge-role availability may remain limited.")
-    if timeline.classification in {
+    if role.gaps and timeline.classification in {
         TimelineClassification.AGGRESSIVE_BUT_PLAUSIBLE,
         TimelineClassification.UNLIKELY_WITHOUT_INTERMEDIATE_ROLE,
     }:
@@ -358,6 +420,24 @@ def _validate_plan_traceability(plan: CareerPlan, role: RoleAssessment) -> None:
                 and milestone.month_end > timeline.requested_months
             ):
                 raise PlanSynthesisValidationError("milestone exceeds the requested timeline")
+
+
+def _wording_tokens(value: str) -> set[str]:
+    return {_WORDING_EQUIVALENTS.get(token, token) for token in normalize_capability(value).split()}
+
+
+def _validate_wording(original: str, proposal: str) -> None:
+    """Allow bounded grammatical/verb paraphrases without weakening factual anchors."""
+
+    old = _wording_tokens(original)
+    new = _wording_tokens(proposal)
+    safe = {_WORDING_EQUIVALENTS.get(token, token) for token in _SAFE_WORDING_TOKENS}
+    if not new.issubset(old | safe) or not (old - safe).issubset(new):
+        raise PlanSynthesisValidationError("model introduced or removed supported plan content")
+    # Retaining nouns alone must not turn a requested action into a negated one.
+    polar = {"no", "not", "never", "without", "avoid", "only", "must", "optional", "required"}
+    if (old & polar) != (new & polar):
+        raise PlanSynthesisValidationError("model changed action conditions")
 
 
 def _apply_model_wording(
@@ -411,14 +491,8 @@ def _apply_model_wording(
             wording = normalize_capability(f"{proposal.action} {proposal.measurable_outcome}")
             if anchor not in wording:
                 raise PlanSynthesisValidationError("model removed the supported capability anchor")
-        original_tokens = set(
-            normalize_capability(f"{original.action} {original.measurable_outcome}").split()
-        )
-        proposed_tokens = set(
-            normalize_capability(f"{proposal.action} {proposal.measurable_outcome}").split()
-        )
-        if not proposed_tokens.issubset(original_tokens | _SAFE_WORDING_TOKENS):
-            raise PlanSynthesisValidationError("model introduced unsupported plan content")
+        _validate_wording(original.action, proposal.action)
+        _validate_wording(original.measurable_outcome, proposal.measurable_outcome)
         credential_words = {"certification", "certificate", "credential"}
         if not credential_supported and credential_words & set(
             normalize_capability(proposal.action).split()
@@ -477,6 +551,15 @@ def generate_career_plan(
         ModelRole.REASONING.value if model_gateway else "none",
     )
     path_type = select_path_type(role_assessment, bridge_outcome, timeline_assessment)
+    if goal.bridge_role_willingness is False and path_type in {
+        PathType.BRIDGE,
+        PathType.MULTIPLE_PATHS,
+    }:
+        path_type = (
+            PathType.NO_CREDIBLE_PATH
+            if any(item.hard_blocker for item in role_assessment.gaps)
+            else PathType.DEVELOPMENT
+        )
     usable_bridges = [item for item in bridge_assessments if item.bridge_role]
     if path_type is PathType.BRIDGE and len(usable_bridges) != 1:
         raise PlanSynthesisValidationError("a bridge plan requires one supported bridge role")
@@ -496,6 +579,53 @@ def generate_career_plan(
         bridge_confidence,
         market_confidence,
     )
+    milestones = _path_milestones(path_type, role_assessment, selected_bridges, timeline_assessment)
+    evidence_by_id = {item.evidence_id: item for item in profile.approved_evidence_items}
+    gaps_by_id = {item.gap_id: item for item in role_assessment.gaps}
+    enriched_milestones = []
+    for item in milestones:
+        linked_gaps = [gaps_by_id[gap_id] for gap_id in item.linked_gap_ids]
+        evidence_ids = list(
+            dict.fromkeys(
+                evidence_id
+                for gap in linked_gaps
+                for evidence_id in gap.current_evidence_ids
+                if evidence_id in evidence_by_id
+            )
+        )
+        if not linked_gaps:
+            evidence_ids = list(
+                dict.fromkeys(
+                    evidence_id
+                    for comparison in role_assessment.requirement_comparisons
+                    for evidence_id in comparison.evidence_ids
+                    if evidence_id in evidence_by_id
+                )
+            )
+        demonstrated = "; ".join(
+            dict.fromkeys(evidence_by_id[value].capability for value in evidence_ids)
+        )
+        enriched_milestones.append(
+            item.model_copy(
+                update={
+                    "supporting_evidence_ids": evidence_ids,
+                    "demonstrated_strength": demonstrated or None,
+                    "linked_requirement_ids": list(
+                        dict.fromkeys(
+                            [
+                                *item.linked_requirement_ids,
+                                *(
+                                    value
+                                    for gap in linked_gaps
+                                    for value in [gap.requirement_id, *gap.requirement_ids]
+                                ),
+                            ]
+                        )
+                    ),
+                    "basis": item.basis or role_assessment.explanation,
+                }
+            )
+        )
     plan = CareerPlan(
         plan_version=1,
         plan_status=PlanStatus.DRAFT,
@@ -504,12 +634,16 @@ def generate_career_plan(
         target_role=goal.target_role or role_assessment.target_role,
         bridge_roles=selected_bridges,
         timeline_assessment=timeline_assessment,
-        milestones=_path_milestones(
-            path_type, role_assessment, selected_bridges, timeline_assessment
+        milestones=enriched_milestones,
+        risks=_risks(
+            role_assessment,
+            bridge_outcome if selected_bridges else BridgeOutcome.NO_BRIDGE_REQUIRED,
+            timeline_assessment,
         ),
-        risks=_risks(role_assessment, bridge_outcome, timeline_assessment),
         assumptions=_assumptions(goal, timeline_assessment),
         source_ids=list(dict.fromkeys([*role_assessment.source_ids, *(source_ids or [])])),
+        source_goal_id=goal.goal_id,
+        source_assessment_id=role_assessment.role_assessment_id,
         confidence=confidence,
         approval_status=ApprovalStatus.DRAFT,
     )
@@ -525,8 +659,6 @@ def generate_career_plan(
                 "Optional wording synthesis was unavailable; the validated deterministic plan "
                 "was retained."
             )
-            confidence = lowest_confidence(plan.confidence, ConfidenceLevel.MODERATE)
-            plan = plan.model_copy(update={"confidence": confidence})
     status = (
         PlanGenerationStatus.SUCCEEDED_WITH_FALLBACK
         if fallback_used

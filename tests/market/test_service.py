@@ -645,8 +645,12 @@ def test_duplicate_postings_are_removed_and_counted() -> None:
     client = FakeMarketSearchClient(
         search_outcomes=[[first, second]],
         content_outcomes={
-            first.url: content(first, employer="Same Employer"),
-            second.url: content(second, employer="Same Employer"),
+            first.url: content(first, employer="Same Employer").model_copy(
+                update={"requisition_id": "REQ-123"}
+            ),
+            second.url: content(second, employer="Same Employer").model_copy(
+                update={"requisition_id": "REQ-123"}
+            ),
         },
     )
 

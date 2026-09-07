@@ -569,6 +569,9 @@ def test_provisional_variant_supported_state_renders_market_analysis_and_plan() 
     assert "Limited target-role evidence" not in _rendered_text(market)
     assert "Candidate accessibility" in _rendered_text(analysis)
     assert "Your career strategy" in _rendered_text(plan)
+    for page in (market, analysis, plan):
+        assert "Provisional target-role evidence" in _rendered_text(page)
+        assert "not every employer" in _rendered_text(page)
 
 
 def test_insufficient_state_is_controlled_across_market_analysis_and_plan() -> None:
@@ -583,6 +586,36 @@ def test_insufficient_state_is_controlled_across_market_analysis_and_plan() -> N
     assert "More evidence is needed" in _rendered_text(analysis)
     assert "A reliable career plan cannot be built yet" in _rendered_text(plan)
     assert "Approve Plan" not in {button.label for button in plan.button}
+
+
+def test_empty_market_does_not_claim_opportunities_were_found_or_zero_percent_coverage() -> None:
+    app = _render_evidence_boundary_view("Market", provisional=False)
+    state = app.session_state["live_graph_state"]
+    state["market_snapshot"] = MARKET_SNAPSHOT.model_copy(update={
+        "validated_posting_count": 0, "exact_title_count": 0,
+        "target_variant_count": 0, "related_title_count": 0,
+    })
+    state["requirement_summary"] = None
+    app.session_state["live_graph_state"] = state
+    app.run()
+    text = _rendered_text(app)
+    assert not app.exception
+    assert "no postings passed validation" in text
+    assert "opportunities were found" not in text
+    assert "coverage unavailable: no validated postings" in text
+    assert "(0% coverage)" not in text
+
+
+def test_market_distinguishes_schema_valid_responses_from_grounded_hiring_evidence() -> None:
+    summary = _summary()
+    summary.schema_valid_extraction_count = 4
+    summary.postings_with_accepted_hiring_requirements = 2
+    summary.rejected_grounding_item_count = 22
+    view = market_view_model({"market_snapshot": MARKET_SNAPSHOT, "requirement_summary": summary})
+    assert "4 schema-valid posting responses" in view.extraction_quality_summary
+    assert "2 postings supplied grounded hiring requirements" in view.extraction_quality_summary
+    assert "22 unsupported items rejected" in view.extraction_quality_summary
+    assert "only failed grounding are excluded" in view.extraction_quality_summary
 
 
 def test_analysis_render_uses_synthesis_content_and_hides_internal_ids() -> None:
@@ -658,10 +691,12 @@ def test_plan_actions_retain_real_material_gap_ids() -> None:
     view = plan_view_model(CAREER_PLAN, ROLE_ASSESSMENT, DEMO_CAREER_SYNTHESIS)
     known_gap_ids = {gap.gap_id for gap in ROLE_ASSESSMENT.gaps}
 
-    assert 3 <= len(view.actions) <= 5
+    assert len(view.actions) == len(CAREER_PLAN.milestones)
     assert all(action.gap_ids for action in view.actions)
     assert {gap_id for action in view.actions for gap_id in action.gap_ids} <= known_gap_ids
-    assert len(view.actions) == len(DEMO_CAREER_SYNTHESIS.grouped_gaps)
+    assert [action.action for action in view.actions] == [
+        item.action for item in CAREER_PLAN.milestones
+    ]
 
 
 def test_plan_story_and_actions_come_from_synthesis() -> None:
@@ -681,12 +716,10 @@ def test_plan_story_and_actions_come_from_synthesis() -> None:
     assert [item.title for item in view.strengths] == [
         item.title for item in DEMO_CAREER_SYNTHESIS.strongest_advantages[:4]
     ]
-    assert {item.career_gap for item in view.actions} == {
-        item.title for item in DEMO_CAREER_SYNTHESIS.grouped_gaps
+    assert {item.action for item in view.actions} == {
+        item.action for item in CAREER_PLAN.milestones
     }
-    assert {item.action for item in view.actions} <= {
-        item.evidence_to_build for item in DEMO_CAREER_SYNTHESIS.grouped_gaps
-    }
+    assert all(item.completion_condition for item in view.actions)
 
 
 def test_untimed_roadmap_uses_ordinal_stages_without_months() -> None:
@@ -702,7 +735,9 @@ def test_untimed_roadmap_uses_ordinal_stages_without_months() -> None:
 
     stages = untimed_roadmap_stages(view)
 
-    assert [stage for stage, _ in stages] == ["NOW", "NEXT", "BUILD / BRIDGE", "TARGET"]
+    assert len(stages) == len(plan.milestones)
+    assert [detail for _, detail in stages] == [item.action for item in plan.milestones]
+    assert all(stage.startswith("STEP ") for stage, _ in stages)
     assert not any("month" in detail.casefold() for _, detail in stages)
     assert plan_eligibility(plan, ROLE_ASSESSMENT, DEMO_CAREER_SYNTHESIS).can_approve
 
@@ -728,6 +763,56 @@ def test_plan_approval_requires_synthesis_and_valid_gap_provenance() -> None:
         }
     )
     assert not plan_eligibility(CAREER_PLAN, blocking_role, DEMO_CAREER_SYNTHESIS).can_approve
+
+
+def test_ready_same_role_plan_has_only_its_actual_application_step() -> None:
+    from ai_career_navigator.domain import BridgeOutcome
+    from tests.career.test_plan_generation import generate, timeline
+
+    result = generate(
+        CandidateAccessibility.APPLY_NOW,
+        [],
+        BridgeOutcome.NO_BRIDGE_REQUIRED,
+        timeline_assessment=timeline(None, TimelineClassification.NO_FIXED_TIMELINE),
+    )
+    ready_role = ROLE_ASSESSMENT.model_copy(update={"gaps": []})
+    ready_synthesis = DEMO_CAREER_SYNTHESIS.model_copy(
+        update={
+            "accessibility": CandidateAccessibility.APPLY_NOW,
+            "grouped_gaps": [],
+            "source_gap_ids": [],
+            "accessibility_rationale": (
+                "Confirmed evidence supports the primary target requirements."
+            ),
+        }
+    )
+    view = plan_view_model(result.plan, ready_role, ready_synthesis)
+    assert len(untimed_roadmap_stages(view)) == 1
+    assert view.actions[0].action == result.plan.milestones[0].action
+    assert not view.actions[0].gap_ids
+    assert "BUILD / BRIDGE" not in str(untimed_roadmap_stages(view))
+    assert "remaining priority dimensions" not in str(view)
+    # A student or returner does not need to invent a current job to approve a plan.
+    assert result.plan.current_role is None
+    assert plan_eligibility(result.plan, ready_role, ready_synthesis).can_approve
+
+
+def test_market_funnel_explains_17_validated_and_four_analyzed() -> None:
+    snapshot = MARKET_SNAPSHOT.model_copy(update={"validated_posting_count": 17})
+    summary = _summary()
+    summary.capability_requirements[0].exact_title_occurrence_count = 2
+    summary.capability_requirements[0].exact_and_variant_frequency = 0.99
+    view = market_view_model({"market_snapshot": snapshot, "requirement_summary": summary})
+    assert view.requirements[0].sample_size == 4
+    assert view.requirements[0].frequency == 0.5
+    assert dict(view.evidence_funnel)["Validated postings not successfully analyzed"] == 13
+    assert dict(view.evidence_funnel)["Provider search hits (before deduplication)"] is None
+
+
+def test_missing_market_denominator_has_no_directional_success_label() -> None:
+    view = market_view_model({"market_snapshot": MARKET_SNAPSHOT})
+    assert view.requirement_sample_confidence == "Unavailable"
+    assert view.requirements == ()
 
 
 def test_plan_render_hides_internal_enums_and_gap_ids() -> None:

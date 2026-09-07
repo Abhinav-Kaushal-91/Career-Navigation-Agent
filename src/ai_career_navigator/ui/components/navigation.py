@@ -197,9 +197,10 @@ def render_app_navigation(current: str) -> None:
             ]
         approved_count = len(approved or ())
     graph_state = st.session_state.get("live_graph_state")
-    role = graph_state.get("role_assessment") if isinstance(graph_state, dict) else None
-    gap_count = len(getattr(role, "gaps", ())) if role is not None else 0
-    completeness = min(1.0, approved_count / 14) if approved_count else 0.0
+    synthesis = (
+        graph_state.get("career_assessment_synthesis") if isinstance(graph_state, dict) else None
+    )
+    gap_count = len(getattr(synthesis, "grouped_gaps", ())) if synthesis is not None else 0
 
     analysis_active = bool(
         st.session_state.get("live_analysis_requested")
@@ -228,13 +229,10 @@ def render_app_navigation(current: str) -> None:
         if analysis_active:
             st.caption("Navigation is paused while this analysis run is active.")
         st.divider()
-        st.write("Profile completeness")
-        st.progress(
-            completeness,
-            text=f"{round(completeness * 100)}% · {approved_count} confirmed items",
-        )
+        st.write("Confirmed profile evidence")
+        st.caption(f"{approved_count} confirmed items · not a readiness score")
         if gap_count:
-            st.caption(f"{gap_count} open gap(s)")
+            st.caption(f"{gap_count} grouped career gap(s)")
         if st.session_state.get("profile_input_mode") == "demo":
             st.badge("Synthetic data", color="orange")
             st.badge("Demo mode", color="blue")

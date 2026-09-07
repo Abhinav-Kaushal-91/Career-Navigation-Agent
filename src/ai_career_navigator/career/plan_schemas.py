@@ -36,7 +36,7 @@ class CareerPlanDraftOutput(BaseModel):
 
     target_role: str | None = None
     bridge_roles: list[str] = Field(default_factory=list, max_length=3)
-    milestones: list[MilestoneDraftOutput] = Field(default_factory=list, max_length=12)
+    milestones: list[MilestoneDraftOutput] = Field(default_factory=list, max_length=64)
     risks: list[str] = Field(default_factory=list, max_length=8)
     assumptions: list[str] = Field(default_factory=list, max_length=8)
 

@@ -1,5 +1,30 @@
 # Provider Strategy
 
+## V1 implementation checkpoint — September 7, 2026
+
+The executable contracts are documented in [V1 model contracts](V1_MODEL_CONTRACTS.md).
+The website and diagnostic runner now construct the gateway through the same Settings-backed
+factory. NVIDIA requests use JSON-object mode plus the Pydantic schema in the system message,
+not server-enforced strict JSON Schema. Thinking is disabled and no private reasoning is retained.
+Extraction/validation temperature is zero; reasoning uses the request's configured temperature.
+Schema repair is at most once within the configured retry budget. Token limits are per operation.
+
+Adzuna and You.com remain concurrent first-class discovery sources. Their shared logical-query
+budget and currentness ceiling are explicit Settings fields. Cross-source deduplication preserves
+one vacancy and multiple provenance records; independent vacancies at one employer are retained.
+Employer diversity ranks ahead of provider diversity. Structured Adzuna fields and the best
+identity-matched posting body are selected independently. Related and seniority-misaligned roles
+are context, not the target's hiring baseline.
+
+`MODEL_INSPECTOR_ENABLED` is off by default. When enabled, sanitized requests and validated
+responses are bounded in memory; there is no automatic file export or external telemetry.
+Opt-in exports still contain career-sensitive information and must be reviewed before sharing.
+
+The bounded live V1 acceptance attempt did **not** produce a defensible target-role profile:
+short source bodies, ungrounded extraction and a repeated schema failure caused a safe stop.
+Offline regressions do not prove live semantic reliability. See the V1 validation report for
+actual outcomes. Historical milestone descriptions below are not current release certification.
+
 ## Structured extraction reliability
 
 Structured output remains subject to strict Pydantic validation. When the first response is

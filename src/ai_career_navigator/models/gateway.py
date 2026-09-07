@@ -5,6 +5,7 @@ import logging
 import time
 from collections.abc import Callable, Mapping
 from typing import Any, TypeVar
+from uuid import uuid4
 
 from pydantic import BaseModel, ValidationError
 
@@ -16,11 +17,72 @@ from ai_career_navigator.models.errors import (
     ModelGatewayError,
     ModelResponseValidationError,
 )
+from ai_career_navigator.models.inspection import LocalModelInspector
 from ai_career_navigator.models.protocols import ModelProvider
 from ai_career_navigator.models.schemas import MetadataValue, ModelRequest, ModelResponse
 
 StructuredModel = TypeVar("StructuredModel", bound=BaseModel)
 logger = logging.getLogger(__name__)
+
+
+def _schema_nodes(nodes: list[dict[str, Any]], root: dict[str, Any]) -> list[dict[str, Any]]:
+    """Resolve local schema alternatives without retaining any response data."""
+    pending = list(nodes)
+    expanded = []
+    visited_refs = set()
+    while pending:
+        node = pending.pop()
+        reference = node.get("$ref")
+        if isinstance(reference, str) and reference.startswith("#/"):
+            if reference in visited_refs:
+                continue
+            visited_refs.add(reference)
+            resolved: Any = root
+            for part in reference[2:].split("/"):
+                resolved = (
+                    resolved.get(part.replace("~1", "/").replace("~0", "~"))
+                    if isinstance(resolved, dict)
+                    else None
+                )
+            if isinstance(resolved, dict):
+                pending.append(resolved)
+        expanded.append(node)
+        for keyword in ("anyOf", "oneOf", "allOf"):
+            pending.extend(item for item in node.get(keyword, []) if isinstance(item, dict))
+    return expanded
+
+
+def _safe_validation_location(location: tuple, schema: dict[str, Any]) -> str:
+    """Keep schema fields/array indices; model-controlled object keys are private."""
+    nodes = [schema]
+    safe_parts = []
+    for part in location:
+        candidates = _schema_nodes(nodes, schema)
+        next_nodes = []
+        approved = False
+        for node in candidates:
+            properties = node.get("properties", {})
+            if isinstance(part, str) and part in properties:
+                approved = True
+                if isinstance(properties[part], dict):
+                    next_nodes.append(properties[part])
+            elif isinstance(part, int) and node.get("type") == "array":
+                approved = True
+                prefix = node.get("prefixItems", [])
+                child = prefix[part] if 0 <= part < len(prefix) else node.get("items")
+                if isinstance(child, dict):
+                    next_nodes.append(child)
+        if not approved:
+            # Map keys remain redacted even if they happen to equal a field name
+            # elsewhere. Its value schema can still explain nested known fields.
+            next_nodes = [
+                child
+                for node in candidates
+                if isinstance((child := node.get("additionalProperties")), dict)
+            ]
+        safe_parts.append(str(part) if approved else "<unexpected-field>")
+        nodes = next_nodes
+    return ".".join(safe_parts) or "<root>"
 
 
 class ModelGateway:
@@ -35,6 +97,7 @@ class ModelGateway:
         max_retries: int,
         sleeper: Callable[[float], None] = time.sleep,
         retry_delay_seconds: float = 0.25,
+        inspector: LocalModelInspector | None = None,
     ) -> None:
         if timeout_seconds <= 0:
             raise ModelConfigurationError("model timeout must be greater than zero")
@@ -48,6 +111,7 @@ class ModelGateway:
         self._max_retries = max_retries
         self._sleeper = sleeper
         self._retry_delay_seconds = retry_delay_seconds
+        self.inspector = inspector
 
     @classmethod
     def from_settings(
@@ -67,11 +131,22 @@ class ModelGateway:
             models={
                 ModelRole.EXTRACTION: settings.extraction_model,
                 ModelRole.REASONING: settings.reasoning_model,
-                ModelRole.VALIDATION: settings.validation_model,
+                ModelRole.VALIDATION: settings.validation_model or settings.reasoning_model,
             },
             timeout_seconds=settings.model_timeout_seconds,
             max_retries=settings.max_retries,
             sleeper=sleeper,
+            inspector=(
+                LocalModelInspector(
+                    secrets=tuple(
+                        value.get_secret_value()
+                        for name in type(settings).model_fields
+                        if hasattr((value := getattr(settings, name)), "get_secret_value")
+                    )
+                )
+                if settings.model_inspector_enabled
+                else None
+            ),
         )
 
     def generate_text(
@@ -129,8 +204,20 @@ class ModelGateway:
         model = self._model_for(request.role)
         retry_count = 0
         validation_retry_used = False
+        call_id = str(uuid4())
 
         while True:
+            if self.inspector is not None:
+                self.inspector.request(
+                    request,
+                    call_id=call_id,
+                    provider=self._provider.provider_name,
+                    model=model,
+                    schema=output_schema.model_json_schema() if output_schema else None,
+                    timeout_seconds=self._timeout_seconds,
+                    max_retries=self._max_retries,
+                    attempt=retry_count + 1,
+                )
             try:
                 if output_schema is None:
                     response = self._provider.generate_text(
@@ -149,6 +236,7 @@ class ModelGateway:
                 if output_schema is not None:
                     response = self._validated_response(response, output_schema)
             except ModelResponseValidationError as error:
+                self._inspect_failure(call_id, retry_count, error)
                 if validation_retry_used or retry_count >= self._max_retries:
                     self._log_failure(request, model, retry_count, error)
                     raise
@@ -158,9 +246,11 @@ class ModelGateway:
                 self._wait_before_retry(retry_count)
                 continue
             except ModelAuthenticationError as error:
+                self._inspect_failure(call_id, retry_count, error)
                 self._log_failure(request, model, retry_count, error)
                 raise
             except ModelGatewayError as error:
+                self._inspect_failure(call_id, retry_count, error)
                 if not error.retryable or retry_count >= self._max_retries:
                     self._log_failure(request, model, retry_count, error)
                     raise
@@ -169,9 +259,22 @@ class ModelGateway:
                 continue
             except Exception as error:
                 wrapped = ModelGatewayError("model provider adapter failed unexpectedly")
+                self._inspect_failure(call_id, retry_count, wrapped)
                 self._log_failure(request, model, retry_count, wrapped)
                 raise wrapped from error
 
+            if self.inspector is not None:
+                self.inspector.record(
+                    "validated_response",
+                    call_id=call_id,
+                    attempt=retry_count + 1,
+                    structured_output=response.structured_output,
+                    finish_reason=response.finish_reason,
+                    latency_ms=response.latency_ms,
+                    input_tokens=response.input_tokens,
+                    output_tokens=response.output_tokens,
+                    validation="SCHEMA_VALIDATED" if output_schema else "TEXT_NOT_RETAINED",
+                )
             logger.info(
                 "model_call_succeeded provider=%s model=%s role=%s latency_ms=%.2f "
                 "retry_count=%d input_tokens=%s output_tokens=%s",
@@ -184,6 +287,18 @@ class ModelGateway:
                 response.output_tokens,
             )
             return response
+
+    def _inspect_failure(self, call_id: str, retry_count: int, error: ModelGatewayError) -> None:
+        if self.inspector is not None:
+            self.inspector.record(
+                "rejected_response",
+                call_id=call_id,
+                attempt=retry_count + 1,
+                failure_category=type(error).__name__,
+                validation_issue=str(error)[:500]
+                if isinstance(error, ModelResponseValidationError)
+                else None,
+            )
 
     def _model_for(self, role: ModelRole) -> str:
         model = self._models.get(role)
@@ -202,6 +317,10 @@ class ModelGateway:
     def _validated_response(
         response: ModelResponse, output_schema: type[StructuredModel]
     ) -> ModelResponse:
+        if response.finish_reason == "length":
+            raise ModelResponseValidationError(
+                f"model output failed validation for {output_schema.__name__}: truncated_response"
+            )
         try:
             candidate: Any = response.structured_output
             if candidate is None:
@@ -217,13 +336,16 @@ class ModelGateway:
         try:
             validated = output_schema.model_validate(candidate)
         except ValidationError as error:
+            schema = output_schema.model_json_schema()
             safe_details = ", ".join(
-                f"{'.'.join(str(part) for part in item['loc'])}:{item['type']}"
-                for item in error.errors(include_url=False, include_context=False)
+                f"{_safe_validation_location(item['loc'], schema)}:{item['type']}"
+                for item in error.errors(
+                    include_url=False, include_context=False, include_input=False
+                )
             )[:500]
             raise ModelResponseValidationError(
                 f"model output failed validation for {output_schema.__name__}: {safe_details}"
-            ) from error
+            ) from None
         return response.model_copy(update={"structured_output": validated.model_dump(mode="json")})
 
     @staticmethod

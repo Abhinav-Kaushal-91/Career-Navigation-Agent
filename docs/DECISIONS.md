@@ -670,3 +670,45 @@ A cross-source duplicate remains one posting and one employer signal with multip
 records. Occupational guides and career articles remain `BACKGROUND_CONTEXT`; they cannot enter
 requirement extraction, comparison, gaps, accessibility, or planning. These retrieval and
 canonicalization rules do not change the generic comparison or accessibility policies.
+
+## 62. V1 reliability uses primary-cohort meaning and separate validation evidence
+
+**Status:** Implemented; live release acceptance remains open (September 7, 2026).
+
+Canonical hiring expectations draw their maturity, years, mandatory status, source quotes and
+confidence from the aligned exact/variant cohort. Related or materially different-seniority
+postings retain provenance but cannot silently raise the baseline. Employer-weighted observed
+qualifier combinations select a matching representative quote; the model must not receive a
+ten-year outlier quote alongside a three-year canonical expectation. Source responsibilities
+remain distinct from qualifications. Optional credentials are not universal blockers; OR
+alternatives remain one expectation and cannot weaken an AND requirement.
+
+Comparison retains semantic function, ownership, scope, maturity and production differences,
+including unknown versus explicitly unmet evidence. Label-only overlap is not general proof of
+direct fit. Employer-specific conditions cannot block a whole target by default. Synthesis
+preserves demonstrated strengths and derives accessibility generically, without profession-specific
+verdicts. A small provisional market sample lowers confidence, not candidate fit by itself.
+
+Plan actions retain requirement/evidence/gap lineage and actual milestone meaning. An apply-ready
+same-role candidate is not forced into training or a bridge. An unspecified deadline is valid;
+no unsupported month estimate is added. UI counts and actions consume these validated objects.
+
+Frozen provider/model recordings test execution and lineage across all six goal types. They do
+not establish Nemotron's semantic accuracy. The original expected rubric and failures are retained
+when an expectation is revised for an independently stated policy reason. Live runs and browser
+checks are separate acceptance evidence. A bounded live safe stop is not a happy-path success.
+
+## 63. Retrieval distinguishes discovery hits, excerpts and usable vacancy bodies
+
+**Status:** Implementation improved; live full-description acceptance remains open (September 7, 2026).
+
+Search source preference is not source validation, and length is not completeness. Adzuna search
+excerpts stay explicitly incomplete. Contents metadata and one-job extraction retain identity and
+section boundaries; stronger bodies win over host preference. Completion must not replace useful
+requirements with a shell, silently accept unknown redirected geography, or inflate counts after
+multiple redirects resolve one requisition. Original evidence and bounded observations remain auditable.
+
+Later query passes may search a wider index window while posting currentness is validated separately.
+The public query probe improved Toronto URL relevance but its three fetches did not yield usable
+full bodies. This does not authorize treating expired/inaccessible pages as hiring evidence,
+altering comparison/accessibility policy, or claiming a release-ready product.

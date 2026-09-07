@@ -1,6 +1,7 @@
 """Provider-neutral schemas for requirement comparison."""
 
 from enum import StrEnum
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -26,18 +27,33 @@ class CandidateComparisonStatus(StrEnum):
     FAILED = "FAILED"
 
 
+class ComparisonEvidenceQuote(BaseModel):
+    """A bounded excerpt from an evidence description, context or outcome."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    evidence_id: UUID
+    quote: str = Field(min_length=1, max_length=800)
+    dimensions: list[Literal["function", "ownership", "scope", "maturity", "production", "outcome"]]
+
+
 class TransferabilityAssessment(BaseModel):
     """Strict reasoning-model output for one requirement and bounded evidence set."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     requirement_id: UUID
-    match_type: MatchType
+    match_type: MatchType | None
     supporting_evidence_ids: list[UUID] = Field(default_factory=list)
     functional_overlap: FunctionalOverlap
     ownership_alignment: OwnershipAlignment
     scope_alignment: ScopeAlignment
     production_context_difference: ProductionContextDifference
+    outcome_alignment: ScopeAlignment = ScopeAlignment.UNKNOWN
+    evidence_status: Literal["SUPPORTED", "UNKNOWN", "CONFIRMED_UNMET", "CONTRADICTED"] = "UNKNOWN"
+    clarification_needed: str | None = Field(default=None, max_length=500)
+    evidence_quotes: list[ComparisonEvidenceQuote] = Field(default_factory=list, max_length=12)
+    matched_alternative: str | None = Field(default=None, max_length=160)
     partial_match_subtype: PartialMatchSubtype | None = None
     transferable_capability: str | None = None
     remaining_difference: str = Field(min_length=1, max_length=500)
@@ -46,11 +62,19 @@ class TransferabilityAssessment(BaseModel):
 
     @model_validator(mode="after")
     def validate_semantic_match(self) -> "TransferabilityAssessment":
-        if self.match_type is MatchType.DIRECT_MATCH:
-            raise ValueError("direct matches must be determined without the reasoning model")
-        if self.match_type in {MatchType.TRANSFERABLE_MATCH, MatchType.PARTIAL_MATCH}:
+        if self.match_type in {
+            MatchType.DIRECT_MATCH,
+            MatchType.TRANSFERABLE_MATCH,
+            MatchType.PARTIAL_MATCH,
+        }:
             if not self.supporting_evidence_ids:
                 raise ValueError("supported semantic matches require evidence references")
+        if self.match_type is MatchType.DIRECT_MATCH and not self.evidence_quotes:
+            raise ValueError("direct semantic matches require evidence excerpts")
+        if self.evidence_status in {"CONFIRMED_UNMET", "CONTRADICTED"} and not self.evidence_quotes:
+            raise ValueError("an explicit unmet or contradicted claim requires evidence excerpts")
+        if self.match_type is None and not self.clarification_needed:
+            raise ValueError("unknown semantic comparisons require a targeted clarification")
         if self.match_type is MatchType.PARTIAL_MATCH and self.partial_match_subtype is None:
             raise ValueError("partial matches require a calibrated subtype")
         if (

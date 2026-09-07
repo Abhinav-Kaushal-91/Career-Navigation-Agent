@@ -35,8 +35,11 @@ class Settings(BaseSettings):
     market_max_search_queries: int = Field(default=3, ge=1, le=10)
     market_max_expansion_queries: int = Field(default=3, ge=0, le=10)
     market_max_content_fetches: int = Field(default=30, ge=1, le=100)
+    market_max_total_search_calls: int = Field(default=12, ge=2, le=30)
+    market_max_posting_age_days: int = Field(default=90, ge=1, le=366)
     market_target_posting_count: int = Field(default=20, ge=1, le=100)
     market_analysis_posting_limit: int = Field(default=10, ge=3, le=10)
+    market_max_enrichments: int | None = Field(default=None, ge=0, le=100)
     market_expansion_threshold: int = Field(default=8, ge=1, le=100)
     market_discovery_result_count: int = Field(default=12, ge=10, le=15)
     market_thin_description_characters: int = Field(default=500, ge=100, le=5000)
@@ -60,6 +63,14 @@ class Settings(BaseSettings):
     validation_model: str | None = "mock-validation"
     model_timeout_seconds: int = Field(default=90, gt=0, le=600)
     max_retries: int = Field(default=2, ge=0, le=5)
+    model_inspector_enabled: bool = False
+
+    langsmith_api_key: SecretStr | None = None
+    langsmith_tracing: bool = False
+    langsmith_project: str | None = None
+    langsmith_workspace_id: str | None = None
+    langsmith_organization_id: str | None = None
+    langsmith_endpoint: str = "https://api.smith.langchain.com/api/v1"
 
     database_path: Path = Path("data/local/career_navigator.db")
     checkpoint_database_path: Path = Path("data/local/langgraph_checkpoints.db")

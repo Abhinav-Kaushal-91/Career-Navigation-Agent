@@ -1,5 +1,59 @@
 # Current State
 
+## GitHub handoff checks — September 7, 2026
+
+The user requested publication of the accumulated code, regression tests and documentation to
+the existing GitHub repository. Pre-publication verification: 791 tests passed in 21.96 seconds;
+Ruff passed across `src`, `tests` and `scripts`. Temporary test directories and artifact work
+are now explicitly ignored alongside credentials, local databases, logs and generated outputs.
+This is a source-code checkpoint, not a live release certification or a website deployment.
+The full-description retrieval and live acceptance limitations below remain open.
+
+## Retrieval improvement checkpoint — September 7, 2026
+
+Targeted retrieval defects were corrected: strict ATS/open-employer query lanes, supported
+Contents formats and MCP envelope parsing, vacancy section boundaries, explicit Adzuna excerpts,
+non-destructive identity-checked completion and post-completion deduplication.
+Final integrated suite: 791 tests passed; market and diagnostic lint checks passed.
+
+Live retrieval still does **not** pass full-description acceptance. The repaired retrieval check
+retained 9 postings from 7 employers, all short excerpts; no full body was recovered. A separate
+quoted-city/wider-index probe improved Toronto-specific URL discovery, but its three fetched pages
+were a loading shell, closed job and 404. No candidate data or model calls were involved.
+
+See [retrieval improvement record](RETRIEVAL_IMPROVEMENT_20260907.md). The earlier V1 release
+acceptance gate remains open; these checks do not replace it.
+
+## V1 reliability checkpoint — September 7, 2026
+
+The generic implementation is in validation; **live release acceptance remains open**. This
+checkpoint supersedes historical success statements below for the current change set.
+
+- Implemented primary-cohort title/seniority selection, vacancy identity, qualifier provenance,
+  responsibility/qualification separation, AND/OR protection and employer-specific conditions.
+- Comparison preserves unknown versus unmet evidence and rejects contribution-as-ownership and
+  unrelated-evidence-as-prerequisite-failure. Synthesis and Plan retain validated lineage.
+- Same-role apply-ready paths avoid invented bridges/training; no fixed timeline is valid.
+- Canonical-role confidence caps downstream assessment/synthesis/plan confidence without
+  changing candidate accessibility solely because the market sample is limited.
+- Shared website/gateway settings, bounded opt-in local model inspection and safe diagnostics.
+- Native Market/Analysis/Plan rendering reviewed in a real browser for full, provisional and
+  insufficient-evidence states; explicit sample/confidence limitations and no fake readiness score.
+- Twelve frozen production-graph cases: original rubric 11/12, revised policy-correct rubric 12/12;
+  original failure and revision reason are retained. These are not live semantic-model tests.
+- Final integrated verification: 713 tests passed; changed-file lint and diff checks passed.
+- One real-provider synthetic same-role run: 10 retained vacancies, 5 selected descriptions of
+  500 characters, 4 schema-valid responses, only 2 postings with accepted statements. It safely
+  withheld synthesis/accessibility/Plan. This is a failed happy-path acceptance attempt.
+- New content-completion/quality diagnostics are validated offline; they do not turn that
+  saved live failure into a pass. A new bounded live acceptance check remains necessary.
+- Excel includes current expected/actual results and all 100 original golden expectations marked
+  not rerun; historic observations stay separate.
+
+See [V1 validation record](V1_RELIABILITY_VALIDATION.md) and
+[V1 model contracts](V1_MODEL_CONTRACTS.md). No public deployment or git push was performed
+during that earlier validation activity.
+
 ## Generic Career Assessment Synthesis
 
 - Status: Implemented and regression-tested on September 5, 2026
@@ -538,3 +592,39 @@ encountered sparse provider evidence: one retained eight Adzuna postings across 
 no repeated canonical requirement survived, while another retained none. Both stopped safely at
 Market with `INSUFFICIENT_EVIDENCE`, no fabricated comparison or Plan, and no NVIDIA transport
 failure. The latest bounded report is `outputs/ai-engineer-calibration-live-qa-2026-09-06.json`.
+
+## Career Navigator Baseline V1 evaluation
+
+The reviewed ten-case workbook is now adapted to the live workflow with golden references kept out
+of workflow inputs. The named Baseline V1 experiment completed on 2026-09-06 and all ten traces were
+accepted by LangSmith. Verdict exact-match accuracy was 0/10. All ten terminal outcomes were
+`insufficient_evidence`. Nine cases stopped after market processing without a candidate assessment
+because the canonical target-role profile remained insufficient; CN-004 completed matching but
+returned the same terminal verdict instead of `ready_now`.
+A separate nine-case retry reproduced the market-stage failures.
+
+Actual predictions, runtimes, token counts, trace IDs, and failure-first annotations are recorded in
+`outputs/career-navigator-evaluation-baseline-v1/Career_Navigator_Evaluation.xlsx`. Unmeasured
+diagnostics and unavailable costs remain blank. The dominant observed failure category is market
+evidence validation attrition; no V2 behavior change is included in these results.
+
+## Career Navigator V2 evidence-retention evaluation
+
+V2 makes one focused correction to source-quote verification: Unicode normalization and
+punctuation-insensitive token comparison now retain quotes whose wording is unchanged but whose
+hyphen or punctuation typography differs from the fetched posting. The verifier still requires the
+complete normalized quote token sequence. Unsupported paraphrases remain rejected, and the
+two-independent-primary-posting threshold is unchanged.
+
+The separate ten-case V2 experiment completed on 2026-09-06 and all ten trace references were
+accepted by LangSmith. Two cases reached assessment versus one in V1. CN-007 changed from a
+market-stage failure to the correct `adjacent_fit` verdict. CN-004 again reached assessment but
+remained incorrectly classified as `insufficient_evidence`; the other eight cases stopped after
+market processing. Verdict accuracy therefore improved from 0/10 to 1/10, with one failure-to-pass
+fix and no pass-to-fail regressions.
+
+The V1/V2 comparison is recorded in
+`outputs/career-navigator-evaluation-v2/Career_Navigator_Evaluation.xlsx`. Live inputs were not
+identical: CN-008 lost the Adzuna lane in V2, CN-009 included truncated content, and rejection mixes
+changed in other cases. Operational changes are observations rather than controlled performance
+claims.

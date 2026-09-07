@@ -2,6 +2,7 @@
 
 from datetime import date
 from enum import StrEnum
+from typing import Literal
 from uuid import UUID, uuid4
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -68,6 +69,7 @@ class CanonicalRequirementKind(StrEnum):
 
 
 class RequirementAuditStatus(StrEnum):
+    GROUNDING_FAILED = "GROUNDING_FAILED"
     SUCCEEDED = "SUCCEEDED"
     FAILED = "FAILED"
 
@@ -111,6 +113,9 @@ class PostingCandidate(BaseModel):
     selected_content_source: str | None = None
     title_classification: str | None = None
     posting_date: date | None = None
+    requisition_id: str | None = None
+    canonical_job_url: str | None = None
+    content_fingerprint: str | None = None
     source_reference_text: str = Field(min_length=1, max_length=2000)
     title: str = Field(min_length=1)
     employer: str | None = None
@@ -193,6 +198,10 @@ class ExtractedRequirement(BaseModel):
     source_quote: str = Field(min_length=1, max_length=2000)
     category: RequirementCategory
     normalized_capability: str | None = None
+    source_section: str | None = Field(default=None, max_length=160)
+    qualifier_quotes: list[str] = Field(default_factory=list, max_length=8)
+    relationship: Literal["SINGLE", "ANY_OF"] = "SINGLE"
+    capability_options: list[str] = Field(default_factory=list, max_length=8)
     mandatory: bool = False
     preferred: bool = False
     years_required: float | None = Field(default=None, ge=0)
@@ -204,6 +213,8 @@ class ExtractedRequirement(BaseModel):
     def validate_flags(self) -> "ExtractedRequirement":
         if self.mandatory and self.preferred:
             raise ValueError("a requirement cannot be both mandatory and preferred")
+        if self.relationship == "ANY_OF" and len(self.capability_options) < 2:
+            raise ValueError("ANY_OF needs at least two source-supported alternatives")
         return self
 
 
@@ -225,6 +236,7 @@ class PostingExtractionQuality(BaseModel):
     employer: str | None = None
     input_description_characters: int = Field(ge=0)
     enrichment_used: bool = False
+    schema_valid_response: bool | None = None
     raw_extracted_item_count: int = Field(ge=0)
     accepted_capability_requirement_count: int = Field(ge=0)
     accepted_role_responsibility_count: int = Field(default=0, ge=0)
@@ -349,8 +361,19 @@ class CanonicalRoleRequirement(BaseModel):
     category: RequirementCategory
     requirement_kind: CanonicalRequirementKind
     expected_maturity: EvidenceMaturity | None = None
+    maturity_support_counts: dict[str, int] = Field(default_factory=dict)
+    years_required: float | None = Field(default=None, ge=0)
+    years_required_by_source: dict[str, float] = Field(default_factory=dict)
+    baseline_requirement_ids: list[UUID] | None = None
+    baseline_posting_ids: list[UUID] = Field(default_factory=list)
+    qualifier_notes: list[str] = Field(default_factory=list)
+    source_section: str | None = None
+    qualifier_quotes: list[str] = Field(default_factory=list)
+    relationship: Literal["SINGLE", "ANY_OF"] = "SINGLE"
+    capability_options: list[str] = Field(default_factory=list)
     mandatory_signal: bool = False
     preferred_signal: bool = False
+    employer_specific: bool = False
     frequency_band: RequirementFrequency
     primary_support_ratio: float = Field(ge=0, le=1)
     employer_support_count: int = Field(ge=0)
@@ -381,6 +404,8 @@ class CanonicalRoleRequirement(BaseModel):
     def comparison_requirement_ids(self) -> list[UUID]:
         """Return only source statements permitted to support candidate comparison."""
 
+        if self.baseline_requirement_ids is not None:
+            return self.baseline_requirement_ids
         return self.qualification_requirement_ids or self.supporting_requirement_ids
 
     def as_role_requirement(self) -> RoleRequirement:
@@ -388,13 +413,19 @@ class CanonicalRoleRequirement(BaseModel):
 
         return RoleRequirement(
             requirement_id=self.canonical_requirement_id,
-            posting_id=self.supporting_posting_ids[0],
+            posting_id=(self.baseline_posting_ids or self.supporting_posting_ids)[0],
             category=self.category,
             statement_type=RequirementStatementType.HIRING_CAPABILITY,
             requirement_text=self.representative_source_quotes[0],
             normalized_capability=self.display_name,
+            source_section=self.source_section,
+            qualifier_quotes=self.qualifier_quotes,
+            relationship=self.relationship,
+            capability_options=self.capability_options,
             mandatory=self.mandatory_signal,
             preferred=self.preferred_signal,
+            employer_specific=self.employer_specific,
+            years_required=self.years_required,
             maturity_expected=self.expected_maturity,
             frequency_within_sample=self.primary_support_ratio,
             extraction_confidence=self.confidence,
@@ -454,6 +485,10 @@ class MarketRequirementSummary(BaseModel):
     identified_candidate_count: int = Field(ge=0)
     validated_in_scope_posting_count: int = Field(ge=0)
     analyzed_posting_count: int = Field(ge=0)
+    schema_valid_extraction_count: int | None = Field(default=None, ge=0)
+    postings_with_accepted_hiring_requirements: int = Field(default=0, ge=0)
+    postings_with_accepted_role_responsibilities: int = Field(default=0, ge=0)
+    rejected_grounding_item_count: int = Field(default=0, ge=0)
     exact_title_analyzed_count: int = Field(ge=0)
     target_variant_analyzed_count: int = Field(default=0, ge=0)
     related_title_analyzed_count: int = Field(ge=0)
@@ -479,6 +514,23 @@ class MarketRequirementSummary(BaseModel):
             )
         if self.analyzed_posting_count > self.validated_in_scope_posting_count:
             raise ValueError("analyzed postings cannot exceed validated in-scope postings")
+        if self.schema_valid_extraction_count is not None:
+            if (
+                not self.analyzed_posting_count
+                <= self.schema_valid_extraction_count
+                <= self.validated_in_scope_posting_count
+            ):
+                raise ValueError(
+                    "schema-valid responses must cover analyzed postings within selected inputs"
+                )
+            if (
+                max(
+                    self.postings_with_accepted_hiring_requirements,
+                    self.postings_with_accepted_role_responsibilities,
+                )
+                > self.schema_valid_extraction_count
+            ):
+                raise ValueError("grounded evidence posting count exceeds schema-valid responses")
         return self
 
 

@@ -235,7 +235,7 @@ def test_graph_continues_through_plan_with_validated_target_variants(
             description=description,
             company=f"Employer {index}",
             location="Canada",
-            created="2026-09-05",
+            created="2026-09-01",
         )
         for index, title in enumerate(
             ("Product Manager", "AI Product Manager", "Technical Product Manager"), start=1

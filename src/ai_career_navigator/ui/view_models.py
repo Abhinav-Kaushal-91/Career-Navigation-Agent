@@ -153,6 +153,9 @@ class MarketViewModel:
     requirement_themes: tuple[RequirementTheme, ...]
     market_takeaways: tuple[tuple[str, str], ...]
     what_this_means: str
+    evidence_funnel: tuple[tuple[str, int | None], ...] = ()
+    extraction_failures: tuple[tuple[str, int], ...] = ()
+    extraction_quality_summary: str | None = None
 
 
 def _title_consistency(exact: int, variants: int, related: int) -> tuple[str, str]:
@@ -281,10 +284,22 @@ def market_view_model(state: dict[str, Any]) -> MarketViewModel:
         RequirementRow(
             name=item.normalized_capability,
             category=str(getattr(item.category, "value", item.category)),
-            frequency=item.exact_and_variant_frequency or 0,
+            frequency=(
+                (item.exact_title_occurrence_count + item.target_variant_occurrence_count)
+                / primary_analyzed
+                if primary_analyzed
+                else 0
+            ),
             occurrences=(item.exact_title_occurrence_count + item.target_variant_occurrence_count),
             sample_size=primary_analyzed,
-            frequency_label=product_label(frequency_band(item.exact_and_variant_frequency or 0)),
+            frequency_label=product_label(
+                frequency_band(
+                    (item.exact_title_occurrence_count + item.target_variant_occurrence_count)
+                    / primary_analyzed
+                    if primary_analyzed
+                    else 0
+                )
+            ),
         )
         for item in (summary.capability_requirements if summary else ())
         if item.exact_title_occurrence_count + item.target_variant_occurrence_count > 0
@@ -316,7 +331,7 @@ def market_view_model(state: dict[str, Any]) -> MarketViewModel:
         "MODERATE": "Moderate",
         "LIMITED": "Limited",
         "SPARSE": "Sparse",
-        "INSUFFICIENT_EVIDENCE": "Sparse",
+        "INSUFFICIENT_EVIDENCE": "Not enough evidence",
     }[str(getattr(snapshot.opportunity_availability, "value", snapshot.opportunity_availability))]
     confidence = (
         "Limited"
@@ -373,6 +388,13 @@ def market_view_model(state: dict[str, Any]) -> MarketViewModel:
             f"{analyzed} successfully analyzed postings",
         ),
     )
+    provider = state.get("market_provider_summary")
+    qualities = tuple(getattr(summary, "posting_quality", ()))
+    failures: dict[str, int] = {}
+    for item in qualities:
+        if item.failure_category:
+            label = product_label(item.failure_category)
+            failures[label] = failures.get(label, 0) + 1
     return MarketViewModel(
         target_role=snapshot.target_role,
         geography=snapshot.geography,
@@ -395,7 +417,9 @@ def market_view_model(state: dict[str, Any]) -> MarketViewModel:
         analyzed_postings=analyzed,
         primary_analyzed_postings=primary_analyzed,
         requirement_sample_confidence=(
-            "Directional"
+            "Unavailable"
+            if not primary_analyzed
+            else "Directional"
             if primary_analyzed < 8
             else "Moderate"
             if primary_analyzed < 12
@@ -442,6 +466,33 @@ def market_view_model(state: dict[str, Any]) -> MarketViewModel:
             ("Leading requirement theme", dominant_theme),
         ),
         what_this_means=what_this_means,
+        evidence_funnel=(
+            (
+                "Provider search hits (before deduplication)",
+                provider.adzuna_raw_result_count + provider.you_raw_result_count
+                if provider
+                else None,
+            ),
+            ("Unique validated postings", snapshot.validated_posting_count),
+            ("Extraction attempts recorded", len(qualities) if qualities else None),
+            ("Successfully analyzed postings", analyzed),
+            ("Primary target postings in frequency denominator", primary_analyzed),
+            (
+                "Validated postings not successfully analyzed",
+                max(0, snapshot.validated_posting_count - analyzed),
+            ),
+        ),
+        extraction_failures=tuple(sorted(failures.items())),
+        extraction_quality_summary=(
+            f"{summary.schema_valid_extraction_count} schema-valid posting responses; "
+            f"{summary.postings_with_accepted_hiring_requirements} postings supplied grounded "
+            f"hiring requirements; {summary.rejected_grounding_item_count} unsupported items "
+            "rejected. Responses with only failed grounding are excluded from the frequency "
+            "denominator. A schema-valid response does not establish full posting coverage."
+            if summary is not None
+            and getattr(summary, "schema_valid_extraction_count", None) is not None
+            else None
+        ),
     )
 
 
@@ -755,6 +806,9 @@ class PlanActionViewModel:
     evidence: str
     career_gap: str
     gap_ids: tuple[object, ...]
+    demonstrated_strength: str | None = None
+    completion_condition: str | None = None
+    milestone_id: object | None = None
 
 
 @dataclass(frozen=True)
@@ -777,6 +831,8 @@ class PlanViewModel:
     strengths: tuple[PlanStrengthViewModel, ...]
     why_this_path: str
     what_this_means: str
+    roadmap: tuple[tuple[str, str], ...] = ()
+    timeline_preference: str = "No fixed timeline"
 
 
 @dataclass(frozen=True)
@@ -790,8 +846,6 @@ def plan_eligibility(plan: Any, role: Any | None, synthesis: Any | None = None) 
     if plan is None:
         missing.append("Run career analysis to create a plan")
         return PlanEligibility(False, tuple(missing))
-    if not plan.current_role:
-        missing.append("Complete the current-role information")
     if not plan.target_role:
         missing.append("Add a target role")
     if role is None:
@@ -801,7 +855,7 @@ def plan_eligibility(plan: Any, role: Any | None, synthesis: Any | None = None) 
     elif synthesis.confidence is ConfidenceLevel.INSUFFICIENT:
         missing.append("Resolve the insufficient career-assessment evidence")
     if plan.timeline_assessment is None:
-        missing.append("Add and assess a target timeline")
+        missing.append("Complete the path assessment; a fixed timeline is optional")
     elif (
         plan.timeline_assessment.classification
         is TimelineClassification.UNSUPPORTED_INSUFFICIENT_EVIDENCE
@@ -825,7 +879,7 @@ def plan_eligibility(plan: Any, role: Any | None, synthesis: Any | None = None) 
             for item in policy_material_gaps(list(role.gaps))
             if not synthesis or item.gap_id in set(synthesis.source_gap_ids)
         }
-        if material_gap_ids and not linked_gap_ids:
+        if not material_gap_ids.issubset(linked_gap_ids):
             missing.append("Regenerate the plan with evidence-linked milestones")
         if any(item.hard_blocker for item in role.gaps):
             missing.append("Resolve the blocking prerequisite before plan approval")
@@ -835,7 +889,7 @@ def plan_eligibility(plan: Any, role: Any | None, synthesis: Any | None = None) 
 
 def plan_options(plan: Any) -> tuple[PlanOptionViewModel, ...]:
     months = getattr(getattr(plan, "timeline_assessment", None), "requested_months", None)
-    duration = f"{months} months" if months else "No fixed timeline"
+    duration = f"{months}-month preference" if months else "No fixed timeline"
     risk_by_confidence = {
         "High": "Lower",
         "Moderate": "Moderate",
@@ -850,9 +904,19 @@ def plan_options(plan: Any) -> tuple[PlanOptionViewModel, ...]:
                 route=" → ".join(filter(None, (plan.current_role, plan.target_role))),
                 duration=duration,
                 evidence_items=sum(len(item.evidence_to_create) for item in plan.milestones),
-                effort="Evidence closure",
+                effort=(
+                    "Evidence closure"
+                    if any(item.linked_gap_ids for item in plan.milestones)
+                    else "Application readiness"
+                ),
                 risk=risk_by_confidence.get(product_label(plan.confidence), "Not assessable"),
-                trade_off="Build the required evidence before applying selectively.",
+                trade_off=(
+                    "Address the specific remaining expectations and check each employer's "
+                    "conditions."
+                    if any(item.linked_gap_ids for item in plan.milestones)
+                    else "Use your confirmed strengths to pursue suitable postings and verify "
+                    "their current requirements."
+                ),
                 evidence_needed=tuple(
                     dict.fromkeys(
                         evidence for item in plan.milestones for evidence in item.evidence_to_create
@@ -899,7 +963,7 @@ def plan_options(plan: Any) -> tuple[PlanOptionViewModel, ...]:
 def plan_view_model(plan: Any, role: Any | None, synthesis: Any | None = None) -> PlanViewModel:
     """Present a deterministic plan grounded in synthesis and raw gap provenance."""
 
-    current = plan.current_role or "Current role not confirmed"
+    current = plan.current_role or "Confirmed career profile"
     target = plan.target_role or "Target role not confirmed"
     bridge = next(
         (item.bridge_role for item in plan.bridge_roles if item.bridge_role),
@@ -913,49 +977,26 @@ def plan_view_model(plan: Any, role: Any | None, synthesis: Any | None = None) -
     if synthesis is None:
         raise ValueError("Career assessment synthesis is required for the Plan view")
     gap_lookup = {item.gap_id: item for item in getattr(role, "gaps", ())}
-    milestone_evidence: dict[object, list[str]] = {}
-    for milestone in plan.milestones:
-        for gap_id in milestone.linked_gap_ids:
-            milestone_evidence.setdefault(gap_id, []).extend(milestone.evidence_to_create)
-
-    severity_rank = {"BLOCKING": 4, "HIGH": 3, "MODERATE": 2, "LOW": 1}
-    frequency_rank = {"COMMON": 4, "FREQUENT": 3, "OCCASIONAL": 2, "RARE": 1}
-
-    def priority(group: Any) -> tuple[int, int, int, int, int]:
-        dimensions = {str(getattr(item, "value", item)) for item in group.affected_dimensions}
-        independent = {
-            str(getattr(item, "value", item)) for item in synthesis.independent_severe_dimensions
-        }
-        return (
-            severity_rank.get(str(getattr(group.severity, "value", group.severity)), 0),
-            int(bool(dimensions & independent)),
-            group.mandatory_requirement_count,
-            frequency_rank.get(
-                str(getattr(group.requirement_frequency, "value", group.requirement_frequency)), 0
-            ),
-            int("PREREQUISITE" in dimensions),
-        )
-
     actions: list[PlanActionViewModel] = []
-    for group in sorted(synthesis.grouped_gaps, key=priority, reverse=True)[:5]:
-        gap_ids = tuple(gap_id for gap_id in group.underlying_gap_ids if gap_id in gap_lookup)
-        if not gap_ids:
-            continue
-        artifacts = tuple(
-            dict.fromkeys(
-                artifact
-                for gap_id in gap_ids
-                for artifact in milestone_evidence.get(gap_id, ())
-                if artifact
-            )
-        )
+    for milestone in plan.milestones:
+        gap_ids = tuple(gap_id for gap_id in milestone.linked_gap_ids if gap_id in gap_lookup)
+        groups = [
+            group
+            for group in synthesis.grouped_gaps
+            if set(gap_ids) & set(group.underlying_gap_ids)
+        ]
         actions.append(
             PlanActionViewModel(
-                action=group.evidence_to_build,
-                why=group.what_is_missing,
-                evidence="; ".join(artifacts) or group.evidence_to_build,
-                career_gap=group.title,
+                action=milestone.action,
+                why=milestone.residual_difference
+                or milestone.basis
+                or synthesis.accessibility_rationale,
+                evidence="; ".join(milestone.evidence_to_create),
+                career_gap="; ".join(group.title for group in groups) or milestone.phase,
                 gap_ids=gap_ids,
+                demonstrated_strength=milestone.demonstrated_strength,
+                completion_condition=milestone.measurable_outcome,
+                milestone_id=milestone.milestone_id,
             )
         )
 
@@ -965,18 +1006,30 @@ def plan_view_model(plan: Any, role: Any | None, synthesis: Any | None = None) -
         for item in re.split(r"(?<=[.!?])\s+", " ".join(synthesis.accessibility_rationale.split()))
         if item.strip()
     ]
-    rationale_opening = rationale_sentences[0]
-    rationale_conclusion = rationale_sentences[-1]
+    rationale_opening = (
+        rationale_sentences[0]
+        if rationale_sentences
+        else "The route uses your validated assessment."
+    )
+    rationale_conclusion = rationale_sentences[-1] if rationale_sentences else ""
     why_this_path = _bounded_sentences(
         rationale_opening,
         (
             f"The recommended route addresses {len(synthesis.grouped_gaps)} career-level gap "
             f"theme(s) containing {underlying_count} underlying requirement(s)."
+            if synthesis.grouped_gaps
+            else (
+                "Assessment uncertainties must be resolved before selecting a career route."
+                if synthesis.insufficient_comparison_count
+                or synthesis.confidence is ConfidenceLevel.INSUFFICIENT
+                else "No material development barrier was identified in the usable "
+                "target comparison."
+            )
         ),
         rationale_conclusion,
         maximum=3,
     )
-    focus = ", ".join(item.career_gap for item in actions[:2])
+    focus = ", ".join(item.career_gap for item in actions if item.gap_ids)
     if bridge:
         meaning = (
             f"Use the validated bridge route through {bridge} and focus next on "
@@ -987,6 +1040,10 @@ def plan_view_model(plan: Any, role: Any | None, synthesis: Any | None = None) -
             f"Use the direct selective route toward {target} and focus next on "
             f"{focus or 'keeping your strongest evidence current'}."
         )
+    elif plan.path_type is PathType.EXPLORATION:
+        meaning = "Resolve the specific documented uncertainty, then repeat the target assessment."
+    elif plan.path_type is PathType.NO_CREDIBLE_PATH:
+        meaning = "Address the documented prerequisite or barrier before pursuing this route."
     else:
         meaning = (
             f"Use the longer development route toward {target} and focus next on "
@@ -994,12 +1051,12 @@ def plan_view_model(plan: Any, role: Any | None, synthesis: Any | None = None) -
         )
     timeline = getattr(plan, "timeline_assessment", None)
     path_label = {
-        PathType.DIRECT: "Direct selective transition",
+        PathType.DIRECT: "Direct route",
         PathType.DEVELOPMENT: "Longer development route",
         PathType.BRIDGE: "Bridge route",
         PathType.MULTIPLE_PATHS: "Bridge route",
-        PathType.EXPLORATION: "Longer development route",
-        PathType.NO_CREDIBLE_PATH: "Longer development route",
+        PathType.EXPLORATION: "Evidence clarification",
+        PathType.NO_CREDIBLE_PATH: "Resolve the documented barrier",
     }[plan.path_type]
     return PlanViewModel(
         current_role=current,
@@ -1009,48 +1066,45 @@ def plan_view_model(plan: Any, role: Any | None, synthesis: Any | None = None) -
         confidence=product_label(plan.confidence),
         bridge_role=bridge,
         untimed=(
-            timeline is not None
-            and timeline.classification is TimelineClassification.NO_FIXED_TIMELINE
+            not plan.timing_basis
+            or (
+                timeline is not None
+                and timeline.classification is TimelineClassification.NO_FIXED_TIMELINE
+            )
         ),
         route=tuple(route_items),
         actions=tuple(actions),
         strengths=tuple(
             PlanStrengthViewModel(item.title, _short(item.explanation, 220))
-            for item in synthesis.strongest_advantages[:4]
+            for item in synthesis.strongest_advantages
         ),
         why_this_path=why_this_path,
         what_this_means=_bounded_sentences(
             rationale_opening, rationale_conclusion, meaning, maximum=3
         ),
+        roadmap=tuple((item.phase, item.action) for item in plan.milestones),
+        timeline_preference=(
+            f"{timeline.requested_months} months requested"
+            if timeline and timeline.requested_months
+            else "No fixed timeline"
+        ),
     )
 
 
-def untimed_roadmap_stages(view: PlanViewModel) -> tuple[tuple[str, str], ...]:
+def untimed_roadmap_stages(
+    view: PlanViewModel,
+    milestones: tuple[Any, ...] | None = None,
+) -> tuple[tuple[str, str], ...]:
     """Create an ordinal roadmap without inventing month estimates."""
 
-    strength_names = ", ".join(item.title for item in view.strengths[:2])
-    next_action = (
-        view.actions[0].action
-        if view.actions
-        else "Keep the confirmed target-role evidence current"
+    roadmap = (
+        tuple((item.phase, item.action) for item in milestones)
+        if milestones is not None
+        else view.roadmap
     )
-    remaining = (
-        view.actions[1].action
-        if len(view.actions) > 1
-        else "Accumulate direct evidence in the remaining priority dimensions"
-    )
-    return (
-        (
-            "NOW",
-            f"Reframe and package confirmed evidence from {strength_names or view.current_role}",
-        ),
-        ("NEXT", next_action),
-        ("BUILD / BRIDGE", view.bridge_role or remaining),
-        (
-            "TARGET",
-            f"Reassess the evidence, then pursue {view.target_role} when it supports "
-            f"{view.accessibility.casefold()}",
-        ),
+    return tuple(
+        (f"STEP {index} · {phase}", action)
+        for index, (phase, action) in enumerate(roadmap, start=1)
     )
 
 

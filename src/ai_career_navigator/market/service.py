@@ -6,7 +6,6 @@ from collections import Counter
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 from time import perf_counter
-from urllib.parse import urlsplit
 
 from ai_career_navigator.config import Settings
 from ai_career_navigator.domain import (
@@ -16,6 +15,7 @@ from ai_career_navigator.domain import (
     JobPosting,
     SourceRecord,
 )
+from ai_career_navigator.market.currentness import currentness_rejection
 from ai_career_navigator.market.deduplication import (
     deduplicate_postings,
     deduplicate_search_results,
@@ -64,7 +64,7 @@ from ai_career_navigator.market.search_plan import (
     build_related_query,
     build_search_plan,
     build_you_ats_query,
-    build_you_fallback_query,
+    build_you_query_family,
 )
 from ai_career_navigator.market.signals import (
     SignalInputs,
@@ -74,33 +74,25 @@ from ai_career_navigator.market.signals import (
     classify_opportunity,
     concentration_counts,
 )
+from ai_career_navigator.market.source_registry import (
+    is_ats_domain,
+    looks_like_individual_job_url,
+)
 from ai_career_navigator.market.validation import (
     is_promising_search_result,
     observed_related_titles,
+    title_equivalence_reason,
 )
 
 logger = logging.getLogger(__name__)
-ATS_DOMAINS = {
-    "boards.greenhouse.io",
-    "jobs.lever.co",
-    "jobs.ashbyhq.com",
-}
 
 
 def _is_ats_domain(domain: str | None) -> bool:
-    normalized = (domain or "").casefold().removeprefix("www.")
-    return any(
-        normalized == item or normalized.endswith(f".{item}")
-        for item in (*ATS_DOMAINS, "myworkdayjobs.com")
-    )
+    return is_ats_domain(domain)
 
 
 def _looks_like_employer_posting_url(url: str) -> bool:
-    path = urlsplit(url).path.casefold()
-    return any(
-        token in path
-        for token in ("/job/", "/jobs/", "/careers/", "/positions/", "/openings/")
-    )
+    return looks_like_individual_job_url(url)
 
 
 def _geography_scope_allowed(
@@ -125,6 +117,11 @@ class _RunMetrics:
     content_attempts: int = 0
     content_successes: int = 0
     rejected_results: int = 0
+    rejected_candidates: int = 0
+    budget_deferred_results: int = 0
+    discovered_urls: set[str] = field(default_factory=set)
+    structured_content_attempts: int = 0
+    structured_content_successes: int = 0
     duplicate_count: int = 0
     malformed_response_count: int = 0
     content_failure_count: int = 0
@@ -157,12 +154,16 @@ def limits_from_settings(settings: Settings) -> SearchLimits:
         max_search_queries=settings.market_max_search_queries,
         max_expansion_queries=settings.market_max_expansion_queries,
         max_content_fetches=settings.market_max_content_fetches,
+        analysis_posting_limit=settings.market_analysis_posting_limit,
+        max_enrichments=settings.market_max_enrichments,
         target_posting_count=settings.market_target_posting_count,
         expansion_threshold=settings.market_expansion_threshold,
         max_retries=settings.max_retries,
         discovery_result_count=settings.market_discovery_result_count,
         thin_description_characters=settings.market_thin_description_characters,
         direct_source_excluded_domains=settings.market_direct_excluded_domains,
+        max_posting_age_days=settings.market_max_posting_age_days,
+        max_total_search_calls=settings.market_max_total_search_calls,
     )
 
 
@@ -193,12 +194,35 @@ async def _search(
     limits: SearchLimits,
 ) -> list[MarketSearchResult]:
     metrics.search_attempts += 1
-    results = await _retry_call(
-        lambda: client.search(request),
-        max_retries=limits.max_retries,
-        operation_name="search",
-    )
+    try:
+        results = await _retry_call(
+            lambda: client.search(request),
+            max_retries=limits.max_retries,
+            operation_name="search",
+        )
+    except MarketIntelligenceError as error:
+        metrics.search_passes.append(
+            SearchPassReport(
+                provider=MarketSourceProvider.YOU,
+                request_parameters=request.model_dump(mode="json"),
+                succeeded=False,
+                failure_category=type(error).__name__,
+                pass_type=request.pass_type,
+                freshness=request.freshness,
+                query=request.query,
+                raw_result_count=0,
+                validated_posting_count=0,
+                aggregator_result_count=0,
+                direct_page_count=0,
+                geography_scope=request.geography_scope,
+                geography_valid_posting_count=0,
+            )
+        )
+        raise
     metrics.search_successes += 1
+    metrics.discovered_urls.update(
+        url for result in results if (url := canonicalize_url(result.url))
+    )
     return results
 
 
@@ -216,6 +240,7 @@ async def _retrieve_candidates(
     retrieval_date: date,
     retrieved_at: datetime,
     excluded_domains: list[str] | None = None,
+    included_domains: list[str] | None = None,
     requested_geography_scope: GeographyScope = GeographyScope.STRICT_CITY,
     content_attempt_cap: int | None = None,
     provider: MarketSourceProvider | None = None,
@@ -224,18 +249,20 @@ async def _retrieve_candidates(
 ) -> None:
     target = plan.search_title or plan.target_role or ""
     exclusions = {domain.casefold().removeprefix("www.") for domain in excluded_domains or []}
-    allowed = [
-        item
-        for item in candidates
-        if not (item.source_domain or source_domain(item.url))
-        or not any(
-            (item.source_domain or source_domain(item.url) or "").casefold() == domain
-            or (item.source_domain or source_domain(item.url) or "")
-            .casefold()
-            .endswith(f".{domain}")
-            for domain in exclusions
+    inclusions = {domain.casefold().removeprefix("www.") for domain in included_domains or []}
+
+    def domain_allowed(item: MarketSearchResult) -> bool:
+        # Recheck provider filters against the actual URL before spending a content call.
+        domain = (source_domain(item.url) or "").casefold().removeprefix("www.")
+
+        def matches(candidate: str) -> bool:
+            return domain == candidate or domain.endswith(f".{candidate}")
+
+        return not any(matches(value) for value in exclusions) and (
+            not inclusions or any(matches(value) for value in inclusions)
         )
-    ]
+
+    allowed = [item for item in candidates if domain_allowed(item)]
     metrics.rejected_results += len(candidates) - len(allowed)
     if provider is not None:
         allowed_urls = {item.url for item in allowed}
@@ -245,7 +272,7 @@ async def _retrieve_candidates(
                 source_url=item.url,
                 source_type=PostingSourceType.AGGREGATOR_PAGE,
                 title=item.title,
-                rejection_reason="Excluded search aggregator or blocked discovery domain.",
+                rejection_reason="Outside requested discovery domain policy.",
             )
             for item in candidates
             if item.url not in allowed_urls
@@ -269,10 +296,25 @@ async def _retrieve_candidates(
     metrics.duplicate_count += url_duplicates
 
     attempt_cap = content_attempt_cap or limits.max_content_fetches
-    for candidate in unique[:candidate_result_cap]:
-        if len(postings) >= limits.target_posting_count:
+
+    def primary_count() -> int:
+        return sum(
+            posting.title_match_kind
+            in {
+                "LITERAL_EXACT",
+                "LEXICAL_EQUIVALENCE",
+                "DESCRIPTIVE_SUFFIX_GROUNDED",
+                "TARGET_VARIANT",
+            }
+            for posting in deduplicate_postings(postings)[0]
+        )
+
+    for candidate_index, candidate in enumerate(unique[:candidate_result_cap]):
+        if primary_count() >= limits.target_posting_count:
+            metrics.budget_deferred_results += len(unique) - candidate_index
             break
         if metrics.content_attempts >= attempt_cap:
+            metrics.budget_deferred_results += len(unique) - candidate_index
             metrics.limitations.append(
                 f"Content retrieval was capped at {attempt_cap} source pages for this stage."
             )
@@ -297,6 +339,18 @@ async def _retrieve_candidates(
             raise
         except MarketIntelligenceError as error:
             metrics.content_failure_count += 1
+            metrics.posting_audits.append(
+                PostingRetrievalAudit(
+                    provider=provider or MarketSourceProvider.YOU,
+                    source_url=candidate.url,
+                    title=candidate.title,
+                    source_type=PostingSourceType.BACKGROUND_CONTEXT,
+                    stage="CONTENT_FETCH",
+                    decision_unit="SEARCH_RESULT",
+                    parent_result_id=canonical,
+                    rejection_reason=f"Content fetch failed: {type(error).__name__}.",
+                )
+            )
             logger.warning("market_content_failed category=%s", type(error).__name__)
             sources.append(
                 create_source_record(
@@ -304,6 +358,29 @@ async def _retrieve_candidates(
                     retrieval_date=retrieval_date,
                     accessible=False,
                     limitations=["Source page could not be retrieved."],
+                )
+            )
+            continue
+
+        currentness_error = currentness_rejection(
+            page, as_of=retrieval_date, max_age_days=limits.max_posting_age_days
+        )
+        if currentness_error:
+            if currentness_error.startswith("Invalid posting dates"):
+                metrics.malformed_response_count += 1
+            metrics.rejected_results += 1
+            metrics.posting_audits.append(
+                PostingRetrievalAudit(
+                    provider=provider or MarketSourceProvider.YOU,
+                    source_url=candidate.url,
+                    title=candidate.title,
+                    source_type=PostingSourceType.DIRECT_ATS_POSTING
+                    if _is_ats_domain(source_domain(candidate.url))
+                    else PostingSourceType.DIRECT_EMPLOYER_POSTING,
+                    stage="CURRENTNESS",
+                    decision_unit="SEARCH_RESULT",
+                    parent_result_id=canonical,
+                    rejection_reason=currentness_error,
                 )
             )
             continue
@@ -337,7 +414,8 @@ async def _retrieve_candidates(
             PostingSourceType.DIRECT_ATS_POSTING,
             PostingSourceType.DIRECT_EMPLOYER_POSTING,
         }:
-            metrics.rejected_results += max(1, len(processed.candidates))
+            metrics.rejected_results += 1
+            metrics.rejected_candidates += len(processed.candidates)
             metrics.posting_audits.append(
                 PostingRetrievalAudit(
                     provider=provider or MarketSourceProvider.YOU,
@@ -397,13 +475,30 @@ async def _retrieve_candidates(
             for item in assessments
             if item in geography_valid and item.title_match is not PostingTitleMatch.IRRELEVANT
         ]
-        metrics.rejected_results += len(assessments) - len(eligible)
+        metrics.rejected_candidates += len(assessments) - len(eligible)
+        for assessment in assessments:
+            if assessment not in eligible:
+                metrics.posting_audits.append(
+                    PostingRetrievalAudit(
+                        provider=provider or MarketSourceProvider.YOU,
+                        source_url=candidate.url,
+                        title=assessment.candidate.title,
+                        posting_id=str(assessment.candidate.posting_id),
+                        source_type=source_type,
+                        parent_result_id=canonical,
+                        decision_unit="POSTING_CANDIDATE",
+                        rejection_reason=(
+                            "Title is irrelevant to the target."
+                            if assessment.title_match is PostingTitleMatch.IRRELEVANT
+                            else f"Geography validation: {assessment.geography_status.value}; "
+                            "allowed scope check failed."
+                        ),
+                    )
+                )
         if not eligible:
             metrics.rejected_results += 1
             continue
         for assessment in eligible:
-            if len(postings) >= limits.target_posting_count:
-                break
             posting_candidate = assessment.candidate
             segmented_result = candidate.model_copy(update={"title": posting_candidate.title})
             segmented_page = page.model_copy(
@@ -411,6 +506,7 @@ async def _retrieve_candidates(
                     "title": posting_candidate.title,
                     "employer": posting_candidate.employer,
                     "location": posting_candidate.location,
+                    "markdown": posting_candidate.posting_text,
                 }
             )
             try:
@@ -427,11 +523,31 @@ async def _retrieve_candidates(
                         "matched_geography_scope": assessment.matched_geography_scope,
                         "grounded_location": posting_candidate.location,
                         "extraction_confidence": posting_candidate.extraction_confidence,
+                        "canonical_job_url": (
+                            canonicalize_url(page.canonical_job_url or page.url)
+                            if source_type
+                            in {
+                                PostingSourceType.DIRECT_ATS_POSTING,
+                                PostingSourceType.DIRECT_EMPLOYER_POSTING,
+                            }
+                            else None
+                        ),
+                        "requisition_id": page.requisition_id
+                        if len(processed.candidates) == 1
+                        else None,
+                        "title_match_kind": title_equivalence_reason(
+                            posting_candidate.title, target, posting_candidate.posting_text
+                        )
+                        or (
+                            "TARGET_VARIANT"
+                            if assessment.title_match is PostingTitleMatch.TARGET_VARIANT
+                            else assessment.title_match.value
+                        ),
                     }
                 )
             except ValueError:
                 metrics.malformed_response_count += 1
-                metrics.rejected_results += 1
+                metrics.rejected_candidates += 1
                 continue
             postings.append(posting)
             title_classification = assessment.title_match.value
@@ -449,6 +565,8 @@ async def _retrieve_candidates(
                     seniority_classification=seniority,
                     selected_content_source=provider or MarketSourceProvider.YOU,
                     selected_for_primary_evidence=True,
+                    title_match_kind=posting.title_match_kind,
+                    parent_result_id=canonical,
                 )
             )
 
@@ -494,8 +612,11 @@ def _snapshot(
     employer_counts = _employer_counts(postings)
     location_counts = _location_counts(postings)
     title_matches = {
-        posting.posting_id: assess_title(
-            posting.normalized_title or posting.original_title,
+        posting.posting_id: PostingTitleMatch.TARGET_VARIANT
+        if posting.title_match_kind
+        in {"LEXICAL_EQUIVALENCE", "DESCRIPTIVE_SUFFIX_GROUNDED", "TARGET_VARIANT"}
+        else assess_title(
+            posting.original_title,
             plan.search_title or "",
         )
         for posting in postings
@@ -524,8 +645,8 @@ def _snapshot(
         employer_counts=employer_counts,
         search_attempts=metrics.search_attempts,
         search_successes=metrics.search_successes,
-        content_attempts=metrics.content_attempts,
-        content_successes=metrics.content_successes,
+        content_attempts=metrics.content_attempts + metrics.structured_content_attempts,
+        content_successes=metrics.content_successes + metrics.structured_content_successes,
         duplicate_count=metrics.duplicate_count,
         malformed_response_count=metrics.malformed_response_count,
     )
@@ -594,23 +715,17 @@ async def _retrieve_you_ats_market(
     seen_urls: set[str] = set()
     scope = plan.allowed_geography_scopes[0]
 
-    async def run(query: str, pass_type: SearchPassType) -> None:
+    async def run(request: MarketSearchRequest) -> None:
+        query, pass_type = request.query, request.pass_type
         before = len(postings)
         results = await _search(
             client,
-            MarketSearchRequest(
-                query=query,
-                pass_type=pass_type,
-                freshness=SearchFreshness.MONTH,
-                count=max(10, limits.max_you_candidate_results),
-                country="CA",
-                language="EN",
-                geography_scope=scope,
-            ),
+            request,
             metrics,
             limits,
         )
         bounded_results = results[: limits.max_you_candidate_results]
+        metrics.budget_deferred_results += max(0, len(results) - len(bounded_results))
         metrics.exact_search_queries.append(query)
         metrics.exact_raw_result_count += len(results)
         await _retrieve_candidates(
@@ -628,12 +743,16 @@ async def _retrieve_you_ats_market(
             requested_geography_scope=scope,
             provider=MarketSourceProvider.YOU,
             individual_postings_only=True,
+            excluded_domains=request.excluded_domains,
+            included_domains=request.included_domains,
             candidate_result_cap=limits.max_you_candidate_results,
         )
         metrics.search_passes.append(
             SearchPassReport(
+                provider=MarketSourceProvider.YOU,
+                request_parameters=request.model_dump(mode="json"),
                 pass_type=pass_type,
-                freshness=SearchFreshness.MONTH,
+                freshness=request.freshness,
                 query=query,
                 raw_result_count=len(results),
                 validated_posting_count=max(0, len(postings) - before),
@@ -649,24 +768,35 @@ async def _retrieve_you_ats_market(
         )
 
     async with client:
-        await run(
-            build_you_ats_query(
-                plan.search_title or plan.target_role or "",
-                plan.geography,
-                plan.target_seniority,
-            ),
-            SearchPassType.ATS_PRIMARY,
-        )
-        if len(deduplicate_postings(postings)[0]) < limits.you_fallback_threshold:
-            metrics.freshness_fallback_used = True
-            await run(
-                build_you_fallback_query(
-                    plan.search_title or plan.target_role or "",
-                    plan.geography,
-                    plan.target_seniority,
-                ),
-                SearchPassType.ATS_FALLBACK,
-            )
+        for index, request in enumerate(
+            build_you_query_family(plan)[
+                : min(limits.max_search_queries, limits.max_total_search_calls)
+            ]
+        ):
+            if (
+                index > 1
+                and sum(
+                    item.title_match_kind
+                    in {
+                        "LITERAL_EXACT",
+                        "LEXICAL_EQUIVALENCE",
+                        "DESCRIPTIVE_SUFFIX_GROUNDED",
+                        "TARGET_VARIANT",
+                    }
+                    for item in deduplicate_postings(postings)[0]
+                )
+                >= limits.you_fallback_threshold
+            ):
+                break
+            if metrics.content_attempts >= limits.max_content_fetches:
+                break
+            metrics.freshness_fallback_used |= index > 0
+            try:
+                await run(request)
+            except MarketIntelligenceError as error:
+                metrics.limitations.append(f"You.com query failed: {type(error).__name__}.")
+                if isinstance(error, (MarketAuthenticationError, MarketConfigurationError)):
+                    raise
 
     snapshot = _snapshot(
         plan=plan,
@@ -712,6 +842,15 @@ async def _retrieve_you_ats_market(
         you_context_result_count=context_count,
         you_rejected_result_count=metrics.rejected_results,
         you_fallback_triggered=metrics.freshness_fallback_used,
+        rejected_candidate_count=metrics.rejected_candidates,
+        fetch_failure_count=metrics.content_failure_count,
+        unique_url_count=len(metrics.discovered_urls),
+        budget_deferred_result_count=metrics.budget_deferred_results,
+        effective_budgets={
+            "search_calls": min(3, limits.max_search_queries),
+            "content_fetches": limits.max_content_fetches,
+            "max_posting_age_days": limits.max_posting_age_days,
+        },
     )
 
 
@@ -779,6 +918,9 @@ async def retrieve_current_market(
         content_attempt_cap: int | None = None,
     ) -> None:
         nonlocal observed_result_count
+        if metrics.search_attempts >= bounded.max_total_search_calls:
+            metrics.limitations.append("Shared search-query budget was exhausted.")
+            return
         before_postings = unique_posting_count()
         before_direct_pages = metrics.direct_page_count
         results = await _search(client, request, metrics, bounded)
@@ -812,6 +954,8 @@ async def retrieve_current_market(
         )
         metrics.search_passes.append(
             SearchPassReport(
+                provider=MarketSourceProvider.YOU,
+                request_parameters=request.model_dump(mode="json"),
                 pass_type=request.pass_type,
                 freshness=request.freshness,
                 query=request.query,
@@ -847,7 +991,9 @@ async def retrieve_current_market(
 
     def needs_more_for_qa() -> bool:
         return (
-            target_evidence_count() < 3 and metrics.content_attempts < bounded.max_content_fetches
+            target_evidence_count() < 3
+            and metrics.content_attempts < bounded.max_content_fetches
+            and metrics.search_attempts < bounded.max_total_search_calls
         )
 
     async with client:

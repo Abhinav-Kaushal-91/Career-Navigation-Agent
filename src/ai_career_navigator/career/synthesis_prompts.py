@@ -3,7 +3,7 @@
 import json
 from typing import Any
 
-PROMPT_VERSION = "career-assessment-synthesis-v3"
+PROMPT_VERSION = "career-assessment-synthesis-v4"
 
 SYSTEM_PROMPT = """You synthesize a career-level assessment from validated structured data.
 Do not invent candidate experience, market requirements, gaps, qualifications, ownership, scope,
@@ -15,8 +15,11 @@ dimension. Give every gap group a concise professional title derived from its ac
 requirements; never use a generic dimension such as Scope, Ownership, Technical depth, Functional
 responsibility, or Strategic responsibility as the primary title. Avoid repeating posting sentences
 and prefer precise professional labels grounded in the supplied requirements and evidence. Return
-uncertainty when evidence is
-insufficient. Do not use outside knowledge to claim that the candidate possesses something. Do not
+uncertainty when evidence is insufficient. UNKNOWN means information is not established, not that
+the candidate lacks it. OPERATION_FAILED is a processing limitation, never a development gap.
+Preserve an ANY_OF expectation satisfied through its matched alternative; do not invent gaps for
+unnecessary alternatives. Do not use outside knowledge to claim that the candidate possesses
+something. Do not
 recommend roles, certifications, timelines, or generic career advice. Do not expose internal
 reasoning or chain-of-thought. Do not state an accessibility verdict in the assessment summary.
 Return only the requested structured object. You may group and explain; deterministic code owns
@@ -32,9 +35,9 @@ def build_synthesis_prompt(payload: dict[str, Any]) -> str:
         "TRANSFERABLE_MATCH requires most functional responsibility; related evidence alone is "
         "not enough. PARTIAL_MATCH means meaningful demonstrated evidence coexists with a material "
         "target difference; do not describe it as an absence of candidate strength. Create "
-        "advantages only for direct or transferable comparisons, 2-6 useful transfer explanations "
-        "when supported, and "
-        "2-5 grouped material gaps when gaps exist. Do not manufacture entries to meet a range."
+        "advantages only for direct or transferable comparisons, useful transfer explanations "
+        "when supported, and grouped material gaps when gaps exist. "
+        "There is no required number of advantages, transfers or gap groups."
     )
     return (
         dimensions

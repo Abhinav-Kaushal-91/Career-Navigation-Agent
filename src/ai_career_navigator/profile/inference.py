@@ -130,7 +130,7 @@ def _to_evidence(
         source_type="AI capability inference",
         source_reference="Supporting evidence: " + "; ".join(dict.fromkeys(sources)),
         capability=inference.capability,
-        description=inference.reasoning_summary,
+        description=inference.description,
         maturity_level=inference.proposed_maturity,
         context=inference.source_context_summary,
         confirmation_status=EvidenceConfirmationStatus.INFERRED_PENDING,

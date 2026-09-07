@@ -1,11 +1,21 @@
 """Deterministic V1 market-search planning."""
 
+import re
+
 from ai_career_navigator.domain import ApprovalStatus, CareerGoal, GeographyScope
 from ai_career_navigator.market.errors import MarketConfigurationError
+from ai_career_navigator.market.normalization import normalize_title
 from ai_career_navigator.market.schemas import (
     GeographyQueryVariant,
+    MarketSearchRequest,
+    SearchFreshness,
+    SearchPassType,
     SearchPlan,
     SearchPlanStatus,
+)
+from ai_career_navigator.market.source_registry import (
+    AGGREGATOR_SEARCH_DOMAINS,
+    ATS_JOB_SEARCH_DOMAINS,
 )
 from ai_career_navigator.market.validation import target_title_variants
 
@@ -20,7 +30,7 @@ def _clean(value: str | None) -> str | None:
 def _search_title(goal: CareerGoal) -> str:
     role = _clean(goal.target_role) or ""
     seniority = _clean(goal.target_seniority)
-    if seniority and seniority.casefold() not in role.casefold():
+    if seniority and normalize_title(seniority).casefold() not in normalize_title(role).casefold():
         return f"{seniority} {role}"
     return role
 
@@ -127,20 +137,30 @@ def _exclude_internships(target_role: str, target_seniority: str | None) -> bool
     """Use only target-role inputs to decide whether early-career evidence is eligible."""
 
     target = f"{target_seniority or ''} {target_role}".casefold().replace("-", " ")
-    early_career_markers = {
-        "intern",
-        "internship",
-        "junior",
-        "entry level",
-        "new grad",
-        "new graduate",
-        "graduate",
-    }
-    return not any(marker in target for marker in early_career_markers)
+    # Substrings such as "intern" in "Internal Auditor" are not career stages.
+    return (
+        re.search(
+            r"\b(?:intern|internship|junior|jr\.?|entry level|new grad|new graduate|graduate)\b",
+            target,
+        )
+        is None
+    )
 
 
 def _internship_suffix(target_role: str, target_seniority: str | None) -> str:
     return " -intern -internship" if _exclude_internships(target_role, target_seniority) else ""
+
+
+def _you_location_query(geography: str) -> str:
+    """Keep the user-supplied locality together without inventing a broader area."""
+    parts = [
+        cleaned
+        for part in geography.replace('"', "").split(",")
+        if (cleaned := " ".join(part.split()))
+    ]
+    if not parts:
+        return ""
+    return " ".join([f'"{parts[0]}"', *parts[1:]])
 
 
 def build_you_ats_query(
@@ -149,13 +169,9 @@ def build_you_ats_query(
     """Build the single primary You.com query for individual ATS postings."""
 
     role = " ".join(target_role.replace('"', "").split())
-    location = " ".join(geography.replace('"', "").split())
-    return (
-        f'"{role}" {location} '
-        "(site:boards.greenhouse.io OR site:jobs.lever.co OR "
-        "site:jobs.ashbyhq.com OR site:myworkdayjobs.com)"
-        f"{_internship_suffix(role, target_seniority)}"
-    )
+    location = _you_location_query(geography)
+    domains = " OR ".join(f"site:{domain}" for domain in sorted(ATS_JOB_SEARCH_DOMAINS))
+    return f'"{role}" {location} ({domains}){_internship_suffix(role, target_seniority)}'
 
 
 def build_you_fallback_query(
@@ -164,8 +180,69 @@ def build_you_fallback_query(
     """Build one bounded fallback that still asks for individual employer postings."""
 
     role = " ".join(target_role.replace('"', "").split())
-    location = " ".join(geography.replace('"', "").split())
+    location = _you_location_query(geography)
     return (
-        f'"{role}" {location} (careers OR jobs)'
+        f'"{role}" {location} (apply OR "job description")'
         f"{_internship_suffix(role, target_seniority)}"
     )
+
+
+def _lexical_query_variant(role: str) -> str | None:
+    """Allow wording changes, not a wider specialty or a new target function."""
+
+    def lexical_key(title: str) -> str:
+        value = re.sub(r"\bsr\.?\b", "senior", title, flags=re.I)
+        value = re.sub(r"\bjr\.?\b", "junior", value, flags=re.I)
+        value = re.sub(r"\bsolutions\b", "solution", value, flags=re.I)
+        return " ".join(re.findall(r"[a-z0-9]+", value.casefold()))
+
+    role_key = lexical_key(role)
+    return next(
+        (variant for variant in target_title_variants(role) if lexical_key(variant) == role_key),
+        None,
+    )
+
+
+def build_you_query_family(plan: SearchPlan) -> list[MarketSearchRequest]:
+    """Three complementary passes within the existing shared discovery budget.
+
+    ATS allowlists are strict, not optional ranking boosts. The middle pass keeps
+    custom employer career sites discoverable without reintroducing aggregators.
+    Later passes widen search-index lookback, not acceptable posting age. All
+    candidates still pass the same role, seniority, geography and currentness checks.
+    """
+    role = " ".join((plan.search_title or plan.target_role or "").replace('"', "").split())
+    geography = plan.geography if plan.geography != "Location not specified" else "Canada"
+    location = _you_location_query(geography)
+    suffix = _internship_suffix(role, plan.target_seniority)
+    common = {"geography_scope": plan.allowed_geography_scopes[0]}
+    queries = [
+        MarketSearchRequest(
+            query=f'"{role}" {location}{suffix}',
+            pass_type=SearchPassType.ATS_PRIMARY,
+            freshness=SearchFreshness.MONTH,
+            included_domains=sorted(ATS_JOB_SEARCH_DOMAINS),
+            **common,
+        ),
+        MarketSearchRequest(
+            query=build_you_fallback_query(role, geography, plan.target_seniority),
+            pass_type=SearchPassType.ATS_FALLBACK,
+            freshness=SearchFreshness.YEAR,
+            excluded_domains=sorted(AGGREGATOR_SEARCH_DOMAINS),
+            **common,
+        ),
+    ]
+    equivalent = _lexical_query_variant(role)
+    # Without a lexical variant, retry the same title's words without a phrase
+    # constraint. This improves discovery recall without adding skills or roles.
+    title_query = f'"{equivalent}"' if equivalent else role
+    queries.append(
+        MarketSearchRequest(
+            query=f"{title_query} {location} (apply OR qualifications OR responsibilities){suffix}",
+            pass_type=SearchPassType.TARGET_VARIANT,
+            freshness=SearchFreshness.YEAR,
+            included_domains=sorted(ATS_JOB_SEARCH_DOMAINS),
+            **common,
+        )
+    )
+    return queries

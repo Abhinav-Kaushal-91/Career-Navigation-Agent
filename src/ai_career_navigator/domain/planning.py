@@ -32,6 +32,11 @@ class PlanMilestone(BaseModel):
     milestone_type: MilestoneType
     action: str = Field(min_length=1)
     linked_gap_ids: list[UUID] = Field(default_factory=list)
+    linked_requirement_ids: list[UUID] = Field(default_factory=list)
+    supporting_evidence_ids: list[UUID] = Field(default_factory=list)
+    basis: str | None = None
+    demonstrated_strength: str | None = None
+    residual_difference: str | None = None
     measurable_outcome: str = Field(min_length=1)
     evidence_to_create: list[str] = Field(default_factory=list)
     dependencies: list[str] = Field(default_factory=list)
@@ -61,6 +66,9 @@ class CareerPlan(BaseModel):
     risks: list[str] = Field(default_factory=list)
     assumptions: list[str] = Field(default_factory=list)
     source_ids: list[UUID] = Field(default_factory=list)
+    source_goal_id: UUID | None = None
+    source_assessment_id: UUID | None = None
+    timing_basis: str | None = None
     confidence: ConfidenceLevel
     approval_status: ApprovalStatus = ApprovalStatus.DRAFT
     created_at: AwareDatetime = Field(default_factory=_now_utc)

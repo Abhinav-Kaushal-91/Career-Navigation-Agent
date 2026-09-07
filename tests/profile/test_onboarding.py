@@ -140,6 +140,13 @@ def test_negative_years_experience_fails() -> None:
         AboutYou(years_professional_experience=-1)
 
 
+def test_confirmed_profile_preserves_about_you_professional_years() -> None:
+    draft = senior_professional_draft()
+    profile = build_candidate_profile(draft)
+    assert profile.years_professional_experience == draft.about.years_professional_experience == 8
+    assert build_candidate_profile(student_draft()).years_professional_experience == 0
+
+
 def test_current_experience_is_valid_without_end_date() -> None:
     entry = ExperienceEntry(
         job_title="Developer",

@@ -125,7 +125,7 @@ def test_identical_canonical_urls_are_deduplicated() -> None:
     assert duplicate_count == 1
 
 
-def test_same_employer_title_and_location_are_grouped() -> None:
+def test_same_employer_title_and_location_without_identity_are_not_merged() -> None:
     common = {
         "source_id": create_source_record(result(), retrieval_date=date(2026, 9, 3)).source_id,
         "original_title": TARGET,
@@ -146,6 +146,5 @@ def test_same_employer_title_and_location_are_grouped() -> None:
 
     retained, duplicate_count = deduplicate_postings([first, second])
 
-    assert len(retained) == 1
-    assert retained[0].duplicate_group_id is not None
-    assert duplicate_count == 1
+    assert len(retained) == 2
+    assert duplicate_count == 0

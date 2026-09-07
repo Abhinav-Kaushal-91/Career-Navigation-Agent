@@ -183,6 +183,7 @@ def build_candidate_profile(
     )
     return CandidateProfile(
         career_stage=draft.about.career_stage,
+        years_professional_experience=draft.about.years_professional_experience,
         professional_summary=draft.about.career_summary,
         core_competencies=draft.core_competencies_text,
         current_role=(

@@ -50,6 +50,152 @@ from ai_career_navigator.models.providers import FakeModelProvider
 NOW = datetime(2026, 9, 5, tzinfo=UTC)
 
 
+def _rebuild(requirements, assessments, audits, summary):
+    return build_canonical_target_role_profile(
+        target_role="Generic Target",
+        geography="Toronto",
+        requirements=requirements,
+        assessments=assessments,
+        summary=summary,
+        posting_audits=audits,
+        generated_at=NOW,
+    )[0]
+
+
+def test_related_maturity_confidence_and_years_cannot_raise_primary_baseline() -> None:
+    _, requirements, assessments, audits, summary = _build(
+        [
+            ("3 years Python delivery", "Python", PostingTitleMatch.EXACT_TARGET, "A"),
+            ("3 years Python delivery", "Python", PostingTitleMatch.EXACT_TARGET, "B"),
+            ("10 years leading Python delivery", "Python", PostingTitleMatch.RELATED_TITLE, "C"),
+        ]
+    )
+    requirements = [
+        item.model_copy(
+            update={
+                "years_required": 3 if index < 2 else 10,
+                "maturity_expected": EvidenceMaturity.PRODUCTION
+                if index < 2
+                else EvidenceMaturity.LEADERSHIP,
+                "extraction_confidence": ConfidenceLevel.HIGH if index < 2 else ConfidenceLevel.LOW,
+            }
+        )
+        for index, item in enumerate(requirements)
+    ]
+    profile = _rebuild(requirements, assessments, audits, summary)
+    item = profile.comparison_requirements[0]
+    assert item.expected_maturity is EvidenceMaturity.PRODUCTION
+    assert item.confidence is ConfidenceLevel.HIGH
+    assert item.as_role_requirement().years_required == 3
+    assert item.related_support_count == 1
+    assert item.comparison_requirement_ids == [source.requirement_id for source in requirements[:2]]
+    assert requirements[2].requirement_id in item.supporting_requirement_ids
+    assert "10 years" not in item.as_role_requirement().requirement_text
+
+
+def test_related_qualification_cannot_promote_primary_duties_into_hiring_requirements() -> None:
+    _, requirements, assessments, audits, summary = _build(
+        [
+            ("Design solutions", "Solution Design", PostingTitleMatch.EXACT_TARGET, "A"),
+            ("Design solutions", "Solution Design", PostingTitleMatch.EXACT_TARGET, "B"),
+            (
+                "Prior solution design required",
+                "Solution Design",
+                PostingTitleMatch.RELATED_TITLE,
+                "C",
+            ),
+        ]
+    )
+    requirements = [
+        item.model_copy(
+            update={
+                "statement_type": RequirementStatementType.ROLE_RESPONSIBILITY,
+                "mandatory": False,
+            }
+        )
+        if index < 2
+        else item
+        for index, item in enumerate(requirements)
+    ]
+    profile = _rebuild(requirements, assessments, audits, summary)
+    assert not profile.comparison_requirements
+    assert profile.responsibilities[0].comparison_requirement_ids == []
+    assert profile.responsibilities[0].responsibility_support_count == 2
+    assert profile.responsibilities[0].qualification_support_count == 1
+
+
+def test_primary_threshold_distribution_does_not_select_exceptional_maximum() -> None:
+    _, requirements, assessments, audits, summary = _build(
+        [
+            ("Python delivery", "Python", PostingTitleMatch.EXACT_TARGET, employer)
+            for employer in ("A", "B", "C")
+        ]
+    )
+    requirements = [
+        item.model_copy(
+            update={
+                "years_required": years,
+                "maturity_expected": EvidenceMaturity.PRODUCTION
+                if years == 3
+                else EvidenceMaturity.LEADERSHIP,
+            }
+        )
+        for item, years in zip(requirements, (3, 3, 10), strict=True)
+    ]
+    item = _rebuild(requirements, assessments, audits, summary).comparison_requirements[0]
+    assert item.as_role_requirement().years_required == 3
+    assert set(item.years_required_by_source.values()) == {3, 10}
+    assert item.maturity_support_counts == {"PRODUCTION": 2, "LEADERSHIP": 1}
+    assert item.qualifier_notes
+
+
+def test_first_outlier_cannot_contradict_canonical_baseline_in_comparison_quote() -> None:
+    _, requirements, assessments, audits, summary = _build(
+        [
+            (quote, "Python", PostingTitleMatch.EXACT_TARGET, employer)
+            for quote, employer in (
+                ("10 years leading Python teams", "A"),
+                ("3 years Python production delivery", "B"),
+                ("3 years Python production delivery", "C"),
+            )
+        ]
+    )
+    requirements = [
+        item.model_copy(
+            update={
+                "years_required": 10 if index == 0 else 3,
+                "maturity_expected": EvidenceMaturity.LEADERSHIP
+                if index == 0
+                else EvidenceMaturity.PRODUCTION,
+                "qualifier_quotes": [item.requirement_text],
+            }
+        )
+        for index, item in enumerate(requirements)
+    ]
+    canonical = _rebuild(requirements, assessments, audits, summary).comparison_requirements[0]
+    projected = canonical.as_role_requirement()
+    assert projected.years_required == 3
+    assert projected.maturity_expected is EvidenceMaturity.PRODUCTION
+    assert projected.requirement_text == "3 years Python production delivery"
+    assert projected.qualifier_quotes == ["3 years Python production delivery"]
+    assert set(canonical.years_required_by_source.values()) == {3, 10}
+
+
+def test_prioritization_is_not_canonical_ownership() -> None:
+    profile, *_ = _build(
+        [
+            ("Prioritize roadmaps", "Roadmap Prioritization", PostingTitleMatch.EXACT_TARGET, "A"),
+            ("Own roadmaps", "Roadmap Ownership", PostingTitleMatch.EXACT_TARGET, "B"),
+        ]
+    )
+    assert {item.display_name for item in profile.requirements} == {
+        "Roadmap Prioritization",
+        "Roadmap Ownership",
+    }
+    assert not quote_capability_alignment("Prioritize the roadmap", "Roadmap Ownership")[0]
+    assert not quote_capability_alignment("Python knowledge", "Production Python Ownership")[0]
+
+
 def _posting(index: int, match: PostingTitleMatch, employer: str):
     posting_id = uuid4()
     candidate = PostingCandidate(
@@ -159,9 +305,13 @@ def test_independent_employers_create_one_canonical_signal() -> None:
             ),
         ]
     )
-    assert len(profile.requirements) == 1
-    assert profile.requirements[0].employer_support_count == 2
-    assert profile.requirements[0].posting_support_count == 3
+    assert len(profile.requirements) == 2
+    collaboration = next(
+        item for item in profile.requirements if item.display_name == "Stakeholder Collaboration"
+    )
+    assert collaboration.employer_support_count == 2
+    assert collaboration.posting_support_count == 2
+    assert any(item.display_name == "Stakeholder Management" for item in profile.requirements)
 
 
 def test_repetition_from_one_employer_is_one_independent_signal() -> None:
@@ -174,7 +324,8 @@ def test_repetition_from_one_employer_is_one_independent_signal() -> None:
     )
     item = profile.requirements[0]
     assert item.employer_support_count == 1
-    assert item.posting_support_count == 3
+    assert item.posting_support_count == 2
+    assert any(item.display_name == "Roadmap Management" for item in profile.requirements)
 
 
 def test_provider_support_is_separate_from_independent_employer_support() -> None:
@@ -276,11 +427,7 @@ def test_two_provider_records_for_one_employer_do_not_create_false_agreement() -
     )
     assessments = [
         item.model_copy(
-            update={
-                "candidate": item.candidate.model_copy(
-                    update={"provider_sources": [provider]}
-                )
-            }
+            update={"candidate": item.candidate.model_copy(update={"provider_sources": [provider]})}
         )
         for item, provider in zip(assessments, ("ADZUNA", "YOU"), strict=True)
     ]
@@ -367,8 +514,8 @@ def test_related_support_does_not_change_primary_frequency() -> None:
                 "B",
             ),
             (
-                "Stakeholder management required",
-                "Stakeholder Management",
+                "Stakeholder communication required",
+                "Stakeholder Communication",
                 PostingTitleMatch.RELATED_TITLE,
                 "C",
             ),

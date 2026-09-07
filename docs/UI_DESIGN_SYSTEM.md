@@ -1,5 +1,24 @@
 # UI Design System
 
+## Current V1 presentation contract — September 7, 2026
+
+The final `Career Navigator redesign (1).zip` native-Streamlit handoff governs the theme and
+widgets: light gray sidebar, readable native radio navigation, native bordered cards and Plotly.
+It supersedes earlier dark-toolbar/custom-CSS experiments. Later approved synthesis requirements
+supersede the handoff's synthetic radar scores, fixed three-route options and fabricated durations.
+Live pages must not manufacture those values merely to resemble a screenshot.
+
+Market uses explicit discovery/validation/analysis denominators, primary-cohort frequencies,
+and source limitations. Analysis presents confirmed strengths, structured match mix, synthesis
+gaps and calibrated accessibility. Plan renders actual validated milestones; no fixed timeline
+means an ordinal roadmap. Summaries follow the roadmap. Provisional evidence is called out on
+all three pages. Missing role evidence produces an honest safe stop, not an empty success chart.
+
+Sidebar evidence counts are not a profile-completeness or readiness percentage. Graphs may leave
+space for outside labels, but frequency axis ticks never exceed 100%. Responsive chart labels
+and legends must remain readable. Validation replays use the production page functions while
+remaining visibly synthetic; they are not proof of provider quality or persisted plan approval.
+
 ## 1. Purpose
 
 The Career Navigator UI is a production-quality user interface for evidence-based career decisions. Its direction is a clean, professional AI SaaS product with the clarity and restraint expected in financial-services software.

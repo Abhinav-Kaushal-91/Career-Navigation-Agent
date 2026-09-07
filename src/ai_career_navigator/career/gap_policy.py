@@ -67,6 +67,8 @@ def gap_severity(
         if frequency is RequirementFrequency.RARE or preferred:
             return GapSeverity.LOW
         return GapSeverity.MODERATE
+    if preferred and not mandatory:
+        return GapSeverity.LOW
     if frequency is RequirementFrequency.RARE and preferred:
         return GapSeverity.LOW
     if (

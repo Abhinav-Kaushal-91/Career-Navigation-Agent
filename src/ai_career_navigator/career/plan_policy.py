@@ -27,6 +27,13 @@ def select_path_type(
 ) -> PathType:
     """Map approved upstream conclusions to one existing path type."""
 
+    if role.candidate_accessibility is CandidateAccessibility.INSUFFICIENT_CANDIDATE_EVIDENCE:
+        return PathType.EXPLORATION
+    if role.candidate_accessibility in {
+        CandidateAccessibility.APPLY_NOW,
+        CandidateAccessibility.APPLY_SELECTIVELY,
+    } and not any(item.hard_blocker for item in role.gaps):
+        return PathType.DIRECT
     if bridge_outcome is BridgeOutcome.MULTIPLE_PLAUSIBLE_BRIDGES:
         return PathType.MULTIPLE_PATHS
     if bridge_outcome is BridgeOutcome.RECOMMENDED_BRIDGE:
@@ -58,21 +65,14 @@ def milestone_type_for(category: GapCategory) -> MilestoneType:
 
 
 def phase_boundaries(months: int | None, path_type: PathType) -> tuple[int, int, int]:
-    """Return broad phase boundaries without assigning time per gap."""
+    """Keep ordered steps until an evidence-based duration estimate exists.
 
-    if months is None:
-        return 0, 0, 0
-    if path_type is PathType.DIRECT:
-        readiness_end = min(months, 3)
-        return readiness_end, readiness_end, months
-    if path_type is PathType.DEVELOPMENT:
-        development_end = max(1, round(months * 0.75))
-        return min(development_end, months), min(development_end, months), months
-    if path_type in {PathType.BRIDGE, PathType.MULTIPLE_PATHS}:
-        foundation_end = max(1, round(months * 0.25))
-        bridge_end = max(foundation_end, round(months * 0.6))
-        return min(foundation_end, months), min(bridge_end, months), months
-    return 0, 0, months
+    Requested months are a preference, not an estimate of how long actions need.
+    Zero bounds are the existing storage representation for an untimed action;
+    presentation must use ordinal steps, never display a zero-month forecast.
+    """
+
+    return 0, 0, 0
 
 
 def lowest_confidence(*values: ConfidenceLevel | None) -> ConfidenceLevel:

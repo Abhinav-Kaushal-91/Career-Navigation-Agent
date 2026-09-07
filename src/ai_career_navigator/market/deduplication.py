@@ -43,18 +43,37 @@ def _posting_key(posting: JobPosting) -> tuple[str, str, str] | None:
 
 def deduplicate_postings(postings: Iterable[JobPosting]) -> tuple[list[JobPosting], int]:
     retained: list[JobPosting] = []
-    index: dict[tuple[str, str, str], int] = {}
     duplicates = 0
     for posting in postings:
-        key = _posting_key(posting)
-        if key is None or key not in index:
-            if key is not None:
-                index[key] = len(retained)
+        retained_index = next(
+            (index for index, prior in enumerate(retained) if same_vacancy(prior, posting)), None
+        )
+        if retained_index is None:
             retained.append(posting)
             continue
         duplicates += 1
-        retained_index = index[key]
         existing = retained[retained_index]
         group_id = existing.duplicate_group_id or uuid4()
         retained[retained_index] = existing.model_copy(update={"duplicate_group_id": group_id})
     return retained, duplicates
+
+
+def same_vacancy(first: JobPosting, second: JobPosting) -> bool:
+    """Merge only supported vacancy identities, not coincidentally similar titles."""
+    if first.posting_id == second.posting_id:
+        return True
+    same_employer = bool(first.employer) and (
+        normalize_employer(first.employer).casefold()
+        == (normalize_employer(second.employer) or "").casefold()
+    )
+    if same_employer and first.requisition_id and second.requisition_id:
+        return first.requisition_id.casefold() == second.requisition_id.casefold()
+    if first.canonical_job_url and second.canonical_job_url:
+        if canonicalize_url(first.canonical_job_url) == canonicalize_url(second.canonical_job_url):
+            return True
+    return bool(
+        _posting_key(first) is not None
+        and _posting_key(first) == _posting_key(second)
+        and first.content_fingerprint
+        and first.content_fingerprint == second.content_fingerprint
+    )

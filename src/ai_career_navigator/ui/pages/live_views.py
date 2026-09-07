@@ -67,6 +67,31 @@ def _plot(figure: object) -> None:
     st.plotly_chart(figure, use_container_width=True, config={"displayModeBar": False})
 
 
+def _confirmed_strengths(state: dict[str, object]) -> None:
+    profile = state.get("confirmed_profile")
+    names = tuple(
+        dict.fromkeys(
+            item.capability
+            for item in getattr(profile, "approved_evidence_items", ())
+            if item.evidence_type.casefold() not in {"employment", "education", "certification"}
+        )
+    )
+    if names:
+        st.markdown("**Your confirmed evidence remains available**")
+        st.write(" · ".join(names))
+        st.caption("Target alignment remains unassessed until usable role evidence is available.")
+
+
+def _provisional_evidence_notice(state: dict[str, object]) -> None:
+    target_profile = state.get("canonical_target_role_profile")
+    if getattr(target_profile, "profile_status", None) == "PROVISIONAL":
+        st.info(
+            "Provisional target-role evidence — this assessment uses a limited sample of "
+            "exact or validated equivalent postings. Candidate readiness describes those "
+            "requirements, not every employer; check individual postings before acting."
+        )
+
+
 def render_live_market(
     state_override: dict[str, object] | None = None,
     *,
@@ -88,10 +113,16 @@ def render_live_market(
     if evidence_label:
         st.caption(evidence_label)
     st.caption(f"Retrieved {view.search_date} · bounded sources · not a complete market count")
+    _provisional_evidence_notice(state)
     if getattr(target_profile, "profile_status", None) == "INSUFFICIENT":
+        found = (
+            "some postings were retained, but their usable hiring evidence is insufficient"
+            if view.validated_postings
+            else "no postings passed validation in this bounded search"
+        )
         st.warning(
-            "Limited target-role evidence — relevant opportunities were found, but there are "
-            "not enough independent exact or validated equivalent postings to build a reliable "
+            f"Limited target-role evidence — {found}. There is not enough independent "
+            "exact or validated equivalent evidence to build a reliable "
             f"profile for {view.target_role} in {view.geography}."
         )
         st.caption(
@@ -100,11 +131,13 @@ def render_live_market(
         )
 
     st.subheader("Market dimensions")
-    for column, dimension in zip(st.columns(5), view.dimensions, strict=True):
-        with column, st.container(border=True, height=270):
-            st.caption(dimension.name)
-            st.markdown(f"**{dimension.value}**")
-            st.caption(dimension.evidence)
+    for start in range(0, len(view.dimensions), 3):
+        row = view.dimensions[start : start + 3]
+        for column, dimension in zip(st.columns(len(row)), row, strict=True):
+            with column, st.container(border=True, height=190):
+                st.caption(dimension.name)
+                st.markdown(f"**{dimension.value}**")
+                st.caption(dimension.evidence)
 
     st.subheader("Exact target and expanded market evidence")
     title_counts = (
@@ -142,14 +175,29 @@ def render_live_market(
         st.info("No supported requirement themes were found in the analyzed postings.")
 
     st.subheader("Requirements observed in the target-role sample")
-    coverage = view.analyzed_postings / view.validated_postings if view.validated_postings else 0
+    coverage_text = (
+        f"{view.analyzed_postings / view.validated_postings:.0%} coverage"
+        if view.validated_postings else "coverage unavailable: no validated postings"
+    )
     st.caption(
         f"{view.analyzed_postings} of {view.validated_postings} validated postings were "
-        f"successfully analyzed ({coverage:.0%} coverage). The bars use "
+        f"successfully analyzed ({coverage_text}). The bars use "
         f"{view.primary_analyzed_postings} exact-target or validated-variant postings; "
         "related titles do not affect target-role frequency."
     )
-    if view.primary_analyzed_postings < 8:
+    if view.extraction_quality_summary:
+        st.caption(view.extraction_quality_summary)
+    with st.expander("From search results to this requirement sample"):
+        for label, count in view.evidence_funnel:
+            st.write(f"- {label}: {count if count is not None else 'Not recorded'}")
+        for reason, count in view.extraction_failures:
+            st.write(f"- Extraction outcome — {reason}: {count}")
+        st.caption(
+            "Search hits can include duplicates and rejected pages. Extraction attempts are "
+            "bounded; unexamined or failed postings are not counted as having no requirements. "
+            "Unavailable stage details are shown as not recorded."
+        )
+    if 0 < view.primary_analyzed_postings < 8:
         st.info(
             "Directional sample — too few target-role postings were analyzed to treat these "
             "frequencies as a broad market conclusion."
@@ -159,7 +207,7 @@ def render_live_market(
             build_requirement_frequency_figure(
                 tuple(
                     (item.name, item.frequency, item.occurrences, item.sample_size)
-                    for item in view.requirements[:8]
+                    for item in view.requirements
                 )
             )
         )
@@ -178,7 +226,7 @@ def render_live_market(
     with title_column, st.container(border=True):
         st.markdown("**Posting title mix**")
         st.caption(f"Title relationship across {view.validated_postings} validated postings.")
-        if view.title_mix:
+        if any(count for _, count in view.title_mix):
             _plot(build_segmented_bar_figure(view.title_mix))
         else:
             st.info("No validated posting-title counts are available.")
@@ -218,12 +266,12 @@ def render_live_market(
         )
 
     st.subheader("Market summary")
-    for column, (label, value) in zip(
-        st.columns(len(view.market_takeaways)), view.market_takeaways, strict=True
-    ):
-        with column, st.container(border=True):
-            st.caption(label)
-            st.markdown(f"**{value}**")
+    for start in range(0, len(view.market_takeaways), 3):
+        row = view.market_takeaways[start : start + 3]
+        for column, (label, value) in zip(st.columns(len(row)), row, strict=True):
+            with column, st.container(border=True, height=160):
+                st.caption(label)
+                st.markdown(f"**{value}**")
 
     st.subheader("What this means for your search")
     st.info(view.what_this_means)
@@ -298,6 +346,7 @@ def render_live_analysis(
             "Sparse availability is not a candidate rejection. The comparison is withheld "
             "because requirement evidence is insufficient."
         )
+        _confirmed_strengths(state)
         st.caption(
             "Try broadening the geography, enabling credible title variants, choosing another "
             "target title, or rerunning later."
@@ -331,6 +380,7 @@ def render_live_analysis(
     if evidence_label:
         st.badge(evidence_label, color="orange")
 
+    _provisional_evidence_notice(state)
     assessment_cards = st.columns(3)
     for column, label, value in (
         (assessment_cards[0], "Target role", view.target_role),
@@ -365,6 +415,13 @@ def render_live_analysis(
         for index, item in enumerate(view.strongest_matches):
             with match_columns[index % len(match_columns)], st.container(border=True):
                 st.markdown(f"**{item.capability}**")
+        with st.expander("Evidence supporting your demonstrated strengths"):
+            seen = set()
+            for item in view.strongest_matches:
+                for detail in item.evidence_details:
+                    if detail not in seen:
+                        st.write(f"- {detail}")
+                        seen.add(detail)
     else:
         st.info("No relevant demonstrated strengths were identified in the approved evidence.")
 
@@ -422,10 +479,10 @@ def render_live_analysis(
             f"{view.material_gap_count} career-level theme(s) summarize the underlying burden. "
             "One grouped theme may contain several severe requirements."
         )
-    elif view.total_requirements:
+    elif view.total_requirements and not view.unassessed_count:
         st.success("No material career-level gaps were identified in the usable comparison.")
     else:
-        st.info("Gap analysis is unavailable because no requirements were compared.")
+        st.info("Gap analysis is incomplete because target requirements remain unassessed.")
 
     st.subheader("Readiness by dimension")
     st.caption("Qualitative labels come from the structured dimensions in the career synthesis.")
@@ -437,7 +494,11 @@ def render_live_analysis(
                 status.badge(item.assessment, color="orange")
                 st.caption(item.basis)
     else:
-        st.info("No material gap dimensions were identified in the synthesized assessment.")
+        st.info(
+            "No assessed gap dimensions are available yet."
+            if not view.total_requirements or view.unassessed_count
+            else "No material gap dimensions were identified in the usable comparison."
+        )
 
     st.subheader("What this means for you")
     st.info(view.what_this_means)
@@ -481,6 +542,7 @@ def render_live_plan(
                 "No candidate accessibility result or approval-ready plan was generated from "
                 "the limited target-role evidence."
             )
+            _confirmed_strengths(state)
             if st.button("Review Goal"):
                 go_to("Goal")
             return
@@ -507,6 +569,7 @@ def render_live_plan(
     )
     if evidence_label:
         st.badge(evidence_label, color="orange")
+    _provisional_evidence_notice(state)
     st.badge(f"Plan status: {product_label(plan.plan_status)}", color="gray")
     summary_values = (
         ("Current role", view.current_role),
@@ -515,11 +578,6 @@ def render_live_plan(
         ("Recommended path", view.recommended_path),
         ("Plan confidence", view.confidence),
     )
-    for column, (label, value) in zip(st.columns(5), summary_values, strict=True):
-        with column, st.container(border=True):
-            st.caption(label)
-            st.markdown(f"**{value}**")
-
     st.markdown("**Why this path**")
     st.info(view.why_this_path)
 
@@ -529,6 +587,10 @@ def render_live_plan(
             st.markdown("**What to complete**")
             for action in eligibility.missing_actions:
                 st.write(f"- {action}")
+        if view.actions:
+            st.markdown("**Specific next steps**")
+            for action in view.actions:
+                st.write(f"- {action.action}")
         corrective = st.columns(3)
         if corrective[0].button("Review profile", width="stretch"):
             go_to("Profile")
@@ -572,10 +634,15 @@ def render_live_plan(
                 st.markdown("**Why it fits**")
                 st.write(option.trade_off)
                 details = st.columns(3)
-                details[0].metric("Timeline", option.duration)
-                details[1].metric("Effort", option.effort)
-                details[2].metric("Risk", option.risk)
-                st.markdown("**Evidence still needed**")
+                for column, label, value in zip(
+                    details,
+                    ("Timeline preference", "Focus", "Evidence uncertainty"),
+                    (option.duration, option.effort, option.risk),
+                    strict=True,
+                ):
+                    column.caption(label)
+                    column.write(value)
+                st.markdown("**Evidence to use or verify**")
                 for evidence in option.evidence_needed[:5] or ("No additional item recorded.",):
                     st.write(f"- {evidence}")
                 if st.button(
@@ -599,25 +666,34 @@ def render_live_plan(
         st.caption("No synthesis-backed advantage was available to highlight.")
 
     milestones = selected_plan_milestones(plan, selected_id)
+    selected_ids = {item.milestone_id for item in milestones}
+    selected_actions = tuple(item for item in view.actions if item.milestone_id in selected_ids)
     st.subheader("Your prioritized action plan")
-    if view.actions:
-        for action in view.actions:
+    if selected_actions:
+        for action in selected_actions:
             with st.container(border=True):
                 st.markdown(f"**{action.action}**")
+                if action.demonstrated_strength:
+                    st.caption(f"Builds on your confirmed evidence: {action.demonstrated_strength}")
                 why, evidence, closes = st.columns(3)
                 why.markdown("**Why it matters**")
                 why.write(action.why)
                 evidence.markdown("**Evidence that will prove it**")
                 evidence.write(action.evidence)
-                closes.markdown("**Career gap this closes**")
+                closes.markdown("**Linked assessment**")
                 closes.write(action.career_gap)
+                if action.completion_condition:
+                    st.caption(f"Completion check: {action.completion_condition}")
     else:
         st.info("No material gap-linked build action is required by the current analysis.")
 
     phases = _phase_rows(milestones)
     if view.untimed:
         st.subheader("Untimed roadmap")
-        stages = untimed_roadmap_stages(view)
+        st.caption(
+            f"{view.timeline_preference}. Steps are ordered; no duration estimate is asserted."
+        )
+        stages = untimed_roadmap_stages(view, milestones)
         with st.container(border=True):
             for index, (stage, detail) in enumerate(stages):
                 st.caption(stage)
@@ -661,6 +737,14 @@ def render_live_plan(
 
     st.subheader("What this means for you")
     st.info(view.what_this_means)
+
+    st.subheader("Plan summary")
+    for start in range(0, len(summary_values), 3):
+        row = summary_values[start : start + 3]
+        for column, (label, value) in zip(st.columns(len(row)), row, strict=True):
+            with column, st.container(border=True):
+                st.caption(label)
+                st.markdown(f"**{value}**")
 
     risks = user_facing_limitations(tuple(plan.risks))
     assumptions = user_facing_limitations(tuple(plan.assumptions))

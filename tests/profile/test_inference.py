@@ -112,6 +112,7 @@ def test_valid_inference_creates_pending_unapproved_evidence_and_preserves_profi
     assert outcome.status is InferenceRunStatus.SUCCEEDED
     assert len(outcome.inferred_evidence) == 1
     inferred = outcome.inferred_evidence[0]
+    assert inferred.description == "Integration across enterprise systems."
     assert inferred.confirmation_status is EvidenceConfirmationStatus.INFERRED_PENDING
     assert not inferred.approved_by_user
     assert inferred.confirmation_status is not EvidenceConfirmationStatus.EXPLICIT
@@ -119,6 +120,26 @@ def test_valid_inference_creates_pending_unapproved_evidence_and_preserves_profi
     assert profile.evidence_items == [source]
     assert profile.approval_status is ApprovalStatus.APPROVED
     assert provider.calls[0].request.role is ModelRole.EXTRACTION
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "Reusable framework and standards development",
+        "Ability to communicate with several teams",
+        "Manage all the many different technologies in complex projects",
+    ],
+)
+def test_vague_or_sentence_capability_names_are_not_accepted(name: str) -> None:
+    with pytest.raises(ValidationError, match="atomic professional"):
+        CapabilityInferenceResult.model_validate_json(result_json(uuid4(), capability=name))
+
+
+def test_atomic_professional_capability_name_is_accepted() -> None:
+    result = CapabilityInferenceResult.model_validate_json(
+        result_json(uuid4(), capability="Automation Framework Design")
+    )
+    assert result.inferred_capabilities[0].capability == "Automation Framework Design"
 
 
 def test_supporting_evidence_ids_are_required_by_schema() -> None:

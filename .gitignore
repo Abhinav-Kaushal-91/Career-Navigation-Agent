@@ -3,6 +3,7 @@ __pycache__/
 *.py[cod]
 *.egg-info/
 .pytest_cache/
+.pytest-*/
 .ruff_cache/
 .coverage
 htmlcov/
@@ -35,6 +36,7 @@ data/local/
 data/processed/
 
 # Local QA artifacts and screenshot-derived validation inputs
+.artifact-work/
 outputs/
 eval-runs/
 scripts/live_validate_screenshot_transition.py

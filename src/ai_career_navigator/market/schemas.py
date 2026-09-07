@@ -122,6 +122,8 @@ class SearchLimits(BaseModel):
     max_variant_queries: int = Field(default=4, ge=0, le=10)
     max_expansion_queries: int = Field(default=3, ge=0, le=10)
     max_content_fetches: int = Field(default=30, ge=1, le=100)
+    analysis_posting_limit: int = Field(default=10, ge=1, le=10)
+    max_enrichments: int | None = Field(default=None, ge=0, le=100)
     target_posting_count: int = Field(default=20, ge=1, le=100)
     expansion_threshold: int = Field(default=8, ge=1, le=100)
     max_retries: int = Field(default=2, ge=0, le=5)
@@ -129,6 +131,8 @@ class SearchLimits(BaseModel):
     thin_description_characters: int = Field(default=500, ge=100, le=5000)
     max_you_candidate_results: int = Field(default=10, ge=1, le=10)
     you_fallback_threshold: int = Field(default=3, ge=1, le=10)
+    max_posting_age_days: int = Field(default=90, ge=1, le=366)
+    max_total_search_calls: int = Field(default=12, ge=2, le=40)
     direct_source_excluded_domains: list[str] = Field(
         default_factory=lambda: [
             "ziprecruiter.com",
@@ -153,6 +157,8 @@ class MarketSearchRequest(BaseModel):
     country: str = Field(default="CA", min_length=2, max_length=2)
     language: str = Field(default="EN", min_length=2, max_length=2)
     excluded_domains: list[str] = Field(default_factory=list)
+    included_domains: list[str] = Field(default_factory=list)
+    boosted_domains: list[str] = Field(default_factory=list)
     geography_scope: GeographyScope = GeographyScope.STRICT_CITY
 
 
@@ -164,6 +170,10 @@ class SearchPassReport(BaseModel):
     pass_type: SearchPassType
     freshness: SearchFreshness
     query: str
+    provider: MarketSourceProvider | None = None
+    request_parameters: dict[str, str | int | bool | list[str] | None] = Field(default_factory=dict)
+    succeeded: bool = True
+    failure_category: str | None = None
     raw_result_count: int = Field(ge=0)
     validated_posting_count: int = Field(ge=0)
     aggregator_result_count: int = Field(ge=0)
@@ -212,6 +222,8 @@ class StructuredJobResult(BaseModel):
     title: str = Field(min_length=1)
     url: str = Field(min_length=1)
     description: str = ""
+    # None means the source did not declare completeness; search excerpts are False.
+    content_complete: bool | None = None
     company: str | None = None
     location: str | None = None
     created: date | None = None
@@ -219,6 +231,9 @@ class StructuredJobResult(BaseModel):
     contract_type: str | None = None
     salary_min: float | None = None
     salary_max: float | None = None
+    requisition_id: str | None = None
+    closing_date: date | None = None
+    active_status: str | None = None
 
 
 class StructuredJobSearchPage(BaseModel):
@@ -231,6 +246,12 @@ class StructuredJobSearchPage(BaseModel):
     total_available: int | None = Field(default=None, ge=0)
     results: list[StructuredJobResult] = Field(default_factory=list)
     malformed_result_count: int = Field(default=0, ge=0)
+
+
+class PostingContentQuality(StrEnum):
+    SHORT_EXCERPT = "SHORT_EXCERPT"
+    FULL_POSTING = "FULL_POSTING"
+    UNKNOWN = "UNKNOWN"
 
 
 class MarketPageContent(BaseModel):
@@ -249,6 +270,9 @@ class MarketPageContent(BaseModel):
     posting_date: str | None = None
     closing_date: str | None = None
     active_status: str | None = None
+    requisition_id: str | None = None
+    canonical_job_url: str | None = None
+    content_complete: bool | None = None
 
 
 class RetainedSourceContent(BaseModel):
@@ -278,6 +302,14 @@ class MarketPostingEvidence(BaseModel):
     seniority_classification: PostingSeniority = PostingSeniority.UNKNOWN
     selected_content_source: MarketSourceProvider | None = None
     limitations: list[str] = Field(default_factory=list)
+    field_sources: dict[str, MarketSourceProvider] = Field(default_factory=dict)
+    field_conflicts: list[str] = Field(default_factory=list)
+    content_quality: PostingContentQuality = PostingContentQuality.UNKNOWN
+    enrichment_target_url: str | None = None
+    enrichment_failure_category: str | None = None
+    enrichment_reason: str | None = None
+    enrichment_deferred_reason: str | None = None
+    enrichment_observation: dict[str, str | int | bool | None] = Field(default_factory=dict)
 
 
 class PostingRetrievalAudit(BaseModel):
@@ -298,6 +330,18 @@ class PostingRetrievalAudit(BaseModel):
     selected_content_source: MarketSourceProvider | None = None
     selected_for_primary_evidence: bool = False
     rejection_reason: str | None = None
+    enrichment_observation: dict[str, str | int | bool | None] = Field(default_factory=dict)
+    stage: str = "POSTING_VALIDATION"
+    decision_unit: str = "POSTING"
+    parent_result_id: str | None = None
+    title_match_kind: str | None = None
+    content_quality: PostingContentQuality = PostingContentQuality.UNKNOWN
+    input_description_characters: int | None = Field(default=None, ge=0)
+    enrichment_status: EnrichmentStatus | None = None
+    enrichment_target_url: str | None = None
+    enrichment_failure_category: str | None = None
+    enrichment_reason: str | None = None
+    enrichment_deferred_reason: str | None = None
 
 
 class MarketRetrievalResult(BaseModel):
@@ -356,6 +400,11 @@ class MarketRetrievalResult(BaseModel):
     you_context_result_count: int = Field(default=0, ge=0)
     you_rejected_result_count: int = Field(default=0, ge=0)
     you_fallback_triggered: bool = False
+    rejected_candidate_count: int = Field(default=0, ge=0)
+    fetch_failure_count: int = Field(default=0, ge=0)
+    unique_url_count: int = Field(default=0, ge=0)
+    budget_deferred_result_count: int = Field(default=0, ge=0)
+    effective_budgets: dict[str, int] = Field(default_factory=dict)
 
     @property
     def requires_role_discovery(self) -> bool:

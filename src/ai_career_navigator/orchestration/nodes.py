@@ -119,6 +119,7 @@ def initialize_run(
         "market_provider_summary": state.get("market_provider_summary"),
         "market_source_ids": state.get("market_source_ids", []),
         "market_posting_audits": state.get("market_posting_audits", []),
+        "market_search_passes": state.get("market_search_passes", []),
         "market_processing_status": state.get(
             "market_processing_status", MarketProcessingWorkflowStatus.NOT_STARTED
         ),
@@ -497,6 +498,7 @@ async def market_retrieval(
             ),
             "market_source_ids": source_ids,
             "market_posting_audits": result.posting_audits,
+            "market_search_passes": result.search_passes,
             "limitations": limitations,
             "degraded_mode": limited or state.get("degraded_mode", False),
             "workflow_status": WorkflowStatus.RUNNING,
@@ -550,6 +552,7 @@ def market_processing(
                 processing_inputs,
                 target_role=goal.target_role,
                 geography=goal.target_location or "Location not specified",
+                target_seniority=goal.target_seniority,
                 model_gateway=runtime.context.model_gateway,
                 allow_related_titles=goal.search_expansion_permission,
                 enable_target_variant_expansion=goal.search_expansion_permission,

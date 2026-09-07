@@ -66,6 +66,8 @@ def normalize_adzuna_payload(payload: object, *, page: int) -> StructuredJobSear
                     title=title,
                     url=url,
                     description=_text(raw.get("description")) or "",
+                    # Adzuna's search contract supplies a snippet, not a full description.
+                    content_complete=False,
                     company=_nested_text(raw.get("company"), "display_name"),
                     location=_nested_text(raw.get("location"), "display_name"),
                     created=_date(raw.get("created")),

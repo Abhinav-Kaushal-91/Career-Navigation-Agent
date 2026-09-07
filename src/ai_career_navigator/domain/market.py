@@ -1,6 +1,7 @@
 """Current-market evidence and derived snapshot schemas for V1."""
 
 from datetime import UTC, date, datetime
+from typing import Literal
 from uuid import UUID, uuid4
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, HttpUrl, model_validator
@@ -61,6 +62,13 @@ class JobPosting(BaseModel):
     closing_date: date | None = None
     retrieved_at: AwareDatetime = Field(default_factory=_now_utc)
     active_status: str | None = None
+    requisition_id: str | None = None
+    canonical_job_url: str | None = None
+    content_fingerprint: str | None = None
+    discovered_at: AwareDatetime | None = None
+    currentness_checked_at: AwareDatetime | None = None
+    currentness_basis: str = "UNKNOWN"
+    title_match_kind: str | None = None
     duplicate_group_id: UUID | None = None
     extraction_confidence: ConfidenceLevel
 
@@ -82,8 +90,13 @@ class RoleRequirement(BaseModel):
     statement_type: RequirementStatementType = RequirementStatementType.HIRING_CAPABILITY
     requirement_text: str = Field(min_length=1)
     normalized_capability: str | None = None
+    source_section: str | None = None
+    qualifier_quotes: list[str] = Field(default_factory=list)
+    relationship: Literal["SINGLE", "ANY_OF"] = "SINGLE"
+    capability_options: list[str] = Field(default_factory=list)
     mandatory: bool = False
     preferred: bool = False
+    employer_specific: bool = False
     years_required: float | None = Field(default=None, ge=0)
     maturity_expected: EvidenceMaturity | None = None
     frequency_within_sample: float | None = Field(default=None, ge=0, le=1)

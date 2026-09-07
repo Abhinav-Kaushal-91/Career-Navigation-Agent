@@ -42,9 +42,20 @@ PRIMARY_TARGET_SCOPES = {
     ComparisonScope.EXACT_TARGET,
     ComparisonScope.TARGET_VARIANT,
 }
+_CONFIDENCE_RANK = {
+    ConfidenceLevel.INSUFFICIENT: 0,
+    ConfidenceLevel.LOW: 1,
+    ConfidenceLevel.MODERATE: 2,
+    ConfidenceLevel.HIGH: 3,
+}
 
 
 def _category(requirement: RoleRequirement, comparison: RequirementComparison) -> GapCategory:
+    if comparison.match_type is None or (
+        comparison.match_type is MatchType.NO_CONFIRMED_MATCH
+        and comparison.evidence_status not in {"CONFIRMED_UNMET", "CONTRADICTED"}
+    ):
+        return GapCategory.EVIDENCE
     if comparison.partial_match_subtype is PartialMatchSubtype.CAPABILITY_PRESENT_MATURITY_GAP:
         return GapCategory.EXPERIENCE
     if comparison.partial_match_subtype is PartialMatchSubtype.OWNERSHIP_OR_SCOPE_GAP:
@@ -165,6 +176,8 @@ def _assessment_confidence(
     snapshot: CurrentMarketSnapshot,
     comparisons: list[RequirementComparison],
     accessibility: CandidateAccessibility,
+    *,
+    target_profile_confidence: ConfidenceLevel | None = None,
 ) -> ConfidenceLevel:
     if accessibility is CandidateAccessibility.INSUFFICIENT_CANDIDATE_EVIDENCE:
         return ConfidenceLevel.INSUFFICIENT
@@ -172,12 +185,20 @@ def _assessment_confidence(
     if snapshot.evidence_confidence is ConfidenceLevel.INSUFFICIENT or insufficient * 3 >= len(
         comparisons
     ):
-        return ConfidenceLevel.LOW
-    if snapshot.evidence_confidence is not ConfidenceLevel.HIGH or any(
+        confidence = ConfidenceLevel.LOW
+    elif snapshot.evidence_confidence is not ConfidenceLevel.HIGH or any(
         item.confidence is not ConfidenceLevel.HIGH for item in comparisons
     ):
-        return ConfidenceLevel.MODERATE
-    return ConfidenceLevel.HIGH
+        confidence = ConfidenceLevel.MODERATE
+    else:
+        confidence = ConfidenceLevel.HIGH
+    # The broad retrieval sample cannot establish greater certainty than the
+    # actual canonical target baseline. This limits confidence, not candidate fit.
+    if target_profile_confidence is not None:
+        confidence = min(
+            confidence, target_profile_confidence, key=_CONFIDENCE_RANK.__getitem__
+        )
+    return confidence
 
 
 def assess_candidate_accessibility(
@@ -240,7 +261,11 @@ def assess_candidate_accessibility(
         band = _frequency(source_requirement_ids or requirement_ids, scope, market_analysis)
         hard = any(
             is_hard_blocker(item.category, item.mandatory, item.requirement_text)
+            and not item.employer_specific
+            and comparison.comparison_scope in PRIMARY_TARGET_SCOPES
             and comparison.match_type is MatchType.NO_CONFIRMED_MATCH
+            and comparison.evidence_status in {"CONFIRMED_UNMET", "CONTRADICTED"}
+            and bool(comparison.grounded_evidence_quotes)
             for comparison, item in selected
         )
         severity = gap_severity(
@@ -252,9 +277,17 @@ def assess_candidate_accessibility(
             hard_blocker=hard,
             confidence=representative.confidence,
         )
+        if requirement.employer_specific and severity in {GapSeverity.HIGH, GapSeverity.BLOCKING}:
+            severity = GapSeverity.MODERATE
         target = _gap_target(requirement, representative)
         category = _category(requirement, representative)
         evidence_needed, possible_action = _action(category, target)
+        if representative.match_type is None:
+            possible_action = representative.clarification_needed or (
+                "Retry the unavailable comparison using the retained evidence."
+                if representative.evidence_status == "OPERATION_FAILED"
+                else f"Confirm the evidence needed for {target}."
+            )
         gaps.append(
             GapItem(
                 requirement_id=requirement.requirement_id,
@@ -272,13 +305,28 @@ def assess_candidate_accessibility(
                 or "A material requirement difference remains.",
                 severity=severity,
                 hard_blocker=hard,
+                employer_specific=requirement.employer_specific,
+                required_status=(
+                    "MANDATORY"
+                    if any(item.mandatory for _, item in selected)
+                    else "PREFERRED"
+                    if all(item.preferred for _, item in selected)
+                    else "UNSPECIFIED"
+                ),
+                evidence_status=representative.evidence_status,
+                clarification_needed=representative.clarification_needed,
                 evidence_needed=evidence_needed,
                 possible_action=possible_action,
                 confidence=representative.confidence,
             )
         )
 
-    exact_comparisons = [item for item in usable if item.comparison_scope in PRIMARY_TARGET_SCOPES]
+    exact_comparisons = [
+        item
+        for item in usable
+        if item.comparison_scope in PRIMARY_TARGET_SCOPES
+        and not requirements[item.requirement_id].employer_specific
+    ]
     accessibility = classify_accessibility(
         AccessibilityInputs(
             exact_comparison_count=len(exact_comparisons),
@@ -287,19 +335,22 @@ def assess_candidate_accessibility(
                 for item in exact_comparisons
             ),
             exact_high_gap_count=sum(
-                item.comparison_scope in PRIMARY_TARGET_SCOPES and item.severity is GapSeverity.HIGH
+                item.comparison_scope in PRIMARY_TARGET_SCOPES
+                and item.severity is GapSeverity.HIGH
+                and not item.employer_specific
                 for item in gaps
             ),
             exact_moderate_gap_count=sum(
                 item.comparison_scope in PRIMARY_TARGET_SCOPES
                 and item.severity is GapSeverity.MODERATE
+                and not item.employer_specific
                 for item in gaps
             ),
             blocking_gap_count=sum(item.hard_blocker for item in gaps),
             insufficient_comparison_count=sum(
-                item.confidence is ConfidenceLevel.INSUFFICIENT for item in usable
+                item.confidence is ConfidenceLevel.INSUFFICIENT for item in exact_comparisons
             ),
-            total_comparison_count=len(usable),
+            total_comparison_count=len(exact_comparisons),
             partial_capability_present_count=sum(
                 item.partial_match_subtype is PartialMatchSubtype.CAPABILITY_PRESENT_MATURITY_GAP
                 for item in exact_comparisons
@@ -313,9 +364,26 @@ def assess_candidate_accessibility(
             ),
         )
     )
+    employer_checks = [
+        item
+        for item in usable
+        if requirements[item.requirement_id].employer_specific
+        and item.match_type not in {MatchType.DIRECT_MATCH, MatchType.TRANSFERABLE_MATCH}
+    ]
+    if accessibility is CandidateAccessibility.APPLY_NOW and employer_checks:
+        accessibility = CandidateAccessibility.APPLY_SELECTIVELY
     confidence = (
-        _assessment_confidence(snapshot, usable, accessibility)
-        if usable
+        _assessment_confidence(
+            snapshot,
+            exact_comparisons,
+            accessibility,
+            target_profile_confidence=(
+                market_analysis.canonical_profile.confidence
+                if market_analysis.canonical_profile is not None
+                else None
+            ),
+        )
+        if exact_comparisons
         else ConfidenceLevel.INSUFFICIENT
     )
     material = sum(item.severity in {GapSeverity.HIGH, GapSeverity.BLOCKING} for item in gaps)

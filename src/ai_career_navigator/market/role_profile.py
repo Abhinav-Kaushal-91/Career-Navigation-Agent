@@ -48,6 +48,21 @@ _CONFIDENCE_RANK = {value: index for index, value in enumerate(reversed(Confiden
 _TOKEN_ALIASES = {
     "architecting": "architecture",
     "architectural": "architecture",
+    "architectures": "architecture",
+    "models": "model",
+    "apis": "api",
+    "integrations": "integration",
+    "frameworks": "framework",
+    "develop": "development",
+    "developing": "development",
+    "developed": "development",
+    "implementing": "implementation",
+    "implemented": "implementation",
+    "delivered": "delivery",
+    "delivering": "delivery",
+    "requirements": "requirement",
+    "standards": "standard",
+    "processes": "process",
     "collaborating": "collaboration",
     "collaborate": "collaboration",
     "communication": "collaboration",
@@ -60,8 +75,7 @@ _TOKEN_ALIASES = {
     "partnering": "collaboration",
     "owned": "ownership",
     "own": "ownership",
-    "prioritization": "ownership",
-    "prioritizing": "ownership",
+    "prioritizing": "prioritization",
     "roadmaps": "roadmap",
     "solutions": "solution",
     "products": "product",
@@ -73,11 +87,11 @@ _TOKEN_ALIASES = {
     "stakeholders": "stakeholder",
 }
 _CONCEPT_EXPANSIONS = {
-    "aws": {"amazon", "web", "services", "cloud"},
-    "genai": {"generative", "artificial", "intelligence", "ai"},
-    "llm": {"large", "language", "model"},
-    "llms": {"large", "language", "model"},
-    "rag": {"retrieval", "augmented", "generation"},
+    "aws": ({"amazon", "web", "services"},),
+    "genai": ({"generative", "ai"}, {"generative", "artificial", "intelligence"}),
+    "llm": ({"large", "language", "model"},),
+    "llms": ({"large", "language", "model"},),
+    "rag": ({"retrieval", "augmented", "generation"},),
 }
 _LOW_INFORMATION = {
     "and",
@@ -96,7 +110,8 @@ _SHORT_MEANINGFUL_TOKENS = {"ai", "ci", "cd", "c#"}
 def _tokens(value: str) -> set[str]:
     return {
         _TOKEN_ALIASES.get(token, token)
-        for token in re.findall(r"[a-z0-9+#.]+", value.casefold())
+        for raw_token in re.findall(r"[a-z0-9+#.]+", value.casefold())
+        for token in [raw_token.rstrip(".")]
         if token not in _LOW_INFORMATION and (len(token) > 2 or token in _SHORT_MEANINGFUL_TOKENS)
     }
 
@@ -108,31 +123,40 @@ def quote_capability_alignment(quote: str, capability: str) -> tuple[bool, str |
     capability_tokens = _tokens(capability)
     if not capability_tokens:
         return False, "Normalized capability has no meaningful semantic tokens."
-    overlap = quote_tokens & capability_tokens
-    if overlap:
-        return True, None
-    if any(
-        expansion & quote_tokens
-        for token, expansion in _CONCEPT_EXPANSIONS.items()
+    strong_claims = {"ownership", "leadership", "production", "expert", "certified"}
+    unsupported_claims = (capability_tokens & strong_claims) - quote_tokens
+    if unsupported_claims:
+        return False, "Capability label strengthens the source claim: " + ", ".join(
+            sorted(unsupported_claims)
+        )
+    covered = quote_tokens & capability_tokens
+    covered.update(
+        token
+        for token, alternatives in _CONCEPT_EXPANSIONS.items()
         if token in capability_tokens
-    ):
+        and any(expansion <= quote_tokens for expansion in alternatives)
+    )
+    if capability_tokens <= covered:
         return True, None
     return (
         False,
-        "Normalized capability has no lexical or configured semantic overlap "
-        "with its source quote.",
+        "The source quote does not support every material concept in the normalized capability.",
     )
 
 
 def _semantic_key(requirement: RoleRequirement) -> tuple[str, str]:
     name = requirement.normalized_capability or requirement.requirement_text
     tokens = _tokens(name)
-    if "stakeholder" in tokens and tokens & {"collaboration", "management"}:
+    if "stakeholder" in tokens and "collaboration" in tokens:
         concept = "stakeholder collaboration"
-    elif "roadmap" in tokens and tokens & {"ownership", "management"}:
+    elif "roadmap" in tokens and "ownership" in tokens:
         concept = "roadmap ownership"
     else:
         concept = " ".join(sorted(tokens))
+    if requirement.relationship == "ANY_OF":
+        concept += " | any of: " + " / ".join(
+            sorted(" ".join(sorted(_tokens(option))) for option in requirement.capability_options)
+        )
     category_group = (
         "prerequisite"
         if requirement.category in _PREREQUISITES
@@ -229,6 +253,10 @@ def build_canonical_target_role_profile(
 
     grouped: dict[tuple[str, str], list[RoleRequirement]] = {}
     for requirement in requirements:
+        if requirement.posting_id not in analyzed_posting_ids or (
+            requirement.posting_id not in assessment_by_posting
+        ):
+            continue
         grouped.setdefault(_semantic_key(requirement), []).append(requirement)
 
     canonical: list[CanonicalRoleRequirement] = []
@@ -251,11 +279,32 @@ def build_canonical_target_role_profile(
                 RequirementStatementType.PREREQUISITE,
             }
         ]
-        basis_items = qualification_items or responsibility_items or preference_items
+        primary_posting_ids = {item.candidate.posting_id for item in primary_assessments}
+        primary_qualifications = [
+            item for item in qualification_items if item.posting_id in primary_posting_ids
+        ]
+        primary_responsibilities = [
+            item for item in responsibility_items if item.posting_id in primary_posting_ids
+        ]
+        primary_preferences = [
+            item for item in preference_items if item.posting_id in primary_posting_ids
+        ]
+        # Context may corroborate a concept, but cannot set the baseline's meaning.
+        basis_items = (
+            primary_qualifications
+            or primary_responsibilities
+            or primary_preferences
+            or qualification_items
+            or responsibility_items
+            or preference_items
+        )
+        if not basis_items:
+            continue
         supporting_assessments = [
             assessment_by_posting[item.posting_id]
-            for item in basis_items
+            for item in items
             if item.posting_id in assessment_by_posting
+            and (item in basis_items or item.posting_id not in primary_posting_ids)
         ]
         exact_ids = {
             item.candidate.posting_id
@@ -314,7 +363,74 @@ def build_canonical_target_role_profile(
             scope = CanonicalRequirementScope.OPTIONAL
         category = Counter(item.category for item in basis_items).most_common(1)[0][0]
         maturities = [item.maturity_expected for item in basis_items if item.maturity_expected]
-        confidences = [item.extraction_confidence for item in items]
+        confidences = [item.extraction_confidence for item in basis_items]
+        # One source cannot impose its exceptional threshold on every employer.
+        # Retain the complete distribution; ties select the lower observed threshold.
+        maturity_support = {
+            maturity: len(
+                {
+                    _support_identity(assessment_by_posting[item.posting_id])
+                    for item in basis_items
+                    if item.maturity_expected is maturity
+                }
+            )
+            for maturity in set(maturities)
+        }
+        years_by_source = {
+            str(item.requirement_id): item.years_required
+            for item in basis_items
+            if item.years_required is not None
+        }
+        year_support = {
+            years: len(
+                {
+                    _support_identity(assessment_by_posting[item.posting_id])
+                    for item in basis_items
+                    if item.years_required == years
+                }
+            )
+            for years in set(years_by_source.values())
+        }
+        descriptors = {(item.maturity_expected, item.years_required) for item in basis_items}
+        descriptor_support = {
+            descriptor: len(
+                {
+                    _support_identity(assessment_by_posting[item.posting_id])
+                    for item in basis_items
+                    if (item.maturity_expected, item.years_required) == descriptor
+                }
+            )
+            for descriptor in descriptors
+        }
+        # Select an observed joint expectation, never an invented combination of qualifiers.
+        expected_maturity, years_required = min(
+            descriptors,
+            key=lambda value: (
+                -descriptor_support[value],
+                _MATURITY_RANK.get(value[0], -1),
+                value[1] if value[1] is not None else -1,
+            ),
+        )
+        basis_items = sorted(
+            basis_items,
+            key=lambda item: (
+                (item.maturity_expected, item.years_required)
+                != (expected_maturity, years_required),
+                item.requirement_text.casefold(),
+            ),
+        )
+        representative = basis_items[0]
+        qualifier_notes = []
+        if len(maturity_support) > 1:
+            qualifier_notes.append(
+                "Expected maturity varies by employer; the most supported primary "
+                "expectation is used, with the lower expectation breaking ties."
+            )
+        if len(year_support) > 1:
+            qualifier_notes.append(
+                "Experience thresholds vary by employer; check the original "
+                "qualification before applying."
+            )
         employers = list(
             dict.fromkeys(
                 item.candidate.employer
@@ -374,14 +490,23 @@ def build_canonical_target_role_profile(
         else:
             source_agreement = SourceAgreement.LOW_SUPPORT
         canonical_item = CanonicalRoleRequirement(
-            display_name=_display_name(items, key),
+            display_name=_display_name(basis_items, key),
             category=category,
             requirement_kind=kind,
-            expected_maturity=(
-                max(maturities, key=lambda value: _MATURITY_RANK[value]) if maturities else None
-            ),
+            expected_maturity=expected_maturity,
+            maturity_support_counts={key.value: value for key, value in maturity_support.items()},
+            years_required=years_required,
+            years_required_by_source=years_by_source,
+            baseline_requirement_ids=[item.requirement_id for item in primary_qualifications],
+            baseline_posting_ids=list(dict.fromkeys(item.posting_id for item in basis_items)),
+            qualifier_notes=qualifier_notes,
+            source_section=representative.source_section,
+            qualifier_quotes=representative.qualifier_quotes,
+            relationship=representative.relationship,
+            capability_options=representative.capability_options,
             mandatory_signal=mandatory_signal,
             preferred_signal=preferred_signal,
+            employer_specific=primary_denominator >= 2 and ratio < 0.5,
             frequency_band=_frequency(ratio),
             primary_support_ratio=ratio,
             employer_support_count=len(primary_employers),
@@ -397,12 +522,8 @@ def build_canonical_target_role_profile(
             you_support_count=len(you_ids),
             source_agreement=source_agreement,
             supporting_requirement_ids=[item.requirement_id for item in items],
-            responsibility_requirement_ids=[
-                item.requirement_id for item in responsibility_items
-            ],
-            qualification_requirement_ids=[
-                item.requirement_id for item in qualification_items
-            ],
+            responsibility_requirement_ids=[item.requirement_id for item in responsibility_items],
+            qualification_requirement_ids=[item.requirement_id for item in qualification_items],
             supporting_posting_ids=posting_ids,
             supporting_employers=employers,
             provider_sources=list(
@@ -412,9 +533,7 @@ def build_canonical_target_role_profile(
                     for provider in (
                         assessment.candidate.provider_sources
                         or (
-                            [assessment.candidate.provider]
-                            if assessment.candidate.provider
-                            else []
+                            [assessment.candidate.provider] if assessment.candidate.provider else []
                         )
                     )
                     if provider in {item.value for item in MarketSourceProvider}
@@ -427,22 +546,14 @@ def build_canonical_target_role_profile(
                     for source in (
                         assessment.candidate.source_provenance
                         or [
-                            assessment.candidate.source_url
-                            or assessment.candidate.source_reference
+                            assessment.candidate.source_url or assessment.candidate.source_reference
                         ]
                     )
                 )
             ),
             statement_types=list(dict.fromkeys(item.statement_type for item in items)),
             representative_source_quotes=list(
-                dict.fromkeys(
-                    item.requirement_text
-                    for item in [
-                        *qualification_items,
-                        *responsibility_items,
-                        *preference_items,
-                    ]
-                )
+                dict.fromkeys(item.requirement_text for item in basis_items)
             )[:3],
             confidence=min(confidences, key=lambda value: _CONFIDENCE_RANK[value]),
             requirement_scope=scope,
@@ -464,10 +575,11 @@ def build_canonical_target_role_profile(
     ]
     repeated = sum(item.employer_support_count >= 2 for item in primary_items)
     agreement = repeated / len(primary_items) if primary_items else 0
+    validated_primary_count = sum(
+        item.title_match in _PRIMARY for item in assessment_by_posting.values()
+    )
     extraction_success_rate = (
-        summary.analyzed_posting_count / summary.validated_in_scope_posting_count
-        if summary.validated_in_scope_posting_count
-        else 0
+        len(primary_assessments) / validated_primary_count if validated_primary_count else 0
     )
     primary_providers = {
         provider
@@ -478,10 +590,7 @@ def build_canonical_target_role_profile(
         )
     }
     high_quality_ratio = (
-        sum(
-            item.candidate.retrieval_quality in {None, "HIGH"}
-            for item in primary_assessments
-        )
+        sum(item.candidate.retrieval_quality in {None, "HIGH"} for item in primary_assessments)
         / len(primary_assessments)
         if primary_assessments
         else 0
@@ -601,9 +710,7 @@ def build_canonical_target_role_profile(
         ],
         limitations=limitations,
     )
-    source_statement_type = {
-        item.requirement_id: item.statement_type for item in requirements
-    }
+    source_statement_type = {item.requirement_id: item.statement_type for item in requirements}
     canonical_classification_by_source = {
         source_id: (
             source_statement_type[source_id].value

@@ -1,5 +1,6 @@
 """Candidate-to-role analysis schemas for V1."""
 
+from typing import Literal
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -42,6 +43,16 @@ class RequirementComparison(BaseModel):
     scope_alignment: ScopeAlignment = ScopeAlignment.UNKNOWN
     maturity_alignment: MaturityAlignment = MaturityAlignment.UNKNOWN
     production_context_difference: ProductionContextDifference = ProductionContextDifference.UNKNOWN
+    outcome_alignment: ScopeAlignment = ScopeAlignment.UNKNOWN
+    evidence_status: Literal[
+        "SUPPORTED", "UNKNOWN", "CONFIRMED_UNMET", "CONTRADICTED", "OPERATION_FAILED"
+    ] = "UNKNOWN"
+    clarification_needed: str | None = None
+    validation_notes: list[str] = Field(default_factory=list)
+    selected_evidence_ids: list[UUID] = Field(default_factory=list)
+    omitted_evidence_ids: list[UUID] = Field(default_factory=list)
+    grounded_evidence_quotes: list[dict[str, str]] = Field(default_factory=list)
+    matched_alternative: str | None = None
     partial_match_subtype: PartialMatchSubtype | None = None
     match_type: MatchType | None
     transferable_capability: str | None = None
@@ -68,6 +79,12 @@ class GapItem(BaseModel):
     remaining_difference: str = Field(min_length=1)
     severity: GapSeverity
     hard_blocker: bool = False
+    required_status: Literal["MANDATORY", "PREFERRED", "UNSPECIFIED"] = "UNSPECIFIED"
+    employer_specific: bool = False
+    evidence_status: Literal[
+        "SUPPORTED", "UNKNOWN", "CONFIRMED_UNMET", "CONTRADICTED", "OPERATION_FAILED"
+    ] = "UNKNOWN"
+    clarification_needed: str | None = None
     evidence_needed: str | None = None
     possible_action: str | None = None
     confidence: ConfidenceLevel

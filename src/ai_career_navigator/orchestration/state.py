@@ -36,6 +36,7 @@ from ai_career_navigator.market import (
     PostingRetrievalAudit,
     TargetVariantAudit,
 )
+from ai_career_navigator.market.schemas import SearchPassReport
 
 from .approval import PlanReviewRequest, WorkflowActionRecord
 
@@ -142,6 +143,7 @@ class CareerGraphState(TypedDict):
     market_provider_summary: MarketProviderSummary | None
     market_source_ids: list[UUID]
     market_posting_audits: NotRequired[list[PostingRetrievalAudit]]
+    market_search_passes: NotRequired[list[SearchPassReport]]
     market_processing_status: MarketProcessingWorkflowStatus
     requirement_summary: MarketRequirementSummary | None
     canonical_target_role_profile: CanonicalTargetRoleProfile | None
@@ -177,7 +179,7 @@ class CareerGraphState(TypedDict):
     completed_stages: list[WorkflowStage]
     degraded_mode: bool
     thread_id: NotRequired[str]
-    audit_artifact_path: NotRequired[str]
+    audit_artifact_path: NotRequired[str | None]
 
 
 _STATE_ADAPTER = TypeAdapter(CareerGraphState)

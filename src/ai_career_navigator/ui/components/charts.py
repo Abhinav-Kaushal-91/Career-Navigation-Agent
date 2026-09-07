@@ -64,12 +64,15 @@ def build_requirement_frequency_figure(
             hovertemplate="%{y}: %{customdata[0]} of %{customdata[1]} postings<extra></extra>",
         )
     )
-    figure.update_xaxes(range=[0, 1.3], tickformat=".0%")
+    figure.update_xaxes(range=[0, 1.3], tickvals=[0, 0.25, 0.5, 0.75, 1], tickformat=".0%")
     figure.update_layout(bargap=0.35, yaxis=dict(autorange="reversed"))
     styled = style(figure, height=max(260, 42 * len(items)))
-    # Wider right margin than the shared default so "N of N" labels on the longest
-    # bars have room to sit outside instead of colliding with the bar's own edge.
-    styled.update_layout(margin=dict(l=0, r=56, t=8, b=0))
+    # Explicit left space plus automatic expansion keeps category names visible
+    # inside Streamlit's clipped chart frame, including narrow desktop columns.
+    styled.update_yaxes(automargin=True)
+    styled.update_xaxes(automargin=True)
+    label_margin = min(214, max(132, max((len(label) for label in labels), default=0) * 7 + 24))
+    styled.update_layout(margin=dict(l=label_margin, r=56, t=8, b=32))
     return styled
 
 
@@ -231,8 +234,8 @@ def render_donut(
         )
         style(figure, height=200, xaxis=False)
         figure.update_layout(
-            showlegend=True,
-            legend=dict(orientation="v", x=1, y=0.5, font_size=12),
+            showlegend=False,
+            margin=dict(l=12, r=12, t=8, b=8),
             annotations=[
                 dict(
                     text=f"<b>{percent:.0f}%</b><br><span style='font-size:11px'>top 3</span>",
@@ -244,6 +247,7 @@ def render_donut(
             ],
         )
         _render_figure(figure)
+        st.caption(f"{center_label}: {percent:.0f}% · {remainder_label}: {100 - percent:.0f}%")
 
 
 def render_segmented_bar(

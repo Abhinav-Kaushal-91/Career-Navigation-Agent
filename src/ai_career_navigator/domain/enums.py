@@ -64,6 +64,7 @@ class OwnershipAlignment(StrEnum):
     ALIGNED = "ALIGNED"
     PARTIAL = "PARTIAL"
     MISSING = "MISSING"
+    UNKNOWN = "UNKNOWN"
     NOT_APPLICABLE = "NOT_APPLICABLE"
 
 

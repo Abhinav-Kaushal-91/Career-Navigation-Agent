@@ -120,7 +120,7 @@ def test_discovery_lanes_start_concurrently() -> None:
 
 
 def test_parallel_you_posting_is_validated_and_merged() -> None:
-    url = "https://you-employer.example/jobs/ai-solutions-architect"
+    url = "https://jobs.lever.co/synthetic-you-employer/ai-solutions-architect"
     you = FakeMarketSearchClient(
         search_outcomes=[
             [
@@ -155,7 +155,9 @@ def test_parallel_you_posting_is_validated_and_merged() -> None:
 
 
 def test_cross_source_duplicate_does_not_inflate_posting_count() -> None:
-    primary_job = job(1)
+    primary_job = job(1).model_copy(
+        update={"url": "https://jobs.lever.co/synthetic-employer/ai-solutions-architect"}
+    )
     you = FakeMarketSearchClient(
         search_outcomes=[
             [
@@ -174,8 +176,17 @@ def test_cross_source_duplicate_does_not_inflate_posting_count() -> None:
                 location=primary_job.location,
                 markdown=(
                     "AI Solutions Architect — Employer 1 — Canada. "
-                    "Production AI architecture and delivery requirements."
+                    "Responsibilities: design production AI solutions with documented architecture "
+                    "decisions, deploy the services, and monitor their reliability. Work with "
+                    "business stakeholders to translate use cases into maintainable designs. "
+                    "Qualifications: demonstrated delivery of production AI applications; "
+                    "experience with Python, cloud services, automated tests, and API integration. "
+                    "Candidates "
+                    "must explain security and operational trade-offs in prior solutions. "
+                    "Preferred: mentoring engineers and reviewing architecture proposals. "
+                    "Apply through this employer's current Canadian vacancy page."
                 ),
+                content_complete=True,
             )
         },
     )
@@ -185,12 +196,41 @@ def test_cross_source_duplicate_does_not_inflate_posting_count() -> None:
     assert result.snapshot.validated_posting_count == 1
     assert result.snapshot.distinct_employer_count == 1
     assert result.cross_source_match_count == 1
-    assert result.sources[0].source_type == "YOU"
+    assert result.sources[0].source_type == "ADZUNA"
+    assert result.posting_evidence[0].selected_content_source is MarketSourceProvider.YOU
     assert result.posting_evidence[0].provider_sources == [
         MarketSourceProvider.ADZUNA,
         MarketSourceProvider.YOU,
     ]
     assert len(result.posting_evidence[0].supporting_sources) == 1
+
+
+def test_thin_ats_duplicate_does_not_replace_substantive_structured_body() -> None:
+    primary_job = job(1).model_copy(
+        update={"url": "https://jobs.lever.co/synthetic-employer/ai-solutions-architect"}
+    )
+    you = FakeMarketSearchClient(
+        search_outcomes=[[MarketSearchResult(title=primary_job.title, url=primary_job.url)]],
+        content_outcomes={
+            primary_job.url: MarketPageContent(
+                url=primary_job.url,
+                title=primary_job.title,
+                employer=primary_job.company,
+                location=primary_job.location,
+                markdown="AI Solutions Architect — Employer 1 — Canada. Qualifications: Python.",
+                content_complete=False,
+            )
+        },
+    )
+
+    result = run(FakeAdzunaMarketSearchClient([page(primary_job)]), you)
+
+    assert result.snapshot.validated_posting_count == 1
+    assert result.cross_source_match_count == 1
+    retained = result.posting_evidence[0]
+    assert retained.primary_content.markdown == primary_job.description
+    assert retained.selected_content_source is MarketSourceProvider.ADZUNA
+    assert set(retained.provider_sources) == {MarketSourceProvider.ADZUNA, MarketSourceProvider.YOU}
 
 
 def test_thin_posting_is_enriched_without_overwriting_structured_fields() -> None:
@@ -214,7 +254,9 @@ def test_thin_posting_is_enriched_without_overwriting_structured_fields() -> Non
     assert evidence.posting.location == "Canada"
     assert evidence.primary_source.source_type == "ADZUNA"
     assert evidence.supporting_sources[0].source_type == "YOU"
-    assert "Supporting source evidence" in evidence.primary_content.markdown
+    assert evidence.primary_content.markdown == "Supporting responsibilities and qualifications."
+    assert any(item.markdown == "Short description" for item in evidence.supporting_contents)
+    assert evidence.selected_content_source is MarketSourceProvider.YOU
 
 
 def test_description_at_thin_threshold_is_enrichment_eligible() -> None:
@@ -226,7 +268,7 @@ def test_description_at_thin_threshold_is_enrichment_eligible() -> None:
                 title=primary_job.title,
                 employer=primary_job.company,
                 location=primary_job.location,
-                markdown="Supporting qualifications.",
+                markdown="Supporting qualifications and responsibilities. " * 20,
             )
         }
     )
@@ -255,7 +297,7 @@ def test_conflicting_enrichment_is_rejected() -> None:
     evidence = result.posting_evidence[0]
     assert result.enrichment_success_count == 0
     assert evidence.supporting_sources == []
-    assert "conflicted" in evidence.limitations[0]
+    assert any("conflicted" in limitation for limitation in evidence.limitations)
 
 
 def test_generic_page_title_is_accepted_only_when_posting_identity_is_grounded() -> None:
@@ -313,7 +355,7 @@ def test_location_conflict_does_not_overwrite_adzuna_location() -> None:
     evidence = result.posting_evidence[0]
     assert evidence.posting.location == "Toronto, Ontario"
     assert evidence.supporting_sources == []
-    assert "conflicted" in evidence.limitations[0]
+    assert any("conflicted" in limitation for limitation in evidence.limitations)
 
 
 def test_enrichment_failure_preserves_primary_posting() -> None:
@@ -327,7 +369,7 @@ def test_enrichment_failure_preserves_primary_posting() -> None:
     assert result.snapshot.validated_posting_count == 1
     assert result.posting_evidence[0].primary_source.source_type == "ADZUNA"
     assert result.posting_evidence[0].supporting_sources == []
-    assert "unavailable" in result.posting_evidence[0].limitations[0]
+    assert any("unavailable" in limitation for limitation in result.posting_evidence[0].limitations)
 
 
 def test_cross_source_duplicates_do_not_inflate_market_signals() -> None:
@@ -344,7 +386,7 @@ def test_adzuna_failure_preserves_parallel_you_lane_in_degraded_mode() -> None:
     primary = FakeAdzunaMarketSearchClient([MarketTransportError("offline")])
     result = run(primary, FakeMarketSearchClient(search_outcomes=[[]]))
     assert result.degraded_discovery is True
-    assert result.source_coverage_confidence.value == "LOW"
+    assert result.source_coverage_confidence.value == "INSUFFICIENT"
     assert any("Adzuna parallel discovery" in item for item in result.snapshot.limitations)
 
 

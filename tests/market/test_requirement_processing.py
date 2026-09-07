@@ -563,10 +563,59 @@ def test_unsupported_requirement_quote_is_rejected_deterministically() -> None:
         [direct], target_role=TARGET, geography=GEOGRAPHY, model_gateway=model_gateway
     )
 
-    assert result.summary.analyzed_posting_count == 1
+    assert result.summary.analyzed_posting_count == 0
+    assert result.summary.schema_valid_extraction_count == 1
+    assert result.summary.postings_with_accepted_hiring_requirements == 0
+    assert result.summary.rejected_grounding_item_count == 1
+    assert result.posting_audits[0].extraction_status.value == "GROUNDING_FAILED"
     assert result.requirements == []
     assert result.summary.posting_quality[0].unsupported_grounding_count == 1
     assert any("without exact support" in item for item in result.summary.limitations)
+
+
+def test_grounded_requirement_survives_typographic_punctuation_changes() -> None:
+    direct = source_content(
+        "Qualifications: Experience delivering high‑quality AI solutions in production.",
+        page_title=TARGET,
+        employer="Canadian Employer",
+        location="Toronto, Canada",
+        url="https://jobs.example/jobs/ca-role",
+    )
+    model_gateway, _ = gateway(
+        extraction(
+            requirement(
+                "Experience delivering high-quality AI solutions in production",
+                "Production AI Solution Delivery",
+            )
+        )
+    )
+
+    result = analyze_market_requirements(
+        [direct], target_role=TARGET, geography=GEOGRAPHY, model_gateway=model_gateway
+    )
+
+    assert len(result.raw_requirements) == 1
+    assert result.summary.posting_quality[0].unsupported_grounding_count == 0
+
+
+def test_quote_grounding_does_not_accept_a_paraphrase_with_shared_terms() -> None:
+    direct = source_content(
+        "Qualifications: Five years of Java development experience is required.",
+        page_title=TARGET,
+        employer="Canadian Employer",
+        location="Toronto, Canada",
+        url="https://jobs.example/jobs/ca-role",
+    )
+    model_gateway, _ = gateway(
+        extraction(requirement("Senior Java expertise is mandatory", "Java"))
+    )
+
+    result = analyze_market_requirements(
+        [direct], target_role=TARGET, geography=GEOGRAPHY, model_gateway=model_gateway
+    )
+
+    assert result.requirements == []
+    assert result.summary.posting_quality[0].unsupported_grounding_count == 1
 
 
 def test_responsibilities_are_preserved_without_becoming_qualifications() -> None:
@@ -600,7 +649,7 @@ def test_responsibilities_are_preserved_without_becoming_qualifications() -> Non
         requirement("Design scalable AI solutions", "AI Solution Design"),
         requirement(
             "Experience designing scalable AI solutions",
-            "Solution Architecture",
+            "AI Solution Design",
             category="EXPERIENCE",
         ),
         requirement(
@@ -631,7 +680,7 @@ def test_responsibilities_are_preserved_without_becoming_qualifications() -> Non
 
     assert {item.normalized_capability for item in result.summary.capability_requirements} == {
         "Python",
-        "Solution Architecture",
+        "AI Solution Design",
     }
     assert result.summary.prerequisite_requirements == []
     responsibilities = [

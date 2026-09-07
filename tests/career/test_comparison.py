@@ -230,13 +230,16 @@ def test_exact_capability_is_partial_for_maturity_or_year_shortfall() -> None:
     ]
 
 
-def test_missing_hard_credential_is_not_sent_for_transferability() -> None:
+def test_unmentioned_hard_credential_is_unknown_not_proven_absent() -> None:
     req = requirement("CPA", category=RequirementCategory.CREDENTIAL)
     model, provider = gateway()
     result = compare_candidate_to_requirements(
         profile([evidence("Accounting")]), analysis([req]), model
     )
-    assert result.comparisons[0].match_type is MatchType.NO_CONFIRMED_MATCH
+    assert result.comparisons[0].match_type is None
+    assert result.comparisons[0].evidence_status == "UNKNOWN"
+    assert "CPA" in result.comparisons[0].clarification_needed
+    assert result.comparisons[0].confidence is ConfidenceLevel.INSUFFICIENT
     assert not provider.calls
 
 
