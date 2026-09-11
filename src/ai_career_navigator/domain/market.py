@@ -79,6 +79,24 @@ class JobPosting(BaseModel):
         return self
 
 
+class SourceExpectation(BaseModel):
+    """Source-specific conditions; frequency never changes required status."""
+
+    model_config = ConfigDict(frozen=True)
+
+    requirement_id: UUID
+    posting_id: UUID
+    source_quote: str
+    statement_type: RequirementStatementType
+    employer: str | None = None
+    expectation_status: Literal["REQUIRED", "PREFERRED", "UNSPECIFIED"] = "UNSPECIFIED"
+    years_required: float | None = None
+    maturity_expected: EvidenceMaturity | None = None
+    qualifier_quotes: list[str] = Field(default_factory=list)
+    relationship: Literal["SINGLE", "ANY_OF"] = "SINGLE"
+    capability_options: list[str] = Field(default_factory=list)
+
+
 class RoleRequirement(BaseModel):
     """A structured requirement derived from a validated posting."""
 
@@ -97,6 +115,8 @@ class RoleRequirement(BaseModel):
     mandatory: bool = False
     preferred: bool = False
     employer_specific: bool = False
+    role_importance: Literal["CORE", "SUPPORTING", "ADDITIONAL", "SPECIALIST"] | None = None
+    source_expectations: list[SourceExpectation] = Field(default_factory=list)
     years_required: float | None = Field(default=None, ge=0)
     maturity_expected: EvidenceMaturity | None = None
     frequency_within_sample: float | None = Field(default=None, ge=0, le=1)

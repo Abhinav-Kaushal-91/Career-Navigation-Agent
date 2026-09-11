@@ -3,7 +3,7 @@
 from enum import StrEnum
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from ai_career_navigator.domain import (
     CandidateAccessibility,
@@ -12,6 +12,7 @@ from ai_career_navigator.domain import (
     GapSeverity,
     RequirementFrequency,
 )
+from ai_career_navigator.models.output_text import unique_statements
 
 
 class CareerSynthesisStatus(StrEnum):
@@ -89,6 +90,8 @@ class CareerSynthesisDraft(BaseModel):
     grouped_gaps: list[GroupedCareerGapDraft] = Field(default_factory=list)
     assessment_summary: str = Field(min_length=1, max_length=900)
     limitations: list[str] = Field(default_factory=list, max_length=8)
+
+    _unique_limitations = field_validator("limitations", mode="before")(unique_statements)
 
 
 class CareerAdvantage(CareerAdvantageDraft):

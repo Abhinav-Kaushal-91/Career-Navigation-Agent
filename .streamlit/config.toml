@@ -5,11 +5,15 @@ backgroundColor = "#FFFFFF"
 secondaryBackgroundColor = "#F0F2F6"
 textColor = "#31333F"
 font = "sans-serif"
+baseFontSize = 15
+headingFontSizes = ["2.1rem", "1.7rem", "1.25rem", "1.1rem", "1rem", "1rem"]
+headingFontWeights = [700, 650, 600, 600, 600, 600]
 borderColor = "rgba(49,51,63,0.2)"
 baseRadius = "medium"
 
 [theme.sidebar]
 backgroundColor = "#F0F2F6"
+headingFontSizes = ["1.35rem", "1.2rem", "1.1rem"]
 
 [server]
 headless = true

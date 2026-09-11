@@ -183,7 +183,9 @@ def test_shortened_secondary_title_cannot_supply_missing_suffix_evidence():
         )
     )
     # A body lacking the descriptor leaves the original posting outside the primary cohort.
-    assert first.snapshot.validated_posting_count == 0
+    assert first.snapshot.validated_posting_count == 1
+    assert first.snapshot.exact_title_count == first.snapshot.target_variant_count == 0
+    assert not first.posting_audits[0].selected_for_primary_evidence
     assert first.posting_audits[0].title_classification == "RELATED_TITLE"
     envelope = retrieve(structured()).posting_evidence[0]
     original = envelope.model_copy(
@@ -220,7 +222,9 @@ def test_shortened_secondary_title_cannot_supply_missing_suffix_evidence():
 
 def test_related_titles_do_not_fill_primary_when_expansion_not_requested():
     result = retrieve(structured(), structured(2, title="Junior Java Developer"))
-    assert result.snapshot.validated_posting_count == 1
+    assert result.snapshot.validated_posting_count == 2
+    assert result.snapshot.exact_title_count == 1
+    assert result.snapshot.related_title_count == 1
     assert not next(
         a for a in result.posting_audits if a.title.startswith("Junior")
     ).selected_for_primary_evidence

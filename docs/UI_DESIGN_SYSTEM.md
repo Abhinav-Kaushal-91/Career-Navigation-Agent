@@ -1,5 +1,99 @@
 # UI Design System
 
+## September 11 — public-copy contract across assessment and Plan
+
+Future concise-v1 same-role/transition results use one or two complete sentences for readiness
+and a combined two/three-sentence role overview, not an employer inventory. Keep material
+conditions and uncertainty; never truncate a concise result to its first sentence. Plan keeps
+one action and one observable completion check per step, plus confidence and timing. References
+stay in structured fields/details. Older saved model output is preserved, not retroactively
+regenerated. No semantic scoring, schema thresholds, reference validation or approval changes.
+
+## September 11 — combined role review, not inline source commentary
+
+For same-role and transition assessments, show a brief readiness conclusion and
+"What this role involves": shared expectations, specialist skills and optional advantages
+from the existing classified competencies. Keep one brief reviewed-description scope note.
+Strengths are names, not repeated evidence paragraphs. Original model rationale, role
+narrative, source IDs and individual-posting analysis belong in optional Run details.
+Never change stored evidence or accessibility to achieve this presentation.
+
+## September 10 — approved five-description Analysis composition
+
+The latest Analysis composition supersedes the main/aside assessment layout below:
+one verdict card, short role-picture block, full-width numbered competency/status table,
+gaps and clarification blocks, then one next-step action. Duties belong in the role picture,
+not the batch competency table. Specialist conditions remain in Run details. Show Core,
+Supporting, Eligibility or Additional advantage with Yes / Transferable / Partial / No /
+Unknown. For a satisfied OR expectation show the demonstrated alternative, not both skills.
+Do not duplicate source paragraphs or add a model-generated percentage. Preserve the existing
+compact native theme, maximum-1120px content width and exact-version Plan approval.
+
+## September 10 — reference-aligned native UI overhaul
+
+This is the latest presentation contract and supersedes conflicting older mock-screen
+instructions below. Reference: Career Navigator redesign (1).zip, handoff spec and
+Home/Analysis/Plan screenshots. Preserve its white/gray/blue native Streamlit language,
+compact heading hierarchy, aligned cards and clear main/secondary content separation.
+
+- Use a centered, maximum 1120px native container and 15px base type; headings use
+  the shared theme rather than inline styles or generated CSS selectors.
+- Home has a concise introduction, existing primary actions and four aligned benefit cards.
+- Profile progress uses short labels with full-name tooltips; section actions have
+  enough width to avoid clipping. Input ownership and AI confirmation are unchanged.
+- Goal's six directions use equally sized content areas with the button inside each card.
+- Career assessment stays merged: verdict/confidence, one static competency table,
+  key gap names/severity, next step and bounded-sample context. Details are optional.
+- Plan shows supported choices only when there is a real choice, one action sequence,
+  route/strength context and one version-specific approval area. No repeated roadmap,
+  priority list and summary presenting the same actions three times.
+- Preserve Unknown, employer-specific context, insufficient-evidence stopping and
+  no-fixed-timeline semantics. Do not resurrect mock fit scores, probabilities,
+  unsupported paths, or decorative market charts.
+- Technical/source details remain in Run details or Plan details. This is not a
+  provider prompt or evidence-threshold change.
+
+See UI_OVERHAUL_QA.md for verification scope and remaining limitations.
+
+## September 10 — concise assessment surface
+
+Show the verdict/confidence once, the competency table once, material gap names
+with severity, and one short next-step sentence. Remove repeated strength/meaning
+summaries and evidence narratives from the main page. Retain source notes, detailed
+rationale, named clarifications, processing diagnostics and posting audit in one
+optional Run details section, without nested Streamlit expanders. Keep insufficient
+states, unknown labels, material gaps and plan-navigation safeguards visible/intact.
+This is presentation-only; no relaxation of grounding or model validation.
+
+## September 10 — compact competency comparison
+
+The employer-expectation section is one static numbered table: competency,
+short context label and one-word candidate status. No per-dimension dropdowns,
+nested comparison/source expanders or supporting-evidence paragraphs in this block.
+Use Yes / Transferable / Partial / No / Unknown; reserve No for a confirmed unmet
+or contradicted condition. Failed, pending and low-confidence comparisons remain
+Unknown. Related-role rows are context, not readiness judgments. Preserve canonical
+records and source audit elsewhere; this presentation does not change assessments.
+
+## Current assessment presentation — September 9, 2026
+
+The approved combined Career assessment page supersedes the separate Market/Analysis
+presentation and visual-first chart instructions below. The visible workflow is
+Profile → Goal → Career assessment → Plan. Legacy Market and Analysis route keys
+remain compatible aliases; business stages and evidence-scope safeguards stay separate.
+
+Lead with the existing calibrated assessment, then employer expectations beside candidate
+evidence, demonstrated strengths, direction/opportunity context, gaps and clarifications.
+Use professional technical, business, interpersonal, leadership, people-management,
+delivery and eligibility dimensions only when supported. Do not score EQ/personality.
+Exact/variant/related counts, sources, query audit and coverage belong in expandable
+details. No frequency, title-mix, concentration pie or readiness-percentage charts on
+the combined page. Plan retains evidence-supported roadmap rendering and approval guards.
+
+Unknown evidence is a question, not proof of inability. Missing market evidence must
+not erase confirmed profile strengths or imply rejection. No generated plan means no
+enabled Continue to Plan action. Existing sessions are never reset merely to preview UI.
+
 ## Current V1 presentation contract — September 7, 2026
 
 The final `Career Navigator redesign (1).zip` native-Streamlit handoff governs the theme and

@@ -30,7 +30,6 @@ from ai_career_navigator.ui.view_models import (
     plan_view_model,
     product_label,
     selected_plan_milestones,
-    untimed_roadmap_stages,
     user_facing_limitations,
 )
 
@@ -177,7 +176,8 @@ def render_live_market(
     st.subheader("Requirements observed in the target-role sample")
     coverage_text = (
         f"{view.analyzed_postings / view.validated_postings:.0%} coverage"
-        if view.validated_postings else "coverage unavailable: no validated postings"
+        if view.validated_postings
+        else "coverage unavailable: no validated postings"
     )
     st.caption(
         f"{view.analyzed_postings} of {view.validated_postings} validated postings were "
@@ -530,6 +530,13 @@ def render_live_plan(
 ) -> None:
     state = state_override if state_override is not None else _state()
     plan = state.get("career_plan") if state else None
+    if state and (state.get("same_role_assessment") or state.get("transition_assessment")):
+        from ai_career_navigator.ui.pages.same_role import render_same_role_plan
+
+        render_same_role_plan(
+            state, read_only=state_override is not None, evidence_label=evidence_label
+        )
+        return
     if state is None or plan is None:
         profile = state.get("canonical_target_role_profile") if state else None
         if getattr(profile, "profile_status", None) == "INSUFFICIENT":
@@ -557,7 +564,7 @@ def render_live_plan(
             "The synthesized career assessment must be completed before a plan can be shown.",
         )
         st.warning("Your completed profile, goal, and market evidence remain preserved.")
-        if st.button("Back to Analysis"):
+        if st.button("Back to career assessment"):
             go_to("Analysis")
         return
     eligibility = plan_eligibility(plan, role, synthesis)
@@ -565,26 +572,26 @@ def render_live_plan(
     render_page_header(
         "Plan",
         "Your career strategy",
-        "What to do next, based on your corrected candidate-to-market analysis.",
+        "A practical next step, grounded in your assessment.",
     )
     if evidence_label:
         st.badge(evidence_label, color="orange")
-    _provisional_evidence_notice(state)
-    st.badge(f"Plan status: {product_label(plan.plan_status)}", color="gray")
-    summary_values = (
-        ("Current role", view.current_role),
-        ("Target role", view.target_role),
-        ("Candidate accessibility", view.accessibility),
-        ("Recommended path", view.recommended_path),
-        ("Plan confidence", view.confidence),
-    )
-    st.markdown("**Why this path**")
-    st.info(view.why_this_path)
+    with st.container(border=True):
+        heading, state_badges = st.columns([2, 1], vertical_alignment="center")
+        heading.subheader(view.recommended_path)
+        heading.caption(f"{view.current_role} → {view.target_role}")
+        with state_badges:
+            st.badge(f"Plan status: {product_label(plan.plan_status)}", color="gray")
+            st.caption(f"{view.accessibility} · Confidence: {view.confidence}")
+        if (
+            getattr(state.get("canonical_target_role_profile"), "profile_status", None)
+            == "PROVISIONAL"
+        ):
+            st.caption("Provisional target-role evidence — a sampled view, not every employer.")
 
     if eligibility.missing_actions:
-        st.warning("We need more information before recommending an approval-ready career path.")
         with st.container(border=True):
-            st.markdown("**What to complete**")
+            st.subheader("Before this plan is ready")
             for action in eligibility.missing_actions:
                 st.write(f"- {action}")
         if view.actions:
@@ -600,18 +607,9 @@ def render_live_plan(
             go_to("Analysis")
         return
 
-    st.subheader("Your recommended path")
-    with st.container(border=True):
-        for index, (stage, role_name) in enumerate(view.route):
-            st.caption(stage)
-            st.markdown(f"**{role_name}**")
-            if index < len(view.route) - 1:
-                st.markdown("↓")
-
     options = plan_options(plan)
     selected_id = "primary"
     if options:
-        st.subheader("Compare supported paths" if len(options) > 1 else "Why this path fits")
         option_ids = {item.option_id for item in options}
         selected_id = st.session_state.get("selected_live_path")
         if selected_id not in option_ids:
@@ -619,150 +617,85 @@ def render_live_plan(
                 (item.option_id for item in options if item.recommended), options[0].option_id
             )
             st.session_state.selected_live_path = selected_id
-        columns = st.columns(len(options))
-        for column, option in zip(columns, options, strict=True):
-            selected = option.option_id == selected_id
-            with column, st.container(border=True):
-                heading, tag = st.columns([2, 1])
-                heading.markdown(f"**{option.title}**")
-                with tag:
-                    st.badge(
-                        "Recommended" if option.recommended else "Optional",
-                        color="green" if option.recommended else "gray",
-                    )
-                st.caption(option.route)
-                st.markdown("**Why it fits**")
-                st.write(option.trade_off)
-                details = st.columns(3)
-                for column, label, value in zip(
-                    details,
-                    ("Timeline preference", "Focus", "Evidence uncertainty"),
-                    (option.duration, option.effort, option.risk),
-                    strict=True,
-                ):
-                    column.caption(label)
-                    column.write(value)
-                st.markdown("**Evidence to use or verify**")
-                for evidence in option.evidence_needed[:5] or ("No additional item recorded.",):
-                    st.write(f"- {evidence}")
-                if st.button(
-                    "Selected ✓" if selected else "Choose this path",
-                    key=f"select_live_path_{option.option_id}",
-                    disabled=selected,
-                    type="primary" if selected else "secondary",
-                    width="stretch",
-                ):
-                    st.session_state.selected_live_path = option.option_id
-                    st.rerun()
-
-    st.subheader("Strengths to build from")
-    if view.strengths:
-        strength_columns = st.columns(min(3, len(view.strengths)))
-        for index, strength in enumerate(view.strengths):
-            with strength_columns[index % len(strength_columns)], st.container(border=True):
-                st.markdown(f"**{strength.title}**")
-                st.write(strength.explanation)
-    else:
-        st.caption("No synthesis-backed advantage was available to highlight.")
+        if len(options) > 1:
+            st.subheader("Compare supported paths")
+            for column, option in zip(st.columns(len(options)), options, strict=True):
+                selected = option.option_id == selected_id
+                with column, st.container(border=True):
+                    st.markdown(f"**{option.title}**")
+                    st.caption(option.route)
+                    st.caption(f"{option.duration} · {option.effort}")
+                    if option.recommended:
+                        st.badge("Recommended", color="green")
+                    if st.button(
+                        "Selected ✓" if selected else "Choose this path",
+                        key=f"select_live_path_{option.option_id}",
+                        disabled=selected,
+                        type="primary" if selected else "secondary",
+                        width="stretch",
+                    ):
+                        st.session_state.selected_live_path = option.option_id
+                        st.rerun()
 
     milestones = selected_plan_milestones(plan, selected_id)
     selected_ids = {item.milestone_id for item in milestones}
     selected_actions = tuple(item for item in view.actions if item.milestone_id in selected_ids)
-    st.subheader("Your prioritized action plan")
-    if selected_actions:
-        for action in selected_actions:
-            with st.container(border=True):
-                st.markdown(f"**{action.action}**")
-                if action.demonstrated_strength:
-                    st.caption(f"Builds on your confirmed evidence: {action.demonstrated_strength}")
-                why, evidence, closes = st.columns(3)
-                why.markdown("**Why it matters**")
-                why.write(action.why)
-                evidence.markdown("**Evidence that will prove it**")
-                evidence.write(action.evidence)
-                closes.markdown("**Linked assessment**")
-                closes.write(action.career_gap)
-                if action.completion_condition:
-                    st.caption(f"Completion check: {action.completion_condition}")
-    else:
-        st.info("No material gap-linked build action is required by the current analysis.")
-
-    phases = _phase_rows(milestones)
-    if view.untimed:
-        st.subheader("Untimed roadmap")
+    journey, context = st.columns([1.8, 1], gap="medium")
+    with journey:
+        st.subheader("Your roadmap")
         st.caption(
-            f"{view.timeline_preference}. Steps are ordered; no duration estimate is asserted."
+            f"{view.timeline_preference} · Ordered steps, not duration estimates."
+            if view.untimed
+            else view.timeline_preference
         )
-        stages = untimed_roadmap_stages(view, milestones)
+        phases = _phase_rows(milestones)
+        if not view.untimed and phases:
+            with st.container(border=True):
+                _plot(build_roadmap_figure(phases))
+        if selected_actions:
+            for index, action in enumerate(selected_actions, 1):
+                with st.container(border=True):
+                    st.caption(f"STEP {index:02d} · {action.career_gap}")
+                    st.markdown(f"**{action.action}**")
+                    if action.completion_condition:
+                        st.caption(f"Done when: {action.completion_condition}")
+        else:
+            st.info("No additional build action was recorded for this path.")
+    with context:
         with st.container(border=True):
-            for index, (stage, detail) in enumerate(stages):
+            st.subheader("Your direction")
+            for index, (stage, role_name) in enumerate(view.route):
                 st.caption(stage)
-                st.markdown(f"**{detail}**")
-                if index < len(stages) - 1:
-                    st.markdown("↓")
-    elif phases:
-        st.subheader("Phased roadmap")
-        with st.container(border=True):
-            _plot(build_roadmap_figure(phases))
-        gap_lookup = {gap.gap_id: gap.target_expectation for gap in role.gaps} if role else {}
-        phase_columns = st.columns(min(3, len(phases)))
-        grouped: dict[str, list[object]] = defaultdict(list)
-        for milestone in milestones:
-            grouped[milestone.phase].append(milestone)
-        for index, (phase, items) in enumerate(grouped.items()):
-            with phase_columns[index % len(phase_columns)], st.container(border=True):
-                st.markdown(f"**{phase}**")
-                st.caption(
-                    f"Months {min(item.month_start for item in items)}–"
-                    f"{max(item.month_end for item in items)}"
-                )
-                st.write(items[0].action)
-                evidence = tuple(
-                    dict.fromkeys(
-                        artifact for item in items for artifact in item.evidence_to_create
-                    )
-                )
-                gaps = tuple(
-                    dict.fromkeys(
-                        gap_lookup[gap_id]
-                        for item in items
-                        for gap_id in item.linked_gap_ids
-                        if gap_id in gap_lookup
-                    )
-                )
-                if evidence:
-                    st.caption("Evidence: " + "; ".join(evidence))
-                if gaps:
-                    st.caption("Linked gaps: " + "; ".join(gaps))
-
-    st.subheader("What this means for you")
-    st.info(view.what_this_means)
-
-    st.subheader("Plan summary")
-    for start in range(0, len(summary_values), 3):
-        row = summary_values[start : start + 3]
-        for column, (label, value) in zip(st.columns(len(row)), row, strict=True):
-            with column, st.container(border=True):
-                st.caption(label)
-                st.markdown(f"**{value}**")
-
-    risks = user_facing_limitations(tuple(plan.risks))
-    assumptions = user_facing_limitations(tuple(plan.assumptions))
-    detail_left, detail_right = st.columns(2)
-    for column, title, values, empty in (
-        (detail_left, "Risks", risks, "No material career-path risk was recorded."),
-        (detail_right, "Assumptions", assumptions, "No additional assumption was recorded."),
-    ):
-        with column, st.container(border=True):
-            st.markdown(f"**{title}**")
-            for item in values or (empty,):
-                st.write(f"- {item}")
-
+                st.markdown(f"**{role_name}**")
+                if index < len(view.route) - 1:
+                    st.caption("↓")
+        if view.strengths:
+            with st.container(border=True):
+                st.subheader("Build on")
+                for strength in view.strengths:
+                    st.write(f"- {strength.title}")
     limitations = plan_limitations(state)
-    if limitations:
-        with st.expander("Plan limitations"):
-            for item in limitations:
-                st.write(f"- {item}")
+    with st.expander("Plan details"):
+        st.markdown("**Why this path**")
+        st.write(view.why_this_path)
+        for option in options:
+            st.markdown(f"**{option.title}**")
+            st.write(option.trade_off)
+        st.markdown("**Action details**")
+        for action in selected_actions:
+            st.markdown(f"**{action.career_gap}**")
+            st.write(action.why)
+            st.caption(f"Outcome: {action.evidence}")
+        for title, values in (
+            ("Risks", user_facing_limitations(tuple(plan.risks))),
+            ("Assumptions", user_facing_limitations(tuple(plan.assumptions))),
+            ("Limitations", limitations),
+        ):
+            if values:
+                st.markdown(f"**{title}**")
+                for value in dict.fromkeys(values):
+                    st.write(f"- {value}")
+
     st.caption("Approval applies to this displayed version and is session-only in V1.")
     workflow_status = product_label(state.get("workflow_status", ""))
     if plan.plan_status is PlanStatus.APPROVED or workflow_status in {
@@ -798,6 +731,7 @@ def render_live_plan(
                 plan_version=plan.plan_version,
                 limitations=limitations,
                 on_action=submit,
+                compact=True,
             )
-    if st.button("Back to Analysis"):
+    if st.button("Back to career assessment"):
         go_to("Analysis")

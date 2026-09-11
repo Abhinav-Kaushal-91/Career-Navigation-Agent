@@ -14,12 +14,9 @@ from ai_career_navigator.ui.components.states import (
 
 
 def render() -> None:
-    st.title("Career Navigator")
-    st.write(
-        "Build a structured career profile, then compare your experience with current "
-        "job-market evidence."
-    )
-    st.caption("Every figure is labelled with its source and confidence.")
+    st.caption("YOUR NEXT CHAPTER")
+    st.title("Turn your experience into direction")
+    st.write("Explore your options, understand your fit, and decide what to do next.")
     has_progress = st.session_state.highest_reached_step != "Home"
     primary, secondary, reset, _ = st.columns([1.4, 1.15, 1.15, 2.3])
     with primary:
@@ -30,32 +27,39 @@ def render() -> None:
             else:
                 reset_workflow("manual")
     with secondary:
-        if st.button("Explore demo", use_container_width=True):
+        if st.button(
+            "Explore demo",
+            help=(
+                "Load an editable Senior Java Developer test profile "
+                "through Education & Certifications."
+            ),
+            use_container_width=True,
+        ):
             reset_demo()
     with reset:
         if has_progress and st.button("Start new analysis", type="tertiary"):
             reset_workflow("manual")
 
+    st.caption(
+        "Explore demo prefills a test profile through Education. It replaces session progress; "
+        "you choose when to run AI review and live analysis."
+    )
+
     st.subheader("What Career Navigator helps you do")
     columns = st.columns(4)
     capabilities = (
-        ("Explore roles", "Credible destinations built from confirmed evidence, not guesses."),
-        ("Understand market", "Review postings, employers, scope, and stated limitations."),
-        ("Identify gaps", "See readiness by dimension and what can close each gap."),
-        ("Build your path", "Compare routes and turn the analysis into measurable milestones."),
+        ("Explore directions", "Find a next role, change fields, or grow into leadership."),
+        ("Understand the role", "See what employers ask for in the postings we find."),
+        ("Know your fit", "Recognize your strengths and the gaps worth addressing."),
+        ("Make a plan", "Follow specific next steps grounded in your assessment."),
     )
     for column, (title, body) in zip(columns, capabilities, strict=True):
         with column:
-            render_card(title, body, height=205)
+            render_card(title, body, height=170)
 
-    st.info(
-        "**Every number carries its source.** Figures are labelled validated, inferred, or "
-        "synthetic. Confidence is shown next to the claim, never hidden in a footnote."
+    st.caption(
+        "You confirm your profile. We distinguish demonstrated skills from unanswered questions."
     )
-    labels = st.columns(3)
-    labels[0].badge("Validated", color="green")
-    labels[1].badge("Inferred", color="orange")
-    labels[2].badge("Synthetic", color="blue")
 
     with st.expander("Preview honest system states"):
         render_loading_state()

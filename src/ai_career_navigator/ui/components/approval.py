@@ -22,14 +22,18 @@ def render_plan_review_actions(
     plan_version: int,
     limitations: tuple[str, ...],
     on_action: Callable[[PlanReviewAction], None],
+    compact: bool = False,
 ) -> None:
     """Render one primary approval and grouped secondary review actions."""
 
-    render_approval_panel(f"plan version {plan_version}", limitations)
-    st.caption(
-        "Review the plan before approving it. Approval confirms that this is the plan you want "
-        "to use as your current career strategy. It does not guarantee an outcome."
-    )
+    if compact:
+        st.markdown(f"**Review plan version {plan_version}**")
+    else:
+        render_approval_panel(f"plan version {plan_version}", limitations)
+        st.caption(
+            "Review the plan before approving it. Approval confirms that this is the plan you want "
+            "to use as your current career strategy. It does not guarantee an outcome."
+        )
     approve, _ = st.columns([1.6, 3.4])
     with approve:
         if st.button("Approve Plan", type="primary", use_container_width=True):

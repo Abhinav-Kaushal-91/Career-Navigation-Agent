@@ -695,13 +695,15 @@ def test_responsibilities_are_preserved_without_becoming_qualifications() -> Non
     responsibility = result.canonical_profile.responsibilities[0]
     assert responsibility.responsibility_support_count == 1
     assert responsibility.qualification_support_count == 0
-    assert responsibility.source_provenance == [
-        "https://employer1.example/jobs/1"
-    ]
-    assert all(
-        item.display_name != "AI Solution Design"
+    assert responsibility.source_provenance == ["https://employer1.example/jobs/1"]
+    assert responsibility.canonical_requirement_id not in {
+        item.canonical_requirement_id for item in result.canonical_profile.comparison_requirements
+    }
+    assert any(
+        item.display_name == "AI Solution Design"
         for item in result.canonical_profile.comparison_requirements
     )
+    # Its separately sourced experience qualification is compared even at one employer.
     responsibility_audit = next(
         item
         for item in result.posting_audits[0].items

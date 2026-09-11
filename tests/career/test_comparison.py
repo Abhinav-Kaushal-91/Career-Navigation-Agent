@@ -1,5 +1,5 @@
 import json
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from uuid import uuid4
 
 from ai_career_navigator.career import (
@@ -7,6 +7,7 @@ from ai_career_navigator.career import (
     compare_candidate_to_requirements,
     eligible_candidate_evidence,
 )
+from ai_career_navigator.career.comparison_prompts import build_transferability_prompt
 from ai_career_navigator.domain import (
     ApprovalStatus,
     CandidateProfile,
@@ -38,6 +39,35 @@ from ai_career_navigator.models import ModelGateway, ModelRole, ModelTimeoutErro
 from ai_career_navigator.models.providers import FakeModelProvider
 
 NOW = datetime(2026, 9, 3, tzinfo=UTC)
+
+
+def test_comparison_prompt_preserves_source_dates_without_inventing_duration():
+    item = evidence("Service Delivery").model_copy(
+        update={
+            "start_date": date(2018, 9, 1),
+            "end_date": None,
+        }
+    )
+    prompt = build_transferability_prompt(requirement("Service Delivery"), [item])
+    payload = json.loads(prompt.split("Assess this data:\n", 1)[1])
+    record = payload["candidate_evidence"][0]
+    assert record["start_date"] == "2018-09-01"
+    assert record["end_date"] is None
+    assert record["source_reference"] == item.source_reference
+    assert "years_experience" not in record
+
+
+def test_current_employment_survives_onboarding_and_comparison_input():
+    from ai_career_navigator.profile.service import build_candidate_profile
+    from ai_career_navigator.ui.demo_data import sample_profile_draft
+
+    profile = build_candidate_profile(sample_profile_draft(), approved=True)
+    item = next(item for item in profile.evidence_items if item.evidence_type == "employment")
+    assert item.is_current is True
+    prompt = build_transferability_prompt(requirement("Java"), [item])
+    record = json.loads(prompt.split("Assess this data:\n", 1)[1])["candidate_evidence"][0]
+    assert record["is_current"] is True
+    assert record["source_recorded_date"] == item.created_at.date().isoformat()
 
 
 def evidence(

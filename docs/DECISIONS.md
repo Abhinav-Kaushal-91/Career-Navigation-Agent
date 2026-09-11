@@ -1,5 +1,316 @@
 # Decisions
 
+## September 11 — separate public review wording from internal evidence
+
+User approved the cleaner combined Analysis presentation and requested code/prompt alignment
+before a later Git push. Same-role/transition prompts and their final reviews now share concise
+public-copy guidance; legacy synthesis and plan wording also forbid inline IDs. Version labels
+use `concise-v1`. Keep reference fields and all eligibility/grounding/approval rules unchanged.
+UI removes citation notation only at display time, with original records retained in details;
+new concise results retain their complete material conditions. No new model calls or publishing
+are part of this implementation. Passing contract tests is not a semantic model-quality claim.
+
+## September 11 — four targeted transition interpretation corrections
+
+User authorized base/specialty separation, mixed-evidence splitting, consistent unknown
+handling and direction-specific planning. Implement as revised transition author/reviewer
+instructions, not additional lexical gates or role-specific scoring. Keep same-role review
+unchanged through a parameterized reviewer prompt. Retain existing schema, reference checks,
+retrieval and approval boundaries. Validate with the same five-description live case; do not
+force a more positive accessibility result or a minimum transfer count.
+
+## September 11 — user-authorized career-transition rule replacement
+
+Use a dedicated transition prompt/schema for ROLE_TRANSITION, sharing transport,
+bounded selection and integrity checks with same-role assessment. Preserve current
+strengths, make transfer boundaries explicit, and distinguish missing information from
+learning/experience needs. Do not append role-specific exceptions to legacy scoring.
+New transition state feeds both Analysis and Plan; approvals/invalidation stay intact.
+Other goal modes and same-role prompt semantics are not changed by this decision.
+
+## September 10 — separate same-role interpretation path
+
+User authorized replacing the brittle scoring path for same-role job moves, not
+accumulating lexical exceptions or tuning for a single role. For Current Market
+Analysis with the same normalized current/target title, analyze at most five
+relevant descriptions plus approved candidate evidence in one structured response,
+then critically review it. Career transitions remain unchanged. The model interprets
+common versus specialist expectations; code validates structure, references and
+plan bases, attaches identity/provenance, and preserves approval/invalidation.
+No old canonical-profile thresholds silently overwrite this assessment.
+Concise source-linked interpretation is not a guarantee of semantic correctness;
+the live validation report explicitly records remaining content failures.
+
+
+## September 10 — description-supported role relevance before batch extraction
+
+Do not reject a compatible occupational heading solely because the target specialty
+is absent from its title. Permit bounded discovery of compatible headings; use
+substantive work/qualification text to admit DESCRIPTION_SUPPORTED_SPECIALTY variants.
+Preserve literal titles and exact/variant counts. Retain level/authority boundaries,
+exclude preference-only/negated/marketing mentions, and let batch extraction retain
+specialist expectations separately or reject materially different scopes. This is a
+generic specialty rule, with a functional software-engineer/developer alias, not a
+Java-, employer-, or candidate-specific exception. Re-evaluate stale title-only
+rejections when full content becomes available. This relevance signal must never
+prove vacancy identity or relax deduplication/enrichment identity checks.
+
+## September 10 — isolate batch theme failures with one bounded repair
+
+A malformed cross-field theme must not discard independently valid siblings. Keep strict
+structural envelope validation in ModelGateway; apply cross-field, citation and semantic
+checks atomically per theme before any canonical use. A structural envelope failure or
+invalid posting-review identity still safe-stops. Make at most one initial request plus
+one indexed repair request, both with gateway retries disabled. Repair cannot modify valid
+themes, invent source IDs, alter ANY_OF choices, or downgrade core importance. Explicit
+preferences can be corrected to ADDITIONAL without becoming required qualifications.
+Retain rejection reasons as sanitized rule messages and original theme indexes. Unresolved
+core/supporting qualification or prerequisite failures block a whole-role verdict; rejected
+optional/duty/specialist evidence lowers confidence without inventing candidate gaps.
+Persist processing status in the canonical contract for truthful UI messaging and replay.
+No retrieval, comparison, source validation or plan-approval safeguards are relaxed.
+
+Production Fireworks now supplies explicit `reasoning_effort=high` for the exact configured
+`accounts/fireworks/models/glm-5p3-flash` deployment when no override is provided. This follows
+the saved controlled experiment in GLM_REASONING_CONTROL_FINDINGS.md; it is not thinking-off
+or a hard reasoning budget. Other model defaults remain unchanged. The optional Settings field
+`FIREWORKS_REASONING_EFFORT` permits low/medium/high overrides without changing model routing.
+The repair prompt is standalone and requests only indexed corrections, not another full profile.
+Rejected names may be shortened to source-grounded labels while kind, category, importance
+and alternatives remain protected. Repair supports must be a subset of original posting/quote
+pairs, preventing a rejected theme from being replaced by an unrelated new expectation.
+Prompt v3 requests compact source labels without unsupported descriptive wrappers. Do not
+relax source validation or invent a positive fit when the saved truncated sample remains weak.
+
+## September 10 — rank descriptions by words; honor the live MCP parameter schema
+
+User requested the five longest relevant descriptions instead of a hard length cutoff.
+Word count is the primary ordering after relevance/geography/nonempty filtering; previous
+selection ordering is a tie-breaker only. Low retrieval quality remains visible to extraction
+and confidence policy, rather than excluding every available excerpt up front. No word count
+proves a complete description. Existing source grounding and safe-stop rules are unchanged.
+
+Connection probes isolated a You.com full-page request mismatch: live MCP advertises a string
+enum, not the nested REST-style extraction object. Send the string for that schema, retain
+the object for an explicitly object-shaped schema, and use the existing contents fallback
+when its shape is unknown. Never guess an argument merely because its name exists.
+
+## September 10 — consolidate five descriptions before candidate comparison
+
+The approved batch experiment is now a production website service. The model groups up to
+five usable exact/variant descriptions into role-level themes; code validates source lineage
+and attaches deterministic counts. Importance is separate from explicit employer obligation.
+Core/supporting expectations drive baseline comparison; specialist conditions remain audit
+context and optional advantages cannot create baseline gaps. Partial descriptions cap
+confidence; rejected primary expectations preserve the safe-stop coverage guard.
+The UI consumes the same canonical/comparison/synthesis objects, not a separate model narrative.
+Legacy replay service defaults remain compatible; the website binding is explicitly tested.
+See FIVE_POSTING_PRODUCTION_BATCH.md for boundaries and remaining live acceptance work.
+
+## September 10 — reconcile design reference with current product decisions
+
+Restore the reference's native Streamlit visual hierarchy without reverting later
+product choices. Keep one Career assessment stage, one visible numbered competency
+block, and concise statuses. Use a bounded canvas, consistent theme and card
+composition rather than CSS overrides or further ad-hoc prose deletion.
+
+Plan actions appear once in an ordered roadmap; supporting explanations remain
+available in one details section. A sole supported route is not presented as a
+choice. No model/provider configuration, evidence calculation, or approval policy
+is changed. Visual acceptance and live-result correctness are tracked separately.
+
+## September 10 — concise presentation is separate from evidence validation
+
+User requested a cleaner, less repetitive assessment. Keep short structured results
+in the main view, and collect original explanations and source/processing diagnostics
+in one optional detail section. Do not reduce grounding standards or treat less
+visible evidence as less validated evidence. No provider prompt or accessibility
+policy change is part of this presentation pass.
+
+## September 10 — one visible competency comparison block
+
+User requested numbered competency information and short statuses instead of
+dropdowns and evidence paragraphs. Use one native static table and retain a compact
+context column to distinguish duties, preferences and employer-specific conditions.
+Keep approved evidence and source lineage in backend/audit storage, without changing
+comparison meaning. Unknowns and failures must not be converted to No.
+
+## September 10 — assess resolved baseline evidence; retain unanswered conditions
+
+User authorized removing the blanket insufficient-evidence outcome for isolated
+unanswered or employer-specific conditions. Require at least two non-employer-specific
+hiring expectations, two resolved comparisons and strictly greater than 50% baseline
+completion. Unverified mandatory baseline prerequisites still prevent an overall
+verdict. Source independence and content-quality gates are retained. A resolved
+comparison needs Moderate/High confidence and no unknown/failure/pending question;
+confirmed mismatches remain negative evidence. Preserve all comparisons, but omit
+unresolved votes when the coverage gate permits a bounded assessment. Open questions
+cap confidence at Moderate and Apply now at Apply selectively. Display separately
+what needs candidate clarification, employer verification or processing retry.
+No model prompt, retrieval, fit-threshold, plan-approval or session-reset change.
+
+## September 10 — employment tenure is deterministic; relevance remains evidence-based
+
+Calculate dated employment elapsed time in code, merge overlapping periods and use
+the analysis date for explicitly current roles. Keep the user's self-reported years
+separate and do not rewrite approved records. Send duration calculations into the
+comparison contract instead of relying on model arithmetic. A role's tenure does
+not automatically establish duration for every tool or technology mentioned there.
+Incomplete dates and pending relevant-duration questions are unknowns, not confirmed
+shortfalls. Explicit model UNKNOWN must not become supported merely because a match
+enum was also returned. Clarification-linked uncertainty must participate in the
+synthesis sufficiency gate. No role-specific retrieval or accessibility rule added.
+
+## September 10 — bounded paraphrases and milestone-local fallback
+
+Allow a small explicit vocabulary/grammar equivalence set, not unconstrained
+semantic similarity or another LLM judge. Preserve ordered meaningful tokens,
+numeric qualifiers, technical symbols, conditions and proficiency levels. Keep
+unchanged original wording where equivalence is not established. A rejected
+milestone retains both action and outcome, while other valid milestones survive.
+All structural/identity/risk/assumption checks remain whole-response gates before
+wording is accepted. Expose non-durable rejection metadata and sanitized logs;
+do not store model reasoning or candidate text in rejection diagnostics.
+No change to accessibility/synthesis policy is included in this wording correction.
+
+## September 10 — separate Plan transport success from recommendation quality
+
+The bounded GLM Plan test completed in 4.34 seconds but failed production wording
+validation. Retain deterministic fallback; do not equate model completion with
+accepted plan generation. The four-comparison diagnostic is not a full canonical
+market assessment. Its clarification gaps exposed an Aspirational/Development
+policy inconsistency that must be reviewed independently of model choice.
+Do not feed the semantically flawed five-JD batch into production Plan. No
+production configuration or policy change was made in this diagnostic activity.
+
+## September 10 — explicit GLM reasoning setting, separate semantic gate
+
+Fireworks returned a definitive thinking-only error for GLM 5.3 with none. Do not
+equate shorter output instructions with disabling reasoning. A controlled request
+changing only reasoning_effort to high completed successfully (86.43 seconds) under
+the unchanged 30k ceiling. Keep default production behavior unchanged until the
+semantic contract is corrected: valid JSON and quote IDs still concealed duties
+promoted to qualifications, missing prerequisites and compound/truncated names.
+No hidden reasoning traces stored; no unsupported inference about default Max or
+an exact reasoning-token split. Generation and content quality are separate gates.
+
+
+## September 10 — stop treating input count as the only GLM batch bottleneck
+
+Five longer descriptions reproduce the consolidated GLM failure at the 30k output
+ceiling with only 3,546 input tokens. Record-count reduction alone has not succeeded
+at 34, ten or five records. Do not silently shrink further, raise limits or substitute
+a result. Preserve the empty final response and typed rejection; generation/task
+contract investigation is a separate next step requiring user direction.
+
+
+## September 10 — distinguish Nemotron completion from assessment validity
+
+The user-authorized Nemotron replay uses the exact saved task/user input and schema,
+with provider-specific NVIDIA JSON-object/schema-prompt and thinking-off settings
+explicitly disclosed. No durable configuration switch. A complete JSON response
+with grounded-looking citations is not sufficient: duties were promoted to mandatory
+qualifications, one employer's statement leaked into another, and unrelated quotes
+supported broad themes. Keep this output diagnostic, not a trusted role baseline.
+
+
+## September 10 — ten-record cap does not resolve consolidated-call failure
+
+The user-requested ten-record subset cut input tokens from 10,023 to 5,328 but
+again exhausted the 30k output ceiling without final JSON. Preserve the same
+contract/settings to isolate the input selection change. Do not treat the failure
+as network timeout, invent a consolidated profile, raise limits or retry silently.
+Diagnostic selection is explicit and does not alter production role ranking.
+
+
+## September 10 — full batch failure is not a usable consolidated assessment
+
+Honor the full-scale test using all 34 available operational source records, while
+disclosing 28 are snippets and only six are longer retrieved documents. Keep
+source identities/possible-duplicate flags and role scopes. One GLM consolidated
+request exhausted 30k output tokens without final JSON at 248.98 seconds. Reject
+it rather than reconstructing an invented profile, silently dropping sources,
+raising token limits, retrying, or changing the active website. Batch architecture
+remains experimental; a failed single-model attempt is not proof the idea is invalid.
+
+
+## September 10 — measure parallel extraction before production adoption
+
+Use a separate opt-in diagnostic runner with independent gateways, two workers,
+four calls and a shared deadline. Preserve production prompts and validation.
+The measured 190.50-second batch shows overlapping requests work; the sum of
+durations (369.99 seconds) is not a controlled serial baseline. Keep source-quality
+and normalization failures visible. Do not automatically modify the active website
+or conclude four mixed-length inputs predict ten full-description throughput.
+
+
+## September 10 — reduce output repetition without dropping evidence conditions
+
+Ask for concise sentences and at most two short exact comparison excerpts; reject
+overlong structured answers rather than truncating evidence. Keep qualifiers,
+AND/OR relations, match dimensions and evidence IDs. Only request plan wording
+edits, restoring immutable skeleton fields in code through validation context.
+Bind comparison requirement IDs in code, but retain model-derived transferable
+capability labels because they are semantic content, not internal metadata.
+Legacy full replies remain subject to identity/tamper checks. Deduplication is
+case/whitespace based, not semantic merging of potentially distinct limitations.
+Do not lower the configured 30k ceiling or claim a latency gain without measurement.
+
+
+## September 9 — live contract findings, not model-only blame
+
+A production GLM response exposed deterministic false rejections of an explicit
+role-named qualification and ordinary action-word inflections. Recover these
+with generic source-grounded rules, not profession-specific exceptions or relaxed
+quote validation. The same raw response is replayed to distinguish code changes
+from provider variability.
+
+Comparison receives source dates, source reference and explicitly recorded
+current-employment status. This is temporal context, not proof of equal years in
+every technology. Unknown historical flags remain null; no old evidence is
+silently upgraded. Non-contiguous assembled excerpts remain invalid even when
+their individual sentences exist in the source. Future run audits record the
+loaded pipeline/prompt versions to distinguish stale-runtime results from current
+contracts. Synthesis must retain the separate hiring/preference/work tracks.
+
+## September 9 — recurrence is not comparison eligibility
+
+All extracted statements remain auditable. Grounded primary-role hiring asks
+are eligible for comparison even when uncommon or employer-specific. Legacy
+CORE/SECONDARY/OPTIONAL recurrence labels no longer determine that eligibility.
+Required/preferred/unspecified conditions remain source-specific; no voting rule
+turns an uncommon requirement into an optional preference or a universal demand.
+
+Canonical grouping separates hiring, preference and responsibility statements
+even for the same concept. Their comparisons share evidence/provenance contracts,
+but only hiring expectations contribute candidate hiring gaps and accessibility.
+Related-role context and ambiguous fragments remain outside that baseline.
+
+Overall readiness requires usable role coverage and completed hiring comparisons;
+one surviving skill is not enough. Coverage uncertainty is not a candidate
+capability gap. Preserve individual strengths and approved timeline preferences;
+use exploration/evidence verification when an overall verdict is unsupported.
+No role-specific shortcuts, retrieval changes or model-provider changes are part
+of this pass. See EVIDENCE_PIPELINE_REPLAY.md for frozen evidence and test limits.
+
+## September 9 — Fireworks streaming and explicit live output ceiling
+
+User requested the actual website use configured GLM 5.3 Flash and increase output
+capacity to 30k. A nullable Settings.model_max_output_tokens override is applied
+at the gateway before dispatch/inspection; it is unset by default. Local ignored
+configuration selects 30000, Fireworks and streaming without changing provider
+defaults for other deployments. GLM's required thinking is left enabled by its
+provider default; no reasoning trace is exposed or persisted.
+
+The earlier diagnostic demonstrated that per-chunk deadline checks are not a
+sufficient cancellation mechanism. Production Fireworks streaming is isolated in
+a child transport worker, with parent-side timed communication and kill/reap on
+timeout. Credentials pass only through stdin, never command-line arguments or
+logs; the network destination is fixed. Completed final answer text and usage are
+normalized through the existing adapter/gateway. Partial streams and length-
+terminated JSON cannot silently become validated workflow results. No changes
+to requirements, comparison/accessibility policy, or human approvals are implied.
+
 ## Activity 8: Parallel Adzuna and You.com discovery
 
 Adzuna structured discovery and You.com MCP web discovery run concurrently as independent bounded
@@ -712,3 +1023,89 @@ Later query passes may search a wider index window while posting currentness is 
 The public query probe improved Toronto URL relevance but its three fetches did not yield usable
 full bodies. This does not authorize treating expired/inaccessible pages as hiring evidence,
 altering comparison/accessibility policy, or claiming a release-ready product.
+
+## 64. Adzuna-seeded discovery retains uncertain identities separately
+
+**Status:** Implemented with offline tests, September 9, 2026; live acceptance pending.
+
+The user's retained-jobs instruction supersedes content-fingerprint merging. Only
+an exact posting/canonical URL or shared employer requisition supports automatic
+merging; conflicting requisitions remain separate. Same employer and similar body
+can flag possible duplicates but cannot change counts by merging or attach one JD
+to another source record. A returned different URL also needs identity evidence
+before it can complete an existing posting. Original snippets and provenance remain.
+
+Use structured employer/title/location as bounded You.com search seeds when direct
+completion fails. Preserve the complete title, including role-defining suffixes;
+no Java-specific rules or hand-coded employer-domain map. Request full-page Markdown
+through advertised MCP capabilities, with Contents fallback on older schemas. Keep
+independently validated alternative vacancies, each linked to the search seed, and
+deduplicate only after checking identity. Existing parallel discovery remains.
+
+Retain related-title discoveries without promoting them into the canonical baseline.
+Recognized individual job-board copies may supply grounded descriptions but are not
+labelled employer-verified vacancies; guides and result-list pages stay excluded.
+Shared search/content budgets still apply. Pending or budget-deferred work is not
+unavailable-description evidence. No automatic background retry system is introduced.
+The safe-stop, requirement extraction, synthesis and accessibility policies remain
+unchanged; record counts with possible duplicates are not verified vacancy totals.
+
+## 65. Homepage demo is a reusable profile-input shortcut
+
+**Status:** Implemented and browser-verified, September 9, 2026.
+
+The user wants to avoid repeatedly entering test data, not preview canned results.
+Explore demo therefore creates a fresh synthetic ProfileDraft and stops at Education
+& Certifications, using the normal manual/live route thereafter. No goal, strengths
+review, approval, retrieval, assessment or plan is seeded. The user chooses when to
+continue into AI review and live analysis. Repeated use replaces temporary session
+progress with fresh input records; homepage copy discloses that behavior. Synthetic
+input labels remain visible. Standard blank onboarding and backend policies are unchanged.
+
+## 66. One user-facing assessment, separate evidence and decision stages
+
+**Status:** Implemented offline, September 9, 2026; live model-quality benchmark pending.
+
+The user approved merging Market and Analysis around employer expectations and candidate
+evidence rather than retrieval statistics. Internal workflow stages and canonical scope
+rules remain separate; both legacy view keys map to one assessment renderer. Plan remains
+a separate evidence-linked action and version-approval experience.
+
+Cross-posting organization uses canonical expectations with exact source passages and
+employer/posting provenance; candidate data enters only the comparison stage. This bounded
+call is allowed to organize IDs into professional dimensions, not invent role requirements,
+people-management demands, personality scores, accessibility, gaps or career advice. It
+must preserve complete coverage and semantic-type/scope boundaries; failure leaves all
+original expectations visible with an explicit fallback label. Existing accessibility and
+plan rules are unchanged. This first implementation does not claim unconstrained role-family
+narratives or per-vacancy candidate-fit recommendations.
+
+Professional summary/core competencies are labelled context, not new verified evidence.
+No market growth/decline, hiring probability or universal-role requirements may be inferred
+from the bounded posting sample. Numbers remain available for audit, not the primary story.
+
+## 67. Repair only empty optional extraction lists, not evidence
+
+**Status:** Implemented and regression-tested, September 9, 2026.
+
+The observed Nemotron nulls for `qualifier_quotes` and `capability_options` may be
+normalized to empty lists at the ExtractedRequirement boundary. This narrowly
+repairs absent optional annotations without changing the required array wire
+schema or relaxing other fields. Non-null wrong types remain errors. ANY_OF still
+requires at least two alternatives and downstream validation still requires
+distinct, non-empty alternatives explicitly supported by an OR source statement.
+Quotes, qualifiers, normalized capability grounding and provenance are unchanged.
+Prompt v5 explicitly specifies array values. This is not a timeout fix and does
+not establish live provider quality; the completed diagnostic remains failed.
+# September 11, 2026 — transition V3 prompt replacement
+
+User authorized implementing the independent role-neutral assessment approach and
+cross-profession safeguards, then repeating the Java-to-AI case with DeepSeek.
+Replace the transition author/reviewer prompts; do not append a second policy stack.
+Use existing rationale for readiness now and role_picture for the credible direction.
+Keep the existing accessibility enum with explicit developmental versus apply-now meaning.
+Add supervised-practice and verified jurisdiction/task-authorization boundaries without
+profession-specific laws, forced verdicts or fabricated credentials. Preserve schemas,
+same-role behavior, retrieval, reference validation and exact-version plan approval.
+Original proposal/self-review artifacts remain historical; live semantic quality must
+be reported from the actual rerun, not inferred from prompt-contract test success.

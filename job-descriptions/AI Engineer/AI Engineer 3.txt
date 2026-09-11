@@ -1,0 +1,65 @@
+AI Engineering Lead
+
+The Opportunity
+
+We are seeking a forward-thinking AI Engineering Lead to join our innovative team and drive the future of Property & Casualty (P&C) insurance. As an AI Engineering Lead, you will serve as a technical authority and strategic leader in developing and deploying sophisticated AI-powered solutions to drive business value and innovation across the P&C insurance value chain.
+
+You will be instrumental in architecting and leading the implementation of our next-generation AI and data platforms, mentoring a team of talented engineers, and setting the technical direction for AI in this critical domain. You will be at the forefront of technological innovation, leveraging your expertise in data, AI models, and responsible AI to create impactful and scalable applications across underwriting, pricing, claims, and customer experience.
+
+What To Expect
+
+ Define and execute the long-term technical strategy for AI-driven business solutions. Lead the architecture and development of scalable, real-time AI systems that address key challenges and opportunities in P&C, from conceptualization to production. 
+ Spearhead the design and implementation of cutting-edge AI solutions using machine learning models (including LLMs, graph neural networks, and computer vision) tailored for key insurance business problems. 
+ As the tech owner of our AI fraud prevention platform, you will Oversee the entire workflow from collecting and preparing data to putting models into production. 
+ Act as a lead and mentor to other AI engineers and data scientists. Provide expert technical guidance on complex projects, foster a culture of innovation, and elevate the team's capabilities in building robust AI solutions. 
+ Collaborate with senior leadership, underwriting, claims and other business and product teams to align AI initiatives with overarching business goals. Translate complex business problems into actionable technical strategies. 
+ Stay at the forefront of academic and industry advancements in AI and data engineering. Drive innovation by prototyping and integrating novel techniques and technologies to maintain a competitive edge. 
+
+What You Bring
+
+ Mastery of Python and deep experience with AI/ML frameworks, Proven ability to write clean, high-performance, and maintainable code in Python, Java, SQL, and Spark. 
+ Deep expertise in a wide range of AI/ML techniques. Extensive, hands-on experience building and deploying AI based applications, RAG pipelines, and agent-based workflows. 
+ Extensive hands-on experience architecting and deploying scalable AI solutions on a major cloud platform (Google Cloud or AWS). Deep experience with Google Cloud, including Vertex AI and Gemini, is a significant asset. 
+ AI Integration: Experience designing and working with A2A, MCP, Agentic RAG, and including conventional microservices, and event-drive architecture. 
+ A bachelor's or master's degree in computer science, or Computer/Software Engineering, Data Science, Artificial Intelligence, or a related field; a Ph.D. is a plus. 
+ 8+ years of experience in a technology-focused role, with a minimum of 3 years of proven, hands-on experience in building and deploying production-grade fraud use. 
+
+Salary Range: $108,700-$158,700
+
+About Us
+
+Actual salary for the role may vary depending on work location of the successful candidate and other factors including but not limited to, skills, education, experience, working conditions and the local labour market.
+
+This position is being posted to fill an existing vacancy.
+
+Interested in this role, but don’t meet every requirement? We encourage you to apply! We know from experience that a candidate doesn’t need 100% of the qualifications listed to bring incredible value to our team. We’re actively seeking diverse backgrounds and perspectives to help us make insurance better. At Definity, inclusion, diversity, and equity aren’t just “nice to have” — they’re essential to our success.
+
+What’s in it for you?
+
+Hybrid work schedule for most roles
+Company share ownership program
+Incentive Program - Eligible employees may participate in various incentive plans which are paid out at the discretion of the company and subject to individual and company performance.
+Pension and savings programs, with company-matched RRSP contributions
+Paid volunteer days and company matching on charitable donations
+Educational resources, tuition assistance, and paid time off to study for exams
+Focus on inclusion with employee groups, support for gender affirmation surgery, access to BIPOC counsellors, access to programs for working parents 
+Wellness and recognition programs 
+Discounts on products and services
+
+Go ahead and expect a lot — you deserve it.
+
+It’s better here — but don’t take our word for it. Definity was named by Great Place to Work® as one of the Best Workplaces™ in Canada for women, for youth, and for inclusion.
+
+Our inclusive work environment welcomes diversity and supports accessibility. If you require accommodation at any time during the recruitment process, please let us know by contacting accessibility@economical.com.
+
+As part of Definity’s commitment to reconciliation, we acknowledge that our work, meetings, and travel take place on the lands now known as Canada, and recognize the enduring presence, wisdom, and stewardship of the First Nations, Métis, and Inuit peoples who have long cared for these lands.
+
+Background checks
+
+This role requires successful clearance of background checks (including criminal checks and leadership references).
+
+About The Team
+
+Definity is the parent company to some of Canada’s most long-standing and innovative insurance brands, including Economical Insurance, Sonnet Insurance, Family Insurance Solutions, and Petline Insurance. Our ambition is to be one of Canada’s leading and most innovative property and casualty insurers. We can’t do that without our people, so we embrace and encourage a culture that’s collaborative, ambitious, rewarding, and empowering.
+
+We offer a flexible, hybrid work experience where employees work from the office and virtually depending on the type of work they are doing and who they are working with. Bring your true self and be a part of our journey. It’s better here.

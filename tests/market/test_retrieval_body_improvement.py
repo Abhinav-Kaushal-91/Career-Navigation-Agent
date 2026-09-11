@@ -80,7 +80,7 @@ def test_missing_identity_and_unchanged_snippet_do_not_count_as_completion():
 
 
 def test_one_selected_body_preserves_structured_identity_and_original_excerpt():
-    original = evidence()
+    original = evidence(requisition_id="123")
     body = "# Senior Java Developer\n## Requirements\nJava production experience.\n" * 15
     page = MarketPageContent(
         url="https://jobs.employer.example/jobs/123",
@@ -90,6 +90,7 @@ def test_one_selected_body_preserves_structured_identity_and_original_excerpt():
         markdown=body,
         content_complete=True,
         closing_date="2026-10-01",
+        requisition_id="123",
     )
     result = enrich(page, original=original)
     assert result.enrichment_status.value == "APPLIED"
@@ -121,15 +122,26 @@ def test_footer_mentions_cannot_override_conflicting_job_metadata(field, value, 
     assert enrich(page).enrichment_reason == reason
 
 
-def test_redirect_requires_positive_employer_and_location_evidence():
+def test_different_returned_url_requires_vacancy_identity_not_just_matching_fields():
     page = MarketPageContent(
         url="https://different.example/careers",
         title="Senior Java Developer",
         markdown="Senior Java Developer job opportunities.",
     )
-    assert enrich(page).enrichment_reason == "REDIRECT_IDENTITY_NOT_GROUNDED"
+    assert enrich(page).enrichment_reason == "VACANCY_IDENTITY_UNCONFIRMED"
     remote = page.model_copy(update={"employer": "Employer", "location": "Remote"})
-    assert enrich(remote).enrichment_reason == "REDIRECT_IDENTITY_NOT_GROUNDED"
+    assert enrich(remote).enrichment_reason == "VACANCY_IDENTITY_UNCONFIRMED"
+    same_fields = page.model_copy(
+        update={
+            "employer": "Employer",
+            "location": "Toronto, Canada",
+            "markdown": "Senior Java Developer. Employer. Toronto, Canada. Qualifications: Java. "
+            * 20,
+        }
+    )
+    result = enrich(same_fields)
+    assert result.enrichment_reason == "VACANCY_IDENTITY_UNCONFIRMED"
+    assert result.primary_content.markdown == "Original brief excerpt."
 
 
 def test_javascript_shell_does_not_replace_source_description():

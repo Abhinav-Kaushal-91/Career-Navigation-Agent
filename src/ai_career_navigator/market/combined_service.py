@@ -10,7 +10,7 @@ from uuid import uuid4
 
 from ai_career_navigator.domain import ConfidenceLevel, JobPosting, SourceRecord
 from ai_career_navigator.market.currentness import currentness_rejection
-from ai_career_navigator.market.deduplication import same_vacancy
+from ai_career_navigator.market.deduplication import possible_duplicate, same_vacancy
 from ai_career_navigator.market.errors import MarketIntelligenceError
 from ai_career_navigator.market.mcp.protocol import MarketSearchClient, StructuredJobSearchClient
 from ai_career_navigator.market.normalization import (
@@ -50,6 +50,7 @@ from ai_career_navigator.market.schemas import (
     StructuredJobSearchRequest,
 )
 from ai_career_navigator.market.search_plan import build_search_plan
+from ai_career_navigator.market.seeded_discovery import discover_from_seed
 from ai_career_navigator.market.service import _RunMetrics, _snapshot, retrieve_current_market
 from ai_career_navigator.market.source_registry import looks_like_individual_job_url
 from ai_career_navigator.market.validation import observed_related_titles, title_equivalence_reason
@@ -221,7 +222,7 @@ def _identity_conflict(primary: MarketPostingEvidence, support: MarketPageConten
     if (
         primary.posting.requisition_id
         and support.requisition_id
-        and primary.posting.requisition_id != support.requisition_id
+        and primary.posting.requisition_id.casefold() != support.requisition_id.casefold()
     ):
         return "REQUISITION_CONFLICT"
 
@@ -232,12 +233,14 @@ def _identity_conflict(primary: MarketPostingEvidence, support: MarketPageConten
         normalized_page = " ".join(re.findall(r"[a-z0-9]+", support.markdown.casefold()))
         return bool(normalized_value) and normalized_value in normalized_page
 
-    title_matches = bool(support.title) and assess_title(
-        support.title, primary.posting.original_title, posting_text=support.markdown
-    ) in {
-        PostingTitleMatch.EXACT_TARGET,
-        PostingTitleMatch.TARGET_VARIANT,
-    }
+    # Role relevance is not vacancy identity. A description-supported specialty
+    # may enter extraction, but cannot authorize merging two different jobs.
+    title_matches = bool(support.title) and (
+        assess_title(support.title, primary.posting.original_title)
+        in {PostingTitleMatch.EXACT_TARGET, PostingTitleMatch.TARGET_VARIANT}
+        or title_equivalence_reason(support.title, primary.posting.original_title, support.markdown)
+        == "DESCRIPTIVE_SUFFIX_GROUNDED"
+    )
     # Content tools sometimes return a generic employer-page HTML title. That
     # metadata must not defeat an exact posting URL whose body explicitly
     # grounds the Adzuna posting title.
@@ -255,17 +258,26 @@ def _identity_conflict(primary: MarketPostingEvidence, support: MarketPageConten
     )
     if location_conflicts:
         return "LOCATION_CONFLICT"
-    # A redirect to a general page is not the same vacancy just because fields are absent.
+    # Employer/title/location/body agreement is not vacancy identity. A content
+    # response for a different URL needs a shared employer requisition or canonical
+    # URL; otherwise it can only enter through independent posting validation.
     same_url = canonicalize_url(str(primary.primary_source.url)) == canonicalize_url(support.url)
-    if not same_url and not (
-        (left and right and left.casefold() == right.casefold() or grounded(left))
-        and (
-            assess_geography(support.location, primary.posting.location)
-            is PostingGeographyStatus.IN_SCOPE
-            or (not support.location and grounded(primary.posting.location))
-        )
-    ):
-        return "REDIRECT_IDENTITY_NOT_GROUNDED"
+    shared_requisition = (
+        left
+        and right
+        and left.casefold() == right.casefold()
+        and primary.posting.requisition_id
+        and support.requisition_id
+        and primary.posting.requisition_id.casefold() == support.requisition_id.casefold()
+    )
+    shared_canonical = (
+        primary.posting.canonical_job_url
+        and support.canonical_job_url
+        and canonicalize_url(primary.posting.canonical_job_url)
+        == canonicalize_url(support.canonical_job_url)
+    )
+    if not (same_url or shared_requisition or shared_canonical):
+        return "VACANCY_IDENTITY_UNCONFIRMED"
     return None
 
 
@@ -424,7 +436,15 @@ def _you_posting_evidence(result: MarketRetrievalResult) -> list[MarketPostingEv
                 source_type=(
                     audit.source_type if audit else PostingSourceType.DIRECT_EMPLOYER_POSTING
                 ),
-                retrieval_quality=RetrievalQuality.HIGH,
+                retrieval_quality=RetrievalQuality.MODERATE
+                if audit and audit.source_type is PostingSourceType.INDIVIDUAL_JOB_BOARD_POSTING
+                else RetrievalQuality.HIGH,
+                limitations=[
+                    "Individual job-board copy; employer-page active status "
+                    "is not independently verified."
+                ]
+                if audit and audit.source_type is PostingSourceType.INDIVIDUAL_JOB_BOARD_POSTING
+                else [],
                 title_classification=(audit.title_classification if audit else None),
                 seniority_classification=(
                     audit.seniority_classification
@@ -443,6 +463,7 @@ def _content_score(item: MarketPostingEvidence) -> tuple[int, int, int, int]:
         PostingSourceType.DIRECT_EMPLOYER_POSTING: 4,
         PostingSourceType.DIRECT_ATS_POSTING: 3,
         PostingSourceType.STRUCTURED_JOB: 2,
+        PostingSourceType.INDIVIDUAL_JOB_BOARD_POSTING: 1,
         PostingSourceType.AGGREGATOR_PAGE: 1,
         PostingSourceType.BACKGROUND_CONTEXT: 0,
     }[item.source_type]
@@ -509,6 +530,11 @@ def _merge_duplicate_evidence(
         )
         if conflicting_support:
             winner = structured
+        applied = (
+            structured.primary_source.source_type == "ADZUNA"
+            and winner.selected_content_source is MarketSourceProvider.YOU
+            and winner.content_quality is PostingContentQuality.FULL_POSTING
+        )
         field_provider = (
             MarketSourceProvider.ADZUNA
             if structured.primary_source.source_type == "ADZUNA"
@@ -538,6 +564,23 @@ def _merge_duplicate_evidence(
                 "selected_content_source": winner.selected_content_source
                 or winner.provider_sources[0],
                 "content_quality": winner.content_quality,
+                "enrichment_status": EnrichmentStatus.APPLIED
+                if applied
+                else structured.enrichment_status,
+                "enrichment_failure_category": None
+                if applied
+                else structured.enrichment_failure_category,
+                "enrichment_deferred_reason": None
+                if applied
+                else structured.enrichment_deferred_reason,
+                "enrichment_reason": "VERIFIED_IDENTITY_CONTENT_MERGE"
+                if applied
+                else structured.enrichment_reason,
+                "discovery_seed_posting_ids": list(
+                    dict.fromkeys(
+                        [*current.discovery_seed_posting_ids, *item.discovery_seed_posting_ids]
+                    )
+                ),
                 "field_sources": {
                     field: field_provider
                     for field in ("title", "employer", "location", "posting_date")
@@ -655,6 +698,7 @@ def _resolve_retrieval_audits(
                     "enrichment_reason": completed.enrichment_reason,
                     "enrichment_deferred_reason": completed.enrichment_deferred_reason,
                     "enrichment_observation": completed.enrichment_observation,
+                    "possible_duplicate_posting_ids": completed.possible_duplicate_posting_ids,
                 }
             )
         if audit.rejection_reason:
@@ -801,6 +845,10 @@ async def retrieve_combined_market(
     if enrichment_budget is None:
         enrichment_budget = bounded.analysis_posting_limit
     enrichment_budget = min(enrichment_budget, bounded.max_content_fetches)
+    seed_search_budget = (
+        min(enrichment_budget, max(0, adzuna_search_budget // 2)) if enrichment_client else 0
+    )
+    adzuna_search_budget -= seed_search_budget
     you_content_budget = max(
         1,
         bounded.max_content_fetches
@@ -1096,23 +1144,23 @@ async def retrieve_combined_market(
     )
 
     enrichment_attempts = 0
+    seed_search_count = 0
+    seed_raw_count = 0
+    seed_validated_count = 0
+    seed_context_count = 0
+    seed_rejected_count = 0
+    seed_seen_urls: set[str] = {
+        canonicalize_url(str(item.primary_source.url)) or str(item.primary_source.url)
+        for item in you_evidence
+    }
     if enrichment_client is not None:
         async with enrichment_client:
             updated: list[MarketPostingEvidence] = []
             for item in evidence:
                 if (
                     item.enrichment_status is EnrichmentStatus.NOT_ATTEMPTED
-                    and item.title_classification in {"EXACT_TARGET", "TARGET_VARIANT"}
-                    and enrichment_attempts
-                    < min(
-                        enrichment_budget,
-                        bounded.max_content_fetches
-                        - (
-                            you_result.snapshot.content_fetch_count
-                            if you_result and you_result.snapshot
-                            else 0
-                        ),
-                    )
+                    and enrichment_attempts < enrichment_budget
+                    and metrics.content_attempts < bounded.max_content_fetches
                 ):
                     enrichment_attempts += 1
                     metrics.content_attempts += 1
@@ -1125,15 +1173,56 @@ async def retrieve_combined_market(
                         metrics.content_successes += 1
                     elif item.enrichment_status is EnrichmentStatus.FAILED:
                         metrics.content_failure_count += 1
+                    if item.enrichment_status is not EnrichmentStatus.APPLIED:
+                        if (
+                            seed_search_count < seed_search_budget
+                            and metrics.search_attempts < bounded.max_total_search_calls
+                            and metrics.content_attempts < bounded.max_content_fetches
+                        ):
+                            seed_search_count += 1
+                            try:
+                                found = await discover_from_seed(
+                                    item,
+                                    client=enrichment_client,
+                                    plan=plan,
+                                    limits=bounded,
+                                    metrics=metrics,
+                                    seen_urls=seed_seen_urls,
+                                    timestamp=timestamp,
+                                )
+                                seed_raw_count += metrics.search_passes[-1].raw_result_count
+                                seed_context_count += found.you_context_result_count
+                                seed_rejected_count += found.rejected_result_count
+                                additions = _you_posting_evidence(found)
+                                seed_validated_count += len(additions)
+                                updated.extend(
+                                    new.model_copy(
+                                        update={
+                                            "discovery_seed_posting_ids": [
+                                                str(item.posting.posting_id)
+                                            ]
+                                        }
+                                    )
+                                    for new in additions
+                                )
+                            except MarketIntelligenceError:
+                                item = item.model_copy(
+                                    update={
+                                        "enrichment_deferred_reason": "SEED_SEARCH_FAILED",
+                                    }
+                                )
+                        else:
+                            item = item.model_copy(
+                                update={
+                                    "enrichment_deferred_reason": "SEED_SEARCH_BUDGET_EXHAUSTED",
+                                }
+                            )
                 elif item.enrichment_status is EnrichmentStatus.NOT_ATTEMPTED:
                     item = item.model_copy(
                         update={
                             "enrichment_target_url": str(item.primary_source.url),
                             "enrichment_deferred_reason": (
-                                "NOT_PRIMARY_TARGET_COHORT"
-                                if item.title_classification
-                                not in {"EXACT_TARGET", "TARGET_VARIANT"}
-                                else "ENRICHMENT_BUDGET_EXHAUSTED"
+                                "ENRICHMENT_BUDGET_EXHAUSTED"
                                 if enrichment_attempts >= enrichment_budget
                                 else "SHARED_CONTENT_FETCH_BUDGET_EXHAUSTED"
                             ),
@@ -1182,16 +1271,31 @@ async def retrieve_combined_market(
     evidence, completion_duplicates = _merge_duplicate_evidence(current_evidence)
     metrics.duplicate_count += completion_duplicates
     cross_source_match_count = sum(len(item.provider_sources) > 1 for item in evidence)
-    primary = [
-        item for item in evidence if item.title_classification in {"EXACT_TARGET", "TARGET_VARIANT"}
-    ]
-    context = [item for item in evidence if item.title_classification == "RELATED_TITLE"]
+    # Retention is not assessment selection. Keep validated related-title records
+    # even when the user has not authorized additional related-title searches.
+    # The downstream canonical profile retains its exact/variant cohort rules.
     evidence = _select_diverse_evidence(
-        primary, bounded.target_posting_count, plan.target_seniority or plan.search_title
-    ) + _select_diverse_evidence(
-        context,
-        bounded.max_expansion_queries if plan.expansion_permitted else 0,
-        plan.target_seniority or plan.search_title,
+        evidence, len(evidence), plan.target_seniority or plan.search_title
+    )
+    evidence = [
+        item.model_copy(
+            update={
+                "possible_duplicate_posting_ids": [
+                    str(other.posting.posting_id)
+                    for other in evidence
+                    if possible_duplicate(
+                        item.posting,
+                        other.posting,
+                        item.primary_content.markdown,
+                        other.primary_content.markdown,
+                    )
+                ]
+            }
+        )
+        for item in evidence
+    ]
+    you_validated_count = len(
+        [item for item in evidence if MarketSourceProvider.YOU in item.provider_sources]
     )
 
     postings = [item.posting for item in evidence]
@@ -1202,6 +1306,11 @@ async def retrieve_combined_market(
     ]
     for item in evidence:
         metrics.limitations.extend(item.limitations)
+    if any(item.possible_duplicate_posting_ids for item in evidence):
+        metrics.limitations.append(
+            "Possible duplicate postings are retained separately pending identity verification. "
+            "The retained record count is not a verified unique-vacancy total."
+        )
     coverage_confidence, coverage_reason = _source_coverage(
         adzuna_failed=primary_failed,
         you_failed=you_failed,
@@ -1255,7 +1364,8 @@ async def retrieve_combined_market(
             you_result.snapshot.search_query_count
             if you_result is not None and you_result.snapshot is not None
             else 0
-        ),
+        )
+        + seed_search_count,
         adzuna_raw_result_count=adzuna_raw_result_count,
         adzuna_validated_count=adzuna_validated_count,
         you_validated_count=you_validated_count,
@@ -1271,10 +1381,14 @@ async def retrieve_combined_market(
             evidence,
             completion_evidence,
         ),
-        you_raw_result_count=(you_result.you_raw_result_count if you_result else 0),
-        you_direct_posting_count=(you_result.you_direct_posting_count if you_result else 0),
-        you_context_result_count=(you_result.you_context_result_count if you_result else 0),
-        you_rejected_result_count=(you_result.you_rejected_result_count if you_result else 0),
+        you_raw_result_count=(you_result.you_raw_result_count if you_result else 0)
+        + seed_raw_count,
+        you_direct_posting_count=(you_result.you_direct_posting_count if you_result else 0)
+        + seed_validated_count,
+        you_context_result_count=(you_result.you_context_result_count if you_result else 0)
+        + seed_context_count,
+        you_rejected_result_count=(you_result.you_rejected_result_count if you_result else 0)
+        + seed_rejected_count,
         you_fallback_triggered=(you_result.you_fallback_triggered if you_result else False),
         rejected_candidate_count=metrics.rejected_candidates
         + (you_result.rejected_candidate_count if you_result else 0),
@@ -1283,11 +1397,13 @@ async def retrieve_combined_market(
             metrics.discovered_urls
             | {audit.source_url for audit in (you_result.posting_audits if you_result else [])}
         ),
-        budget_deferred_result_count=you_result.budget_deferred_result_count if you_result else 0,
+        budget_deferred_result_count=(you_result.budget_deferred_result_count if you_result else 0)
+        + metrics.budget_deferred_results,
         effective_budgets={
             "total_search_calls": bounded.max_total_search_calls,
             "adzuna_search_calls": adzuna_search_budget,
             "you_search_calls": you_search_budget,
+            "you_seed_search_calls": seed_search_budget,
             "content_fetches": bounded.max_content_fetches,
             "enrichment_attempts": enrichment_budget,
             "max_posting_age_days": bounded.max_posting_age_days,

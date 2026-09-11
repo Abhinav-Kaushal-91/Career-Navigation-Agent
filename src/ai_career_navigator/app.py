@@ -7,7 +7,7 @@ from ai_career_navigator.ui.components.navigation import (
     initialize_session_state,
     render_app_navigation,
 )
-from ai_career_navigator.ui.pages import analysis, goal, home, market, plan, profile
+from ai_career_navigator.ui.pages import assessment, goal, home, plan, profile
 
 st.set_page_config(
     page_title="Career Navigator", page_icon="CN", layout="wide", initial_sidebar_state="expanded"
@@ -25,8 +25,10 @@ views = {
     "Home": home.render,
     "Profile": profile.render,
     "Goal": goal.render,
-    "Market": market.render,
-    "Analysis": analysis.render,
+    "Market": assessment.render,
+    "Analysis": assessment.render,
     "Plan": plan.render,
 }
-views[current_step]()
+with st.container(horizontal=True, horizontal_alignment="center"):
+    with st.container(width=1120):
+        views[current_step]()

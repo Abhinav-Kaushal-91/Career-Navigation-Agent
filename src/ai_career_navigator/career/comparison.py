@@ -26,6 +26,7 @@ from ai_career_navigator.domain import (
 )
 from ai_career_navigator.market import MarketRequirementAnalysis, PostingTitleMatch
 from ai_career_navigator.models import ModelGateway, ModelGatewayError, ModelRole
+from ai_career_navigator.profile.experience import calculate_professional_experience
 
 from .comparison_prompts import PROMPT_VERSION, SYSTEM_PROMPT, build_transferability_prompt
 from .comparison_schemas import (
@@ -155,7 +156,15 @@ def _deterministic(
     # Only a simple, explicitly exercised atomic skill can use the factual shortcut.
     # Compound capabilities and qualified expectations need a semantic assessment.
     simple_skill = (
-        requirement.category is RequirementCategory.TECHNICAL
+        all(
+            normalize_capability(source.source_quote) in {target, f"{target} required"}
+            and not source.qualifier_quotes
+            and source.years_required == requirement.years_required
+            and source.maturity_expected == requirement.maturity_expected
+            and source.relationship == "SINGLE"
+            for source in requirement.source_expectations
+        )
+        and requirement.category is RequirementCategory.TECHNICAL
         and len(target.split()) == 1
         and normalize_capability(requirement.requirement_text) in {target, f"{target} required"}
     )
@@ -426,12 +435,22 @@ def _semantic(
     candidates: list[EvidenceItem],
     scope: ComparisonScope,
     gateway: ModelGateway,
+    profile_context: dict | None = None,
+    calculated_experience: dict | None = None,
 ) -> RequirementComparison:
     response = gateway.generate_structured(
         role=ModelRole.REASONING,
         output_schema=TransferabilityAssessment,
+        validation_context={
+            "requirement_id": str(requirement.requirement_id),
+        },
         system_prompt=SYSTEM_PROMPT,
-        user_prompt=build_transferability_prompt(requirement, candidates),
+        user_prompt=build_transferability_prompt(
+            requirement,
+            candidates,
+            profile_context=profile_context,
+            calculated_experience=calculated_experience,
+        ),
         temperature=0,
         max_tokens=2400,
         metadata={
@@ -520,13 +539,7 @@ def _semantic(
         production_context_difference=production_difference,
         outcome_alignment=assessment.outcome_alignment,
         matched_alternative=assessment.matched_alternative,
-        evidence_status=(
-            "SUPPORTED"
-            if assessment.evidence_status == "UNKNOWN"
-            and assessment.match_type
-            in {MatchType.DIRECT_MATCH, MatchType.TRANSFERABLE_MATCH, MatchType.PARTIAL_MATCH}
-            else assessment.evidence_status
-        ),
+        evidence_status=assessment.evidence_status,
         clarification_needed=assessment.clarification_needed,
         grounded_evidence_quotes=[
             {
@@ -688,6 +701,27 @@ def _enforce_transferability_quality(
     comparison: RequirementComparison,
 ) -> RequirementComparison:
     """Enforce generic dimensional consistency without profession-specific overrides."""
+
+    if comparison.evidence_status == "UNKNOWN" or (
+        comparison.match_type is MatchType.PARTIAL_MATCH
+        and comparison.clarification_needed
+        and comparison.evidence_status == "SUPPORTED"
+    ):
+        expectation = requirement.normalized_capability or requirement.requirement_text
+        return comparison.model_copy(
+            update={
+                "match_type": None,
+                "evidence_status": "UNKNOWN",
+                "partial_match_subtype": None,
+                "confidence": ConfidenceLevel.INSUFFICIENT,
+                "clarification_needed": comparison.clarification_needed
+                or f"What confirmed evidence addresses: {expectation}?",
+                "validation_notes": [
+                    *comparison.validation_notes,
+                    "Unknown evidence remains a clarification, not a capability deficit.",
+                ],
+            }
+        )
 
     if comparison.evidence_status in {"CONFIRMED_UNMET", "CONTRADICTED"} and (
         comparison.match_type is not MatchType.NO_CONFIRMED_MATCH
@@ -869,17 +903,18 @@ def compare_candidate_to_requirements(
 
     started = perf_counter()
     evidence = eligible_candidate_evidence(profile)
+    calculated_experience = calculate_professional_experience(evidence)
     scopes = _scope_by_posting(analysis)
     canonical_by_id = {
         item.canonical_requirement_id: item
         for item in (
-            analysis.canonical_profile.comparison_requirements if analysis.canonical_profile else ()
+            analysis.canonical_profile.assessment_requirements if analysis.canonical_profile else ()
         )
     }
     if analysis.canonical_profile is not None:
         requirements = [
             item.as_role_requirement()
-            for item in analysis.canonical_profile.comparison_requirements
+            for item in analysis.canonical_profile.assessment_requirements
         ]
         canonical_scopes = {
             item.canonical_requirement_id: (
@@ -887,7 +922,7 @@ def compare_candidate_to_requirements(
                 if item.exact_support_count
                 else ComparisonScope.TARGET_VARIANT
             )
-            for item in analysis.canonical_profile.comparison_requirements
+            for item in analysis.canonical_profile.assessment_requirements
         }
     else:
         requirements = sorted(
@@ -965,7 +1000,17 @@ def compare_candidate_to_requirements(
             semantic_result = _enforce_transferability_quality(
                 requirement,
                 candidates,
-                _semantic(requirement, candidates, scope, model_gateway),
+                _semantic(
+                    requirement,
+                    candidates,
+                    scope,
+                    model_gateway,
+                    {
+                        "professional_summary": (profile.professional_summary or "")[:3000],
+                        "core_competencies": (profile.core_competencies or "")[:2000],
+                    },
+                    calculated_experience,
+                ),
             )
             semantic_result = semantic_result.model_copy(
                 update={

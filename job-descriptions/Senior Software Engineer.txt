@@ -1,0 +1,141 @@
+Senior Software Engineer
+
+ob details
+Here’s how the job details align with your profile.
+Pay
+
+$140,000–$190,000 a year
+Job type
+
+Full-time
+&nbsp;
+Location
+Estimated commute
+Job address
+Toronto, ON M5A 1E1•Hybrid work
+&nbsp;
+Benefits
+Pulled from the full job description
+
+Paid time off
+Dental care
+Life insurance
+Disability insurance
+Extended health care
+&nbsp;
+Full job description
+Our Mission at Tactable
+
+What if you could build software that didn’t just scale, but transformed entire organizations?
+
+At Tactable, this is what drives us. We’re building a world-class cloud, data, and API engineering firm with a mission to power the most influential tech of tomorrow, through expert-led delivery, strong partnerships, and a relentless focus on quality.
+
+We don’t just consult. We build.
+
+Founded by engineers who care deeply about people, process, and product, we go beyond just solving problems. We embed with clients, work across full project lifecycles, and operate at the speed of startups while upholding the rigor of enterprise-grade engineering.
+
+From financial institutions to emerging tech ventures, our work is behind some of the most mission-critical systems in production today, and we’re just getting started. With growing demand from top-tier clients and a strong runway for expansion, we’re building a team of curious, ambitious developers who want to build meaningful things with meaningful people.
+
+Take a look at to learn more about our work and what sets us apart.
+
+The Role: Senior Software Engineer (Cloud, Data & APIs)
+
+This is a hands-on, hybrid role designed for builders. As a Software Engineer, you’ll be part of a deeply technical team solving real-world data and infrastructure challenges for our enterprise clients, from scaling streaming pipelines and integrating APIs to designing high-availability cloud systems.
+
+You’ll have the opportunity to lead technical direction, mentor teammates, and rotate across domains that expose you to new tech, use cases, and industries. We're not just hiring you for a project. We’re investing in your long-term growth.
+
+If you love writing clean code, collaborating cross-functionally, and designing systems that make a real impact, you’ll thrive at Tactable.
+
+What You’ll Do
+
+End-to-End Engineering
+
+Build scalable, high-performance backend systems using Java, leveraging concurrent and distributed architectures
+Design and implement robust, distributed data pipelines using Spark, Databricks, Kafka, and Apache Iceberg
+Develop and maintain microservices that interact with both streaming and batch data sources
+Integrate complex data systems using ETL/ELT processes, Spring Expressions, and custom APIs
+Optimize and manage datasets using Parquet, Hadoop, and modern query layers like Dremio
+Collaborate with frontend teams to support integration of React-based user interfaces with backend APIs
+Modernize and migrate legacy systems to cloud-native infrastructure
+Technical Leadership
+
+Guide architectural decisions involving data workflows, storage formats, and service patterns
+Break down complex, cross-cutting tasks into structured delivery plans
+Mentor junior and mid-level engineers on data engineering best practices, from streaming to transformation layers
+Review and document architecture choices and technical designs for transparency and alignment
+Client & Project Exposure
+
+Rotate across engagements (every 6–12 months) involving large-scale data and infrastructure challenges, often in banking, financial services, and regulated environments
+Lead technical execution across greenfield builds, real-time analytics platforms, and high-throughput systems
+Act as a hands-on engineering partner to client teams, building long-term technical trust and delivering meaningful impact
+What You Bring
+
+Must-Have Experience
+
+8+ years of extensive software/data engineering experience in production environments
+Advanced expertise in Java or Python, including performance optimization, concurrency, and service-oriented architecture
+Deep experience building scalable data pipelines with tools like Spark, Kafka, Databricks, and Iceberg
+Strong working knowledge of RDBMS and SQL, plus hands-on experience with Parquet and big data file formats
+Familiarity with Hadoop-based ecosystems, large-scale data processing, and modern orchestration practices
+Hands-on experience with cloud platforms like AWS or Azure
+Experience integrating backend services with React-based frontends (bonus if full-stack)
+Solid understanding of CI/CD workflows, API design, and cloud infrastructure fundamentals
+Bonus Points For
+
+Exposure to LLM/AI-based data transformation tools
+Prior experience with Java and Python in mixed-language environments
+Experience with Dremio or similar data lake query engines
+Experience working in highly regulated industries, especially finance or insurance
+Ability to operate in hybrid/in-person environments and lead small technical teams
+Why You’ll Love This Role
+
+Growth-First Culture - From custom career paths to project rotation, we design roles around your goals, not just business needs.
+Full Ownership & Impact - You’ll own critical parts of delivery, architecture, and technical decision-making. No red tape, no silos.
+Tight-Knit Team - We’ve built a culture of trust, collaboration, and curiosity. Whether it’s team lunches, hack days, or a new internal tool, we move as one unit.
+Real Work, Real Users - We’re not building MVPs that sit on a shelf. You’ll work on systems that millions rely on, every day.
+Flexibility with Structure - We’re a hybrid-first team with a strong appreciation for in-office collaboration, especially at our downtown Toronto HQ. We encourage in-person presence to foster mentorship, connection, and collaboration.
+Why This Might Not Be a Fit
+
+If you’re looking for narrow responsibilities or prefer to stay in one tech domain long-term
+If you want to work in a rigid hierarchy with formal titles and clear ladders
+If you prefer a vendor-style relationship with clients rather than deep, embedded partnerships
+Compensation, Benefits & Perks
+
+Salary Range: $140,000 – $190,000 CAD, based on experience and role fit
+Comprehensive health and dental plan
+Generous PTO and holidays
+Laptop & home office equipment provided
+Career coaching and personalized development plans
+Regular social events, team outings, and wellness activities
+Hiring Process & Transparency
+
+This role is for an active vacancy on our engineering team, not a future talent pool position.
+As part of our hiring process, we use AI-assisted screening tools. Candidates selected to move forward will complete an initial screening interview via an AI-based platform, followed by direct interviews with our engineering team.
+Ready to Build the Next Generation of Cloud & Data Infrastructure?
+
+No cover letter required. Just apply, and let’s start building.
+
+Job Type: Full-time
+
+Pay: $140,000.00-$190,000.00 per year
+
+Benefits:
+
+Dental care
+Disability insurance
+Extended health care
+Life insurance
+Paid time off
+Education:
+
+Bachelor's Degree (preferred)
+Experience:
+
+Software development: 8 years (required)
+Language:
+
+English (required)
+Location:
+
+Toronto, ON M5A 1E1 (required)
+Work Location: Hybrid remote in Toronto, ON M5A 1E1

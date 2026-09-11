@@ -2,6 +2,7 @@
 
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
 from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -62,6 +63,9 @@ class Settings(BaseSettings):
     reasoning_model: str = "mock-reasoning"
     validation_model: str | None = "mock-validation"
     model_timeout_seconds: int = Field(default=90, gt=0, le=600)
+    model_max_output_tokens: int | None = Field(default=None, gt=0, le=131072)
+    fireworks_streaming: bool = False
+    fireworks_reasoning_effort: Literal["low", "medium", "high"] | None = None
     max_retries: int = Field(default=2, ge=0, le=5)
     model_inspector_enabled: bool = False
 

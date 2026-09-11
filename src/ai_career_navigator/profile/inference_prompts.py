@@ -4,7 +4,7 @@ import json
 
 from ai_career_navigator.profile.inference_schemas import CapabilityInferenceContext
 
-PROMPT_VERSION = "capability-inference-v2"
+PROMPT_VERSION = "capability-inference-v5"
 
 SYSTEM_PROMPT = """You identify transferable capabilities from confirmed career evidence.
 
@@ -32,6 +32,32 @@ Follow these rules:
   valid. Exclude claims with insufficient support rather than filling the response with weak ideas.
 - Provide concise user-facing summaries only. Never provide chain-of-thought or hidden reasoning.
 - Return structured output only, matching the requested schema.
+- Return one concise sentence per capability (at most 320 characters), including
+  the demonstrated action and necessary business context. Do not return separate explanation
+  fields or repeat the description elsewhere.
+
+Before returning, review each suggestion against these quality checks:
+- Name the reusable professional capability, not a named product, project, employer, or
+  implementation artifact. Keep proprietary names and tools in the description when useful.
+  Tool-specific skills remain valid when the skill itself is additional and evidenced.
+  For example, a named ticket-routing engine demonstrates Workflow Routing Design;
+  a named incident-tracking framework may demonstrate Exception Management Design.
+- Compare against core competencies as well as explicit evidence capabilities and other
+  suggestions. Omit semantic duplicates, including paraphrases of discovery or facilitation
+  already listed. A different tool or project name alone does not make a new capability.
+  Retain a related capability only when it adds a distinct evidenced professional function;
+  include that distinction in the concise description. Do not fill a quota.
+- Preserve actor roles and business context. Invoice suppliers are not automatically delivery
+  vendors. Recovering a program involving many suppliers does not establish multi-vendor
+  delivery management. Do not turn business entities into candidate management responsibilities.
+- Limitations must identify an actual ambiguity affecting a returned suggestion, grounded in
+  supplied evidence. Do not speculate about recall, credibility, verification, or documentation.
+  Do not add boilerplate about personal projects when no returned suggestion uses them.
+- unresolved_areas must be material uncertainties for a returned capability, not requests for
+  extra metrics, maintenance history, or future benefit tracking merely because absent.
+  Use empty limitations and unresolved_areas arrays when no relevant uncertainty exists.
+  State each uncertainty once in one concise sentence, in the most appropriate array; do not
+  repeat it across limitations and unresolved_areas or explain routine processing choices.
 """
 
 

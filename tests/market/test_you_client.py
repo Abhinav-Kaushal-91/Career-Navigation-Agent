@@ -1,5 +1,7 @@
 import asyncio
 
+import pytest
+
 from ai_career_navigator.market.mcp.you_client import (
     YouMcpMarketSearchClient,
     _scoped_endpoint,
@@ -113,3 +115,44 @@ def test_adapter_representation_redacts_api_key() -> None:
 
     assert secret not in repr(client)
     assert "<redacted>" in repr(client)
+
+
+@pytest.mark.parametrize(
+    "schema,expected",
+    [
+        ({"type": "string", "enum": ["none", "highlights", "full_page"]}, "full_page"),
+        (
+            {"type": "object"},
+            {"extraction_mode": "full_page", "full_page": {"extraction_formats": ["markdown"]}},
+        ),
+        ({}, None),
+    ],
+)
+def test_full_page_search_uses_the_advertised_parameter_type(monkeypatch, schema, expected):
+    client = YouMcpMarketSearchClient(
+        endpoint="https://api.you.com/mcp", api_key="test", timeout_seconds=30
+    )
+    client._search_properties = {"query", "extraction", "count"}
+    client._search_parameter_schemas = {"extraction": schema}
+    observed = {}
+
+    async def call(tool, arguments):
+        observed.update(arguments)
+        return {"results": {"web": []}}
+
+    monkeypatch.setattr(client, "_call", call)
+    asyncio.run(
+        client.search(
+            MarketSearchRequest(
+                query="Senior Java Developer Toronto",
+                pass_type=SearchPassType.DIRECT_SOURCE,
+                freshness=SearchFreshness.MONTH,
+                count=2,
+                full_page=True,
+            )
+        )
+    )
+    if expected is None:
+        assert "extraction" not in observed
+    else:
+        assert observed["extraction"] == expected

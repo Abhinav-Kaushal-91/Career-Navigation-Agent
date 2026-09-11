@@ -103,10 +103,13 @@ def test_final_review_interrupt_and_approval_are_checkpointed(
             "run_id": str(waiting.state["run_id"]),
             "plan_id": str(draft.plan_id),
             "plan_version": draft.plan_version,
-            "limitations": [
-                "Semantic synthesis was unavailable; validated deterministic grouping was used."
-            ],
+            "limitations": waiting.interrupts[0]["limitations"],
         },
+    )
+    assert any("fewer than two" in note for note in waiting.interrupts[0]["limitations"])
+    assert (
+        "Semantic synthesis was unavailable; validated deterministic grouping was used."
+        in waiting.interrupts[0]["limitations"]
     )
     completed = _submit(controller, waiting, PlanReviewAction.APPROVE_AND_SAVE)
 

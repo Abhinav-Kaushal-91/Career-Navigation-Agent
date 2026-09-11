@@ -1,0 +1,49 @@
+Senior AI EngineerFull job description
+At Tangerine, we’re redefining banking. As Canada’s leading digital bank, we thrive on innovation, agility, and bold thinking, tackling every challenge head-on with leading technology and the unstoppable power of collaboration.
+
+Our client-obsessed teams deliver flexible, accessible banking solutions, breakthrough products, and award-winning service. Beyond banking, we’re committed to making an impact in the communities we serve and across our organization. We foster a culture built on integrity, inclusion, and fearless ambition – where diverse perspectives are valued, and people are empowered to do their best work.
+
+Are you ready to disrupt the status quo? Do you crave challenges that push boundaries? If you’re a high performer looking to accelerate your career and reimagine the banking landscape, this is your moment.
+
+Let’s shape the future of banking together!
+
+Do you like new challenges? Are you ready to reach new heights in your career and become part of an established disruptor? If so, come join us and help redefine the Canadian banking landscape!
+
+The Senior AI Engineer is responsible for the engineering execution and delivery of technology solutions that support Tangerine’s AI platform. This role ensures the timely delivery, quality, resiliency, and operational excellence of AI platform capabilities that support applications, processes and client journeys for Tangerine. The Staff AI Engineer partners closely with business and product leads to align on requirements and priorities, delivering technical solutions that support strategic business outcomes. Reporting to the Head, Data and AI Platforms, this role plays a key part in translating vision into executable plans and ensuring those plans are delivered with a high level of quality, stability, and stakeholder alignment.
+
+Is this role right for you? In this role, you will:
+Responsible for the successful engineering delivery of the Tangerine AI Platform in alignment with the desired outcomes. Focus is on the AI/ML/Agentic platform capabilities (MLOps/LLMOps pipelines, model training, deployment, monitoring, governance), collaboration across other teams to meet the strategic priorities, while maintaining stability, scalability, and high performance of critical platform capabilities and services
+Partners with technology, risk, analytics and business teams, to deliver on the AI platform vision/strategy and create robust technical solutions that support a best in class AI platform
+Deliver infrastructure and tooling for scalable model training and inference, Retrieval-Augmented Generation (RAG), context engineering, and intelligent agents
+Executes on the strategic platform roadmap, as defined by the Technology and Business leadership team ensuring seamless transition from strategy to technical implementation, and fostering a continuous feedback loop with AI platform consumers (technology and business)
+Leads delivery of engineering project initiatives, ensuring proper planning, execution, QA, deployment, and ongoing support
+Champions a client-focused engineering culture across their team, prioritizing value delivery, customer experience, and the secure, compliant operation of the AI platform
+Collaborates with the data platform team to manage data products, feature stores and other data sources optimized for ML/AI training, inference and agents
+Collaborates with AI and Agentic Development team to ensure the Tangerine AI platform supports their success
+Leads the design and implementation of Tangerine’s standard AI pipelines—real-time, batch, and hybrid
+Drives engineering excellence by promoting best practices in coding, platform architecture, DevOps, CI/CD, observability, test automation, and incident response
+Ensures platform resilience and operational preparedness, guaranteeing application reliability through extensive monitoring, proactive issue detection, and detailed root cause analysis for incidents
+Directs day-to-day activities in a manner consistent with the Bank’s risk culture and the relevant risk appetite statement and limits. Communicates the Bank’s risk culture and risk appetite statement throughout their teams
+Mentors junior and intermediate engineers and contributes to technical leadership forums to foster a culture of excellence
+
+Do you have the skills that will enable you to succeed in this role? We'd love to work with you if you have: Required Qualifications:
+
+University degree in Computer Engineering / Computer Science / Technology, or relevant work experience
+8+ years of Software/Data/ML/AI Engineering experience
+2+ years of technology leadership experience, e.g. as a Senior/Staff Engineer
+Significant experience delivering complex, high-availability ML/AI platforms at scale.
+Hands on experience with Machine Learning, Generative AI, Agentic AI, RAG pipelines, and feature stores.
+Deep experience with cloud native AI/ML stacks (GCP/Azure/AWS), container orchestration (Kubernetes) and modern AI platforms
+Knowledge of AI governance, compliance, security and reliability best practices
+
+What's in it for you?
+
+You will be part of a diverse and inclusive team of Client-focused go-getters looking to learn from each other in an environment that celebrates and recognizes success!
+You will have access to thousands of online and in-person courses so you can shape your career growth with support from diverse industry leaders.
+You will get our help to save for your future and to invest in your total well-being through our Tangerine benefits.
+You belong here, and we are equal and uncomplicated. Bring your true self to work, dress codes don’t apply here.
+You will enjoy workspace flexibility and all the excitement that comes from working at the official Bank of the Toronto Raptors.
+
+Location(s): Canada : Ontario : Toronto
+
+At Tangerine we value the unique skills and experiences each individual brings to the team, and are committed to creating and maintaining an inclusive and accessible environment. If you require accommodation during the recruitment and selection process, please let our Recruitment team know.

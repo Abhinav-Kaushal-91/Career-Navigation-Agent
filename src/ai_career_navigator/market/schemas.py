@@ -29,6 +29,7 @@ class PostingSourceType(StrEnum):
     STRUCTURED_JOB = "STRUCTURED_JOB"
     DIRECT_ATS_POSTING = "DIRECT_ATS_POSTING"
     DIRECT_EMPLOYER_POSTING = "DIRECT_EMPLOYER_POSTING"
+    INDIVIDUAL_JOB_BOARD_POSTING = "INDIVIDUAL_JOB_BOARD_POSTING"
     AGGREGATOR_PAGE = "AGGREGATOR_PAGE"
     BACKGROUND_CONTEXT = "BACKGROUND_CONTEXT"
 
@@ -62,6 +63,7 @@ class EnrichmentStatus(StrEnum):
 
 
 class SearchPassType(StrEnum):
+    POSTING_ENRICHMENT = "POSTING_ENRICHMENT"
     DIRECT_SOURCE = "DIRECT_SOURCE"
     GENERAL_WEB = "GENERAL_WEB"
     TARGET_VARIANT = "TARGET_VARIANT"
@@ -153,13 +155,15 @@ class MarketSearchRequest(BaseModel):
     query: str = Field(min_length=1)
     pass_type: SearchPassType
     freshness: SearchFreshness
-    count: int = Field(default=12, ge=10, le=15)
+    count: int = Field(default=12, ge=1, le=15)
     country: str = Field(default="CA", min_length=2, max_length=2)
     language: str = Field(default="EN", min_length=2, max_length=2)
     excluded_domains: list[str] = Field(default_factory=list)
     included_domains: list[str] = Field(default_factory=list)
     boosted_domains: list[str] = Field(default_factory=list)
     geography_scope: GeographyScope = GeographyScope.STRICT_CITY
+    full_page: bool = False
+    crawl_timeout_seconds: int = Field(default=60, ge=1, le=60)
 
 
 class SearchPassReport(BaseModel):
@@ -310,6 +314,8 @@ class MarketPostingEvidence(BaseModel):
     enrichment_reason: str | None = None
     enrichment_deferred_reason: str | None = None
     enrichment_observation: dict[str, str | int | bool | None] = Field(default_factory=dict)
+    possible_duplicate_posting_ids: list[str] = Field(default_factory=list)
+    discovery_seed_posting_ids: list[str] = Field(default_factory=list)
 
 
 class PostingRetrievalAudit(BaseModel):
@@ -327,6 +333,7 @@ class PostingRetrievalAudit(BaseModel):
     title_classification: str | None = None
     seniority_classification: PostingSeniority = PostingSeniority.UNKNOWN
     duplicate_of: str | None = None
+    possible_duplicate_posting_ids: list[str] = Field(default_factory=list)
     selected_content_source: MarketSourceProvider | None = None
     selected_for_primary_evidence: bool = False
     rejection_reason: str | None = None

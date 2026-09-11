@@ -41,7 +41,12 @@ def route_after_market_retrieval(state: CareerGraphState) -> Literal["processing
     return "end"
 
 
-def route_after_market_processing(state: CareerGraphState) -> Literal["ready", "end"]:
+def route_after_market_processing(state: CareerGraphState) -> Literal["ready", "review", "end"]:
+    if (
+        state.get("same_role_assessment") is not None
+        or state.get("transition_assessment") is not None
+    ):
+        return "review" if state.get("career_plan") is not None else "end"
     if state["market_processing_status"] in {
         MarketProcessingWorkflowStatus.SUCCEEDED,
         MarketProcessingWorkflowStatus.LIMITED,

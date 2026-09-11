@@ -173,7 +173,13 @@ def _content_pages(payload: Any) -> list[dict[str, Any]]:
                 pages.append(value)
             else:
                 for key in (
-                    "pages", "contents", "results", "data", "response", "content", "output"
+                    "pages",
+                    "contents",
+                    "results",
+                    "data",
+                    "response",
+                    "content",
+                    "output",
                 ):
                     if key in value and isinstance(value[key], (dict, list)):
                         pending.append((value[key], depth + 1))
@@ -410,6 +416,8 @@ class YouMcpMarketSearchClient:
         self._content_supports_formats = True
         self._content_formats = list(_CONTENT_FORMATS)
         self._search_properties: set[str] = {"query"}
+        self._search_parameter_schemas: dict[str, Any] = {}
+        self._search_pages: dict[str, MarketPageContent] = {}
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}(endpoint={self._endpoint!r}, api_key=<redacted>)"
@@ -425,6 +433,7 @@ class YouMcpMarketSearchClient:
         )
 
     async def __aenter__(self) -> Self:
+        self._search_pages.clear()
         stack = AsyncExitStack()
         try:
             http_client = await stack.enter_async_context(
@@ -448,6 +457,7 @@ class YouMcpMarketSearchClient:
             content_tool = next(tool for tool in listed.tools if tool.name == "you-contents")
             search_tool = next(tool for tool in listed.tools if tool.name == "you-search")
             self._search_properties = set(search_tool.input_schema.get("properties", {}))
+            self._search_parameter_schemas = search_tool.input_schema.get("properties", {})
             properties = content_tool.input_schema.get("properties", {})
             self._content_argument = (
                 "url" if "url" in properties and "urls" not in properties else "urls"
@@ -545,10 +555,47 @@ class YouMcpMarketSearchClient:
         elif request.excluded_domains:
             exclusions = " ".join(f"-site:{domain}" for domain in request.excluded_domains)
             arguments["query"] += f" {exclusions}"
+        # MCP deployments expose different search schemas. Never send unsupported
+        # arguments; fetch_content remains the Markdown fallback on older servers.
+        if request.full_page:
+            if "extraction" in self._search_properties:
+                extraction_schema = self._search_parameter_schemas.get("extraction", {})
+                if extraction_schema.get("type") == "string":
+                    arguments["extraction"] = "full_page"
+                elif extraction_schema.get("type") == "object":
+                    arguments["extraction"] = {
+                        "extraction_mode": "full_page",
+                        "full_page": {"extraction_formats": ["markdown"]},
+                    }
+                # With an unknown shape, use the existing contents-tool fallback,
+                # not a guessed argument that can make the search itself fail.
+            for name, value in {
+                "livecrawl": "all",
+                "livecrawl_formats": ["markdown"],
+                "crawl_timeout": request.crawl_timeout_seconds,
+            }.items():
+                if name in self._search_properties:
+                    arguments[name] = value
         payload = await self._call("you-search", arguments)
-        return normalize_you_search_payload(payload)
+        results = normalize_you_search_payload(payload)
+        if request.full_page:
+            pages = [
+                {**item, **item["contents"]}
+                for item in _walk_mappings(payload)
+                if isinstance(item.get("contents"), dict) and isinstance(item.get("url"), str)
+            ]
+            for result in results[: request.count]:
+                try:
+                    page = normalize_you_content_payload(pages or payload, result.url)
+                except MarketContentError:
+                    continue
+                if page.markdown.strip() and _page_url_key(page.url) == _page_url_key(result.url):
+                    self._search_pages[result.url] = page
+        return results
 
     async def fetch_content(self, url: str) -> MarketPageContent:
+        if url in self._search_pages:
+            return self._search_pages[url]
         value: str | list[str] = url if self._content_argument == "url" else [url]
         arguments: dict[str, Any] = {self._content_argument: value}
         if self._content_supports_formats and self._content_formats:

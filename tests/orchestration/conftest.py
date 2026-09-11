@@ -89,8 +89,6 @@ def inference_json(evidence_id: object) -> str:
                     "supporting_evidence_ids": [str(evidence_id)],
                     "proposed_maturity": "PRODUCTION",
                     "confidence": "MODERATE",
-                    "reasoning_summary": "Supported by production REST API work.",
-                    "source_context_summary": "Production automation.",
                 }
             ],
             "limitations": [],

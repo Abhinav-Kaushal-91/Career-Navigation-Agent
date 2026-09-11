@@ -37,5 +37,7 @@ def test_demo_plan_uses_only_engine_supported_paths_without_probabilities() -> N
         for item in collection
     )
 
-    assert len(path_buttons) == len(CAREER_PLAN.bridge_roles)
+    # A single supported route is presented directly, not as a fake choice.
+    expected_choices = len(CAREER_PLAN.bridge_roles) if len(CAREER_PLAN.bridge_roles) > 1 else 0
+    assert len(path_buttons) == expected_choices
     assert "Likelihood" not in rendered_text

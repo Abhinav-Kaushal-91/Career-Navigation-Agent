@@ -1,0 +1,77 @@
+Job details
+Here’s how the job details align with your profile.
+Pay
+
+$77,874–$86,767 a year
+&nbsp;
+Location
+Mississauga, ON
+&nbsp;
+Benefits
+Pulled from the full job description
+
+Paid time off
+Vision care
+Dental care
+Life insurance
+Disability insurance
+&nbsp;
+Full job description
+Role description
+
+Role: Java Fullstack Developer
+
+Location: Mississauga, ON
+
+Seeking a Senior Java Full Stack Developer with 3 to 5 years of experience in Java development within the JAVACLOUDNATIVE domain to design and develop scalable and maintainable enterprise applications
+
+Job Description
+
+Develop and maintain robust Java applications using core Java technologies.
+Utilize Java to build scalable and highperformance backend systems.
+Collaborate with cross-functional teams to gather requirements and deliver highquality software solutions.
+Write clean maintainable and efficient code adhering to coding standards and best practices.
+Participate in code reviews unit testing and integration testing to ensure software quality.
+Stay updated with emerging Java technologies and frameworks to continuously enhance application performance and scalability.
+Assist in troubleshooting and resolving production issues related to Java applications.
+Support continuous integration and continuous deployment CICD pipelines to streamline delivery processes
+Roles and Responsibilities
+
+Lead hands-on development efforts in Java with a strong focus on cloudnative Java applications.
+Design develop and deploy microservices based applications ensuring reliability and scalability.
+Work extensively with RESTful APIs and integrate various services within the microservices ecosystem.
+Optimize application performance and ensure security compliance.
+Collaborate with DevOps teams for containerization and orchestration using tools like Docker and Kubernetes advantageous
+Demonstrate strong problem-solving and analytical skills to tackle complex application issues.
+Communicate effectively with team members and stakeholders to align technical solutions with business needs.
+Manage priorities and work efficiently under pressure to meet deadlines and adapt to changing requirements.
+Act as a Subject Matter Expert SME in Java and cloudnative technologies.
+Ensure adherence to coding standards design patterns and best practices
+Mandatory Certification Karat Assessment
+
+
+Skills
+Mandatory Skills : Java
+Good to Have Skills : SOA and Microservices Based Architecture
+Other details
+
+Benefits/perks listed below may vary depending on the nature of your employment with LTIMindtree Canada (“LTIMC”):
+
+Benefits and Perks:
+
+Comprehensive Medical Plan Covering Medical, Dental, Vision
+Health Care Spending Account
+Short Term and Long-Term Disability Coverage
+Life Insurance
+Annual vacation and other Paid Leaves
+Maternity Leave Top Up Pay
+The range displayed on each job posting reflects the total compensation range for the position across all Canada locations. Within the range, individual pay is determined by work location and job level and additional factors including job-related skills, experience, and relevant education or training. Depending on the position offered, other forms of compensation may be provided as part of overall compensation like an annual performance-based bonus, sales incentive pay and other forms of bonus or variable compensation.
+
+Disclaimer: The compensation and benefits information provided herein is accurate as of the date of this posting.
+LTIMindtree is an equal opportunity employer that is committed to diversity in the workplace. Our employment decisions are made without regard to race, color, creed, religion, sex (including pregnancy, childbirth or related medical conditions), gender identity or expression, national origin, ancestry, age, family-care status, veteran status, marital status, civil union status, domestic partnership status, military service, handicap or disability or history of handicap or disability, genetic information, atypical hereditary cellular or blood trait, union affiliation, affectional or sexual orientation or preference, or any other characteristic protected by applicable federal, state, or local law, except where such considerations are bona fide occupational qualifications permitted by law.
+Accessibility and Reasonable Accommodation: LTIMindtree has an accommodation process in place and provides accommodations for applicants with disabilities. If you require a specific accommodation because of a disability or a medical need, please write to us at so that arrangements can be made for the appropriate accommodations to be in place.
+
+Benefits
+Compensation range: $77,874.00 to $86,767.00 per year
+About LTM
+LTM is an AI-centric global technology services company and the Business Creativity partner to the world’s largest and most disruptive enterprises. We bring human insights and intelligent systems together to help clients create greater value at the intersection of technology and domain expertise. Our capabilities span integrated operations, transformation, and business AI — enabling new ways of working, new productivity paradigms, and new roads to value. Together with over 87,000 employees across 40 countries and our global network of partners, LTM — a Larsen & Toubro company — owns business outcomes for our clients, helping them not just outperform the market, but to Outcreate it. Please also note that neither LTM nor any of its authorized recruitment agencies/partners charge any candidate registration fee or any other fees from talent (candidates) towards appearing for an interview or securing employment/internship. Candidates shall be solely responsible for verifying the credentials of any agency/consultant that claims to be working with LTM for recruitment. Please note that anyone who relies on the representations made by fraudulent employment agencies does so at their own risk, and LTM disclaims any liability in case of loss or damage suffered as a consequence of the same. Recruitment Fraud Alert - https://www.ltimindtree.com/recruitment-fraud-alert/

@@ -8,6 +8,7 @@ from ai_career_navigator.market import (
     build_enrichment_market_client,
     build_primary_market_client,
 )
+from ai_career_navigator.market.batch_profile import analyze_five_postings
 from ai_career_navigator.models import ModelGateway
 from ai_career_navigator.models.protocols import ModelProvider
 from ai_career_navigator.models.providers import configured_provider
@@ -49,6 +50,7 @@ def build_live_workflow_runtime(
         market_client_factory=lambda: build_enrichment_market_client(settings),
         structured_market_client_factory=lambda: build_primary_market_client(settings),
         content_store=TransientMarketContentStore(),
+        market_processing_service=analyze_five_postings,
     )
     controller = CareerWorkflowController(build_career_graph(), context)
     return LiveWorkflowRuntime(

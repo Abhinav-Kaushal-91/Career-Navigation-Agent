@@ -4,7 +4,7 @@ from enum import StrEnum
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, model_validator
 
 from ai_career_navigator.domain import (
     ConfidenceLevel,
@@ -27,20 +27,29 @@ class CandidateComparisonStatus(StrEnum):
     FAILED = "FAILED"
 
 
+def _comparison_wire_schema(schema: dict) -> None:
+    for key in ("requirement_id",):
+        schema["properties"].pop(key, None)
+        if key in schema.get("required", []):
+            schema["required"].remove(key)
+
+
 class ComparisonEvidenceQuote(BaseModel):
     """A bounded excerpt from an evidence description, context or outcome."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     evidence_id: UUID
-    quote: str = Field(min_length=1, max_length=800)
+    quote: str = Field(min_length=1, max_length=320)
     dimensions: list[Literal["function", "ownership", "scope", "maturity", "production", "outcome"]]
 
 
 class TransferabilityAssessment(BaseModel):
     """Strict reasoning-model output for one requirement and bounded evidence set."""
 
-    model_config = ConfigDict(frozen=True, extra="forbid")
+    model_config = ConfigDict(
+        frozen=True, extra="forbid", json_schema_extra=_comparison_wire_schema
+    )
 
     requirement_id: UUID
     match_type: MatchType | None
@@ -51,14 +60,38 @@ class TransferabilityAssessment(BaseModel):
     production_context_difference: ProductionContextDifference
     outcome_alignment: ScopeAlignment = ScopeAlignment.UNKNOWN
     evidence_status: Literal["SUPPORTED", "UNKNOWN", "CONFIRMED_UNMET", "CONTRADICTED"] = "UNKNOWN"
-    clarification_needed: str | None = Field(default=None, max_length=500)
-    evidence_quotes: list[ComparisonEvidenceQuote] = Field(default_factory=list, max_length=12)
+    clarification_needed: str | None = Field(default=None, max_length=240)
+    evidence_quotes: list[ComparisonEvidenceQuote] = Field(default_factory=list, max_length=2)
     matched_alternative: str | None = Field(default=None, max_length=160)
     partial_match_subtype: PartialMatchSubtype | None = None
     transferable_capability: str | None = None
-    remaining_difference: str = Field(min_length=1, max_length=500)
+    remaining_difference: str = Field(min_length=1, max_length=320)
     confidence: ConfidenceLevel
-    explanation: str = Field(min_length=1, max_length=800)
+    explanation: str = Field(min_length=1, max_length=320, description="One concise sentence.")
+
+    @model_validator(mode="before")
+    @classmethod
+    def bind_request_metadata(cls, value, info: ValidationInfo):
+        # Compatibility for older positive replies that omitted the status field.
+        # An explicitly returned UNKNOWN must never be silently promoted.
+        if (
+            isinstance(value, dict)
+            and "evidence_status" not in value
+            and not value.get("clarification_needed")
+            and value.get("match_type")
+            in {
+                MatchType.DIRECT_MATCH,
+                MatchType.TRANSFERABLE_MATCH,
+                MatchType.PARTIAL_MATCH,
+            }
+        ):
+            value = {**value, "evidence_status": "SUPPORTED"}
+        if isinstance(value, dict) and info.context:
+            value = dict(value)
+            for key in ("requirement_id",):
+                if key in info.context:
+                    value.setdefault(key, info.context[key])
+        return value
 
     @model_validator(mode="after")
     def validate_semantic_match(self) -> "TransferabilityAssessment":

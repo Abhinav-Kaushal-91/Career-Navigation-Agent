@@ -73,7 +73,8 @@ def test_completion_budget_follows_analyzed_cohort_and_preserves_explicit_two(
     assert result.enrichment_attempt_count == expected
     assert len(you.content_calls) == expected
     assert result.snapshot.content_fetch_count == expected
-    assert len(you.search_requests) == 3
+    assert len(you.search_requests) == 3 + min(expected, 4)
+    assert result.you_search_count == len(you.search_requests)
     assert result.enrichment_success_count == 0
     statuses = [audit.enrichment_status for audit in result.posting_audits if audit.posting_id]
     assert (
@@ -83,7 +84,11 @@ def test_completion_budget_follows_analyzed_cohort_and_preserves_explicit_two(
         )
         == expected
     )
-    deferred = [audit for audit in result.posting_audits if audit.enrichment_deferred_reason]
+    deferred = [
+        audit
+        for audit in result.posting_audits
+        if audit.enrichment_status and audit.enrichment_status.value == "NOT_ATTEMPTED"
+    ]
     assert len(deferred) == 6 - expected
     assert all(
         item.enrichment_deferred_reason == "ENRICHMENT_BUDGET_EXHAUSTED" for item in deferred

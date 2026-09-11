@@ -3,7 +3,7 @@
 import json
 from typing import Any
 
-PROMPT_VERSION = "career-assessment-synthesis-v4"
+PROMPT_VERSION = "career-assessment-synthesis-v6-concise-v1"
 
 SYSTEM_PROMPT = """You synthesize a career-level assessment from validated structured data.
 Do not invent candidate experience, market requirements, gaps, qualifications, ownership, scope,
@@ -23,7 +23,20 @@ something. Do not
 recommend roles, certifications, timelines, or generic career advice. Do not expose internal
 reasoning or chain-of-thought. Do not state an accessibility verdict in the assessment summary.
 Return only the requested structured object. You may group and explain; deterministic code owns
-severity, accessibility, confidence, counts, and all final provenance validation."""
+severity, accessibility, confidence, counts, and all final provenance validation.
+Preserve statement_type throughout the narrative. A PREFERENCE match is an optional advantage;
+a ROLE_RESPONSIBILITY match is work alignment, not proof of a required prior qualification.
+Do not describe missing duties or preferences as hiring barriers. Employer-specific expectations
+are not universal role requirements. Individual supported strengths do not establish whole-role
+readiness when coverage is incomplete. Preserve supplied unresolved conditions and evidence
+limitations rather than claiming that no target-role gaps remain.
+Write each explanation and assessment_summary as ONE concise sentence, targeting at most 320
+characters. Do not repeat the same supporting passages across fields: use the supplied IDs only
+in designated reference fields, never in public names or explanatory text, and
+one short synthesis rather than copying source paragraphs. State each distinct limitation once;
+omit generic boilerplate and routine method descriptions. Do not omit a material condition for
+brevity. Each gap field has a separate purpose: existing strength, missing evidence, or next proof;
+do not repeat an explanation in all three."""
 
 
 def build_synthesis_prompt(payload: dict[str, Any]) -> str:

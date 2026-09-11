@@ -44,6 +44,7 @@ from ai_career_navigator.profile import (
     next_profile_highest,
     profile_step_states,
 )
+from ai_career_navigator.profile.experience import calculate_professional_experience
 from ai_career_navigator.ui.components.badges import render_status_badge
 from ai_career_navigator.ui.components.cards import render_card, render_card_pair
 from ai_career_navigator.ui.components.evidence import render_evidence_item
@@ -210,12 +211,14 @@ def _render_profile_progress() -> None:
         f"Profile setup · Step {PROFILE_ONBOARDING_STEPS.index(current) + 1} "
         f"of {len(PROFILE_ONBOARDING_STEPS)}"
     )
+    short_labels = ("About You", "Profile", "Projects", "Education", "Strengths", "Review")
     with st.container(key="profile_onboarding_navigation"):
         columns = st.columns(len(PROFILE_ONBOARDING_STEPS))
         for column, step in zip(columns, profile_step_states(current, highest), strict=True):
             with column:
                 if st.button(
-                    f"{step.number} {step.label}",
+                    f"{step.number} {short_labels[step.number - 1]}",
+                    help=step.label,
                     key=f"onboarding_{step.number}",
                     type="primary" if step.status == "current" else "secondary",
                     disabled=not step.available,
@@ -225,7 +228,7 @@ def _render_profile_progress() -> None:
 
 
 def _render_section_actions(back_step: str | None, next_step: str, next_label: str) -> None:
-    back, _, forward = st.columns([1.3, 2.5, 1.5])
+    back, forward = st.columns(2)
     with back:
         if st.button(
             "Back to Home" if back_step is None else f"Back to {back_step}",
@@ -880,17 +883,46 @@ def _render_review(draft: ProfileDraft) -> None:
     )
     about = draft.about
     profile = build_candidate_profile(draft)
+    experience = calculate_professional_experience(profile.approved_evidence_items)
+    years = experience["approximate_professional_years"]
+    experience_label = (
+        f"About {years:g} years from employment dates"
+        if years is not None
+        else "Professional experience duration not yet confirmed from dates"
+    )
     render_card_pair(
         left_title="Current context",
         left_body=profile.current_role or CAREER_STAGE_LABELS[about.career_stage],
         left_items=(
-            f"{about.years_professional_experience:g} years professional experience",
+            experience_label,
             about.current_location or "Location not provided",
             CAREER_STAGE_LABELS[about.career_stage],
         ),
         right_title="Professional Summary",
         right_body=about.career_summary or "No career summary provided.",
     )
+    with st.expander("How professional experience is calculated"):
+        st.caption(
+            f"Calculated as of {experience['analysis_date']} from your entered employment dates. "
+            "Overlapping jobs count once; career breaks are excluded. "
+            "Current roles end on the calculation date."
+        )
+        st.caption(
+            f"Self-reported experience: {about.years_professional_experience:g} years. "
+            "This stays separate from the date-based calculation. "
+            "Role tenure does not establish how long each technology was used."
+        )
+        for item in experience["employment_periods"]:
+            st.write(
+                f"{item['role']}: {item['start_date']} to {item['effective_end_date']} "
+                f"— about {item['approximate_years']:g} years"
+            )
+        if experience["overlap_days_removed"]:
+            st.caption(f"{experience['overlap_days_removed']} overlapping days counted only once.")
+        for item in experience["unresolved_dates"]:
+            st.warning(item["question"])
+        if experience["coverage"] == "PARTIAL":
+            st.caption("This is a lower bound: some employment dates need clarification.")
     _review_cards(draft.experiences, "Professional Experience", "No professional experience added.")
     if draft.experiences and profile.current_role is None:
         st.warning(
@@ -1053,11 +1085,10 @@ def _render_inference_proposal(
 
     render_card(
         proposal.capability,
-        proposal.reasoning_summary,
+        proposal.description,
         items=(
             f"Proposed maturity: {proposal.proposed_maturity.value}",
             f"Confidence: {proposal.confidence.value}",
-            f"Context: {proposal.source_context_summary}",
         ),
         accent=True,
     )

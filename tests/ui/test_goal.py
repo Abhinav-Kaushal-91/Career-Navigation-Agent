@@ -76,7 +76,8 @@ def test_market_transport_failure_is_not_presented_as_nvidia_failure() -> None:
     message = _safe_live_failure_message("MARKETTRANSPORTERROR")
 
     assert "market sources" in message
-    assert "NVIDIA extraction has not started" in message
+    assert "Model-based requirement extraction has not started" in message
+    assert "NVIDIA" not in message
 
 
 def test_interrupted_run_message_preserves_confirmed_inputs() -> None:

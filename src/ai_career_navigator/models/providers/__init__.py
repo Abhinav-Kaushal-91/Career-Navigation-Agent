@@ -24,7 +24,11 @@ def configured_provider(
             raise ModelConfigurationError(
                 "FIREWORKS_API_KEY is required for LLM_PROVIDER=fireworks"
             )
-        return FireworksProvider(settings.fireworks_api_key)
+        return FireworksProvider(
+            settings.fireworks_api_key,
+            streaming=settings.fireworks_streaming,
+            reasoning_effort=settings.fireworks_reasoning_effort,
+        )
     if provider_name == "nvidia":
         if settings.nvidia_api_key is None:
             raise ModelConfigurationError("NVIDIA_API_KEY is required for LLM_PROVIDER=nvidia")

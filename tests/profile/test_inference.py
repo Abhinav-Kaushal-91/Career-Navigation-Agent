@@ -33,6 +33,60 @@ from ai_career_navigator.profile import (
 NOW = datetime(2026, 9, 3, 14, 0, tzinfo=UTC)
 
 
+@pytest.mark.parametrize("reference", [
+    "aaf399b9", "AAF399B9", "aaf399b9755c", "aaf399b9-755c",
+    "aaf399b9-755c-5477-9760-849d58067356",
+])
+def test_request_scoped_prefix_repair_before_gateway_schema_validation(reference, caplog):
+    source = explicit_evidence().model_copy(update={
+        "evidence_id": UUID("aaf399b9-755c-5477-9760-849d58067356")
+    })
+    payload = json.loads(result_json(source.evidence_id))
+    payload["inferred_capabilities"][0]["supporting_evidence_ids"] = [reference]
+    provider = FakeModelProvider(outcomes=[json.dumps(payload)])
+    with caplog.at_level("INFO"):
+        outcome = infer_capabilities(approved_profile(source), gateway(provider))
+    assert outcome.status is InferenceRunStatus.SUCCEEDED
+    assert outcome.result.inferred_capabilities[0].supporting_evidence_ids == [source.evidence_id]
+    assert len(provider.calls) == 1
+    assert ("prefix_repaired" in caplog.text) == (reference != str(source.evidence_id))
+
+
+@pytest.mark.parametrize("reference", ["aaf399b", "zzzzzzzz", "12345678", "aaf3-99b9"])
+def test_invalid_or_unknown_prefix_is_rejected(reference):
+    source = explicit_evidence().model_copy(update={
+        "evidence_id": UUID("aaf399b9-755c-5477-9760-849d58067356")
+    })
+    payload = json.loads(result_json(source.evidence_id))
+    payload["inferred_capabilities"][0]["supporting_evidence_ids"] = [reference]
+    outcome = infer_capabilities(
+        approved_profile(source), gateway(FakeModelProvider(outcomes=[json.dumps(payload)]))
+    )
+    assert outcome.status is InferenceRunStatus.FAILED
+
+
+def test_ambiguous_prefix_rejected_but_exact_id_wins():
+    first = UUID("aaf399b9-755c-5477-9760-849d58067356")
+    second = UUID("aaf399b9-1111-4111-8111-111111111111")
+    payload = json.loads(result_json(first))
+    context = {"allowed_evidence_ids": (first, second)}
+    assert CapabilityInferenceResult.model_validate(payload, context=context)
+    payload["inferred_capabilities"][0]["supporting_evidence_ids"] = ["aaf399b9"]
+    with pytest.raises(ValidationError, match="uniquely match"):
+        CapabilityInferenceResult.model_validate(payload, context=context)
+
+
+def test_repaired_duplicate_and_context_free_prefix_rejected():
+    full = UUID("aaf399b9-755c-5477-9760-849d58067356")
+    payload = json.loads(result_json(full))
+    payload["inferred_capabilities"][0]["supporting_evidence_ids"] = [str(full), "aaf399b9"]
+    with pytest.raises(ValidationError, match="unique"):
+        CapabilityInferenceResult.model_validate(payload, context={"allowed_evidence_ids": (full,)})
+    payload["inferred_capabilities"][0]["supporting_evidence_ids"] = ["aaf399b9"]
+    with pytest.raises(ValidationError):
+        CapabilityInferenceResult.model_validate(payload)
+
+
 def explicit_evidence(
     capability: str = "REST APIs",
     *,
@@ -82,8 +136,6 @@ def result_json(
                     "supporting_evidence_ids": [str(evidence_id)],
                     "proposed_maturity": maturity,
                     "confidence": confidence,
-                    "reasoning_summary": "Supported by explicit production API integration.",
-                    "source_context_summary": "Production automation integration.",
                 }
             ],
             "limitations": [],
@@ -113,6 +165,7 @@ def test_valid_inference_creates_pending_unapproved_evidence_and_preserves_profi
     assert len(outcome.inferred_evidence) == 1
     inferred = outcome.inferred_evidence[0]
     assert inferred.description == "Integration across enterprise systems."
+    assert inferred.context is None
     assert inferred.confirmation_status is EvidenceConfirmationStatus.INFERRED_PENDING
     assert not inferred.approved_by_user
     assert inferred.confirmation_status is not EvidenceConfirmationStatus.EXPLICIT
@@ -120,6 +173,7 @@ def test_valid_inference_creates_pending_unapproved_evidence_and_preserves_profi
     assert profile.evidence_items == [source]
     assert profile.approval_status is ApprovalStatus.APPROVED
     assert provider.calls[0].request.role is ModelRole.EXTRACTION
+    assert provider.calls[0].request.max_tokens == 10000
 
 
 @pytest.mark.parametrize(
@@ -142,6 +196,49 @@ def test_atomic_professional_capability_name_is_accepted() -> None:
     assert result.inferred_capabilities[0].capability == "Automation Framework Design"
 
 
+def test_core_competency_duplicate_removed_but_distinct_function_retained() -> None:
+    source = explicit_evidence()
+    profile = approved_profile(source).model_copy(update={
+        "core_competencies": "Discovery: Stakeholder Discovery; Requirements translation"
+    })
+    duplicate = CapabilityInferenceResult.model_validate_json(
+        result_json(source.evidence_id, capability="Stakeholder Discovery")
+    ).inferred_capabilities[0]
+    distinct = duplicate.model_copy(update={"capability": "Workflow Routing Design"})
+    result = filter_duplicate_inferences(
+        CapabilityInferenceResult(inferred_capabilities=[duplicate, distinct]), profile
+    )
+    assert [item.capability for item in result.inferred_capabilities] == ["Workflow Routing Design"]
+
+
+@pytest.mark.parametrize("instruction", [
+    "Name the reusable professional capability",
+    "Omit semantic duplicates",
+    "Invoice suppliers are not automatically delivery",
+    "Do not speculate about recall",
+    "no returned suggestion uses them",
+    "not requests for",
+])
+def test_strength_quality_instructions_reach_model(instruction: str) -> None:
+    source = explicit_evidence()
+    provider = FakeModelProvider(outcomes=[result_json(source.evidence_id)])
+    infer_capabilities(approved_profile(source), gateway(provider))
+    request = provider.calls[0].request
+    assert instruction in request.system_prompt
+    assert request.metadata["prompt_version"] == "capability-inference-v5"
+
+
+def test_strength_schema_exposes_semantic_guidance_to_provider() -> None:
+    schema = CapabilityInferenceResult.model_json_schema()
+    fields = schema["$defs"]["InferredCapability"]["properties"]
+    assert "description" in fields
+    assert "reasoning_summary" not in fields
+    assert "source_context_summary" not in fields
+    name = schema["$defs"]["InferredCapability"]["properties"]["capability"]
+    assert "not a named solution or project" in name["description"]
+    assert "no speculative credibility" in schema["properties"]["limitations"]["description"]
+
+
 def test_supporting_evidence_ids_are_required_by_schema() -> None:
     with pytest.raises(ValidationError):
         InferredCapability(
@@ -150,8 +247,6 @@ def test_supporting_evidence_ids_are_required_by_schema() -> None:
             supporting_evidence_ids=[],
             proposed_maturity=EvidenceMaturity.APPLIED,
             confidence=ConfidenceLevel.MODERATE,
-            reasoning_summary="Summary",
-            source_context_summary="Context",
         )
 
 

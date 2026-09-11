@@ -12,6 +12,7 @@ from ai_career_navigator.domain import (
     RequirementStatementType,
     RoleRequirement,
 )
+from ai_career_navigator.domain.market import SourceExpectation
 
 from .requirement_schemas import (
     CanonicalRequirementKind,
@@ -46,6 +47,22 @@ _PREREQUISITES = {
 _MATURITY_RANK = {value: index for index, value in enumerate(EvidenceMaturity)}
 _CONFIDENCE_RANK = {value: index for index, value in enumerate(reversed(ConfidenceLevel))}
 _TOKEN_ALIASES = {
+    "mentor": "mentoring",
+    "mentored": "mentoring",
+    "deploy": "deployment",
+    "deployed": "deployment",
+    "deploying": "deployment",
+    "integrate": "integration",
+    "integrated": "integration",
+    "pipelines": "pipeline",
+    "developer": "development",
+    "developers": "development",
+    "build": "building",
+    "built": "building",
+    "troubleshoot": "troubleshooting",
+    "applications": "application",
+    "systems": "system",
+    "collaboratively": "collaboration",
     "architecting": "architecture",
     "architectural": "architecture",
     "architectures": "architecture",
@@ -164,6 +181,9 @@ def _semantic_key(requirement: RoleRequirement) -> tuple[str, str]:
         if concept == "stakeholder collaboration"
         else requirement.category.value
     )
+    # The same concept can describe a duty, an advantage, or a prior qualification.
+    # Preserve those contracts instead of allowing the strongest wording to win.
+    category_group += ":" + requirement.statement_type.value
     return category_group, concept
 
 
@@ -220,6 +240,7 @@ def build_canonical_target_role_profile(
     summary: MarketRequirementSummary,
     posting_audits: list[PostingRequirementAudit],
     generated_at: datetime,
+    consolidation_groups: dict | None = None,
 ) -> tuple[CanonicalTargetRoleProfile, list[PostingRequirementAudit]]:
     """Consolidate primary requirements and retain related-only observations separately."""
 
@@ -257,7 +278,33 @@ def build_canonical_target_role_profile(
             requirement.posting_id not in assessment_by_posting
         ):
             continue
-        grouped.setdefault(_semantic_key(requirement), []).append(requirement)
+        key = (consolidation_groups or {}).get(
+            requirement.requirement_id, _semantic_key(requirement)
+        )
+        # Identical statements with subset labels describe the same expectation. This
+        # never merges different conditions or unrelated concepts sharing a paragraph.
+        tokens = _tokens(requirement.normalized_capability or requirement.requirement_text)
+        for existing_key, existing_items in grouped.items():
+            if consolidation_groups is not None:
+                break  # Explicit validated model groups replace lexical consolidation.
+            if existing_key[0] != key[0]:
+                continue
+            if any(
+                source.requirement_text.casefold().split()
+                == requirement.requirement_text.casefold().split()
+                and source.statement_type == requirement.statement_type
+                and source.years_required == requirement.years_required
+                and source.relationship == requirement.relationship
+                and source.capability_options == requirement.capability_options
+                and (
+                    tokens <= _tokens(source.normalized_capability or source.requirement_text)
+                    or _tokens(source.normalized_capability or source.requirement_text) <= tokens
+                )
+                for source in existing_items
+            ):
+                key = existing_key
+                break
+        grouped.setdefault(key, []).append(requirement)
 
     canonical: list[CanonicalRoleRequirement] = []
     source_to_canonical = {}
@@ -497,7 +544,12 @@ def build_canonical_target_role_profile(
             maturity_support_counts={key.value: value for key, value in maturity_support.items()},
             years_required=years_required,
             years_required_by_source=years_by_source,
-            baseline_requirement_ids=[item.requirement_id for item in primary_qualifications],
+            baseline_requirement_ids=[
+                item.requirement_id
+                for item in (
+                    primary_qualifications or primary_responsibilities or primary_preferences
+                )
+            ],
             baseline_posting_ids=list(dict.fromkeys(item.posting_id for item in basis_items)),
             qualifier_notes=qualifier_notes,
             source_section=representative.source_section,
@@ -507,6 +559,29 @@ def build_canonical_target_role_profile(
             mandatory_signal=mandatory_signal,
             preferred_signal=preferred_signal,
             employer_specific=primary_denominator >= 2 and ratio < 0.5,
+            source_expectations=[
+                SourceExpectation(
+                    requirement_id=source.requirement_id,
+                    posting_id=source.posting_id,
+                    source_quote=source.requirement_text,
+                    statement_type=source.statement_type,
+                    employer=assessment_by_posting[source.posting_id].candidate.employer,
+                    expectation_status=(
+                        "PREFERRED"
+                        if source.preferred
+                        else "REQUIRED"
+                        if source.mandatory
+                        else "UNSPECIFIED"
+                    ),
+                    years_required=source.years_required,
+                    maturity_expected=source.maturity_expected,
+                    qualifier_quotes=source.qualifier_quotes,
+                    relationship=source.relationship,
+                    capability_options=source.capability_options,
+                )
+                for source in basis_items
+                if source.posting_id in primary_posting_ids
+            ],
             frequency_band=_frequency(ratio),
             primary_support_ratio=ratio,
             employer_support_count=len(primary_employers),
@@ -566,7 +641,7 @@ def build_canonical_target_role_profile(
     primary_items = [
         item
         for item in canonical
-        if item.requirement_scope is not CanonicalRequirementScope.OPTIONAL
+        if item.exact_support_count + item.variant_support_count
         and item.requirement_kind
         not in {
             CanonicalRequirementKind.ROLE_RESPONSIBILITY,
@@ -709,6 +784,14 @@ def build_canonical_target_role_profile(
             if not item.exact_support_count and not item.variant_support_count
         ],
         limitations=limitations,
+        coverage_limitations=(
+            [
+                "Most analyzed primary posting content is marked low quality. Retrieve sufficient "
+                "employer descriptions before an overall role-readiness verdict."
+            ]
+            if high_quality_ratio < 0.5
+            else []
+        ),
     )
     source_statement_type = {item.requirement_id: item.statement_type for item in requirements}
     canonical_classification_by_source = {

@@ -103,11 +103,103 @@ def title_is_relevant(candidate_title: str, target_title: str) -> bool:
     return "ai" in target_tokens and any("ai" in token for token in candidate_tokens)
 
 
+def compatible_role_heading(candidate_title: str, target_title: str) -> bool:
+    """A discovery candidate, not proof of specialty, level or candidate fit.
+
+    Developer/software-engineer is a functional alias, not an alias for every
+    engineering occupation. Other functions must share their occupational head.
+    """
+    candidate = set(normalized_comparison(candidate_title).split())
+    target = set(normalized_comparison(target_title).split())
+    candidate_heads = candidate & ROLE_WORDS
+    target_heads = target & ROLE_WORDS
+    # Do not silently collapse individual contribution into management/architecture.
+    authority = {"manager", "director", "lead", "architect"}
+    if (candidate_heads & authority) != (target_heads & authority):
+        return False
+    if candidate_heads & target_heads:
+        return True
+    software_candidate = "developer" in candidate or {"software", "engineer"} <= candidate
+    software_target = "developer" in target or {"software", "engineer"} <= target
+    return software_candidate and software_target
+
+
+def body_supported_specialty(candidate_title: str, target_title: str, body: str) -> bool:
+    """Let substantive work/qualification text establish a missing title specialty.
+
+    This only admits a target variant for extraction. The batch model must still
+    separate specialist conditions and reject materially different role scopes.
+    Never infer specialty from benefits, employer marketing, negation or preferences.
+    """
+    if not body or not compatible_role_heading(candidate_title, target_title):
+        return False
+    rank_words = {"senior", "junior", "staff", "principal", "intern", "internship"}
+    candidate = set(normalized_comparison(candidate_title).split())
+    target = set(normalized_comparison(target_title).split())
+    if candidate & rank_words != target & rank_words:
+        return False
+    subjects = target - ROLE_WORDS - rank_words - {"solution", "and", "of", "the"}
+    if not subjects:
+        return False
+    # This rescue fills a missing specialty; it must not erase an explicitly
+    # different specialization already present alongside the target in a title.
+    neutral_scope_words = {"software", "full", "stack", "fullstack", "application", "applications"}
+    if subjects <= candidate and candidate - target - neutral_scope_words:
+        return False
+    section = ""
+    cue = ""
+    supported = set()
+    for raw_line in body.splitlines():
+        line = normalized_comparison(raw_line)
+        if not line:
+            continue
+        if len(line.split()) <= 12:
+            if re.search(r"\b(?:preferred|bonus|nice to have|good to have)\b", line):
+                section, cue = "preference", ""
+            elif re.search(
+                r"\b(?:benefits|compensation|about us|about the company|salary|perks)\b", line
+            ):
+                section, cue = "metadata", ""
+            elif re.search(
+                r"\b(?:qualifications|requirements|required|must have|mandatory skills|"
+                r"what we re looking for|what you bring)\b",
+                line,
+            ):
+                section, cue = "hiring", ""
+            elif re.search(
+                r"\b(?:responsibilities|what you ll do|what you ll build|duties)\b", line
+            ):
+                section, cue = "work", ""
+        if re.search(
+            r"\b(?:not required|no experience|do not use|don t use|no longer|"
+            r"migrat\w* away|preferred|bonus|nice to have|good to have)\b",
+            line,
+        ):
+            continue
+        if section in {"preference", "metadata"}:
+            continue
+        if re.search(
+            r"\b(?:experience|expertise|proficiency|proficient|programming|develop\w*|"
+            r"build\w*|design\w*|maintain\w*|using|knowledge|mandatory|required|skills)\b",
+            line,
+        ):
+            cue = line
+        tokens = set(line.split())
+        # A short list item inherits the active qualification/work section; a
+        # standalone keyword without such context cannot establish role relevance.
+        if section in {"hiring", "work"} or cue == line or (cue and len(tokens) <= 6):
+            supported.update(subjects & tokens)
+    return subjects <= supported
+
+
 def is_promising_search_result(result: MarketSearchResult, target_title: str) -> bool:
     combined = " ".join([result.title, result.url, *result.snippets]).casefold()
     if any(pattern in combined for pattern in REJECT_PATTERNS):
         return False
-    if not title_is_relevant(result.title, target_title):
+    if not (
+        title_is_relevant(result.title, target_title)
+        or compatible_role_heading(result.title, target_title)
+    ):
         return False
     return looks_like_individual_job_url(result.url) or any(
         signal in combined for signal in HIRING_SIGNALS
@@ -125,7 +217,10 @@ def is_plausible_current_job_page(
     folded = combined.casefold()
     if any(pattern in folded for pattern in REJECT_PATTERNS):
         return False
-    if not title_is_relevant(page.title or result.title, target_title):
+    if not (
+        title_is_relevant(page.title or result.title, target_title)
+        or body_supported_specialty(page.title or result.title, target_title, page.markdown)
+    ):
         return False
     if not any(signal in folded for signal in HIRING_SIGNALS):
         return False
@@ -195,7 +290,11 @@ def title_equivalence_reason(
         return None
     parts = re.split(r"\s+[—–|\-]\s+", candidate_title, maxsplit=1)
     if len(parts) != 2 or normalized_comparison(parts[0]) != normalized_comparison(target_title):
-        return None
+        return (
+            "DESCRIPTION_SUPPORTED_SPECIALTY"
+            if body_supported_specialty(candidate_title, target_title, posting_text)
+            else None
+        )
     # A suffix describing authority/function/level must never be discarded as decoration.
     if re.search(
         r"\b(?:lead|manager|management|director|head|staff|principal|chief|supervisor|"

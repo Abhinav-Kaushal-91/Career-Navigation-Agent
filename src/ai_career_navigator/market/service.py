@@ -76,6 +76,7 @@ from ai_career_navigator.market.signals import (
 )
 from ai_career_navigator.market.source_registry import (
     is_ats_domain,
+    is_individual_job_board_url,
     looks_like_individual_job_url,
 )
 from ai_career_navigator.market.validation import (
@@ -304,6 +305,7 @@ async def _retrieve_candidates(
                 "LITERAL_EXACT",
                 "LEXICAL_EQUIVALENCE",
                 "DESCRIPTIVE_SUFFIX_GROUNDED",
+                "DESCRIPTION_SUPPORTED_SPECIALTY",
                 "TARGET_VARIANT",
             }
             for posting in deduplicate_postings(postings)[0]
@@ -400,7 +402,10 @@ async def _retrieve_candidates(
         processed = classify_and_segment_source(retained)
         domain = candidate.source_domain or source_domain(candidate.url)
         source_type = (
-            PostingSourceType.DIRECT_ATS_POSTING
+            PostingSourceType.INDIVIDUAL_JOB_BOARD_POSTING
+            if is_individual_job_board_url(candidate.url)
+            and processed.content_type is SourceContentType.DIRECT_JOB_PAGE
+            else PostingSourceType.DIRECT_ATS_POSTING
             if _is_ats_domain(domain)
             and processed.content_type is SourceContentType.DIRECT_JOB_PAGE
             else PostingSourceType.DIRECT_EMPLOYER_POSTING
@@ -411,6 +416,7 @@ async def _retrieve_candidates(
             else PostingSourceType.BACKGROUND_CONTEXT
         )
         if individual_postings_only and source_type not in {
+            PostingSourceType.INDIVIDUAL_JOB_BOARD_POSTING,
             PostingSourceType.DIRECT_ATS_POSTING,
             PostingSourceType.DIRECT_EMPLOYER_POSTING,
         }:
@@ -527,6 +533,7 @@ async def _retrieve_candidates(
                             canonicalize_url(page.canonical_job_url or page.url)
                             if source_type
                             in {
+                                PostingSourceType.INDIVIDUAL_JOB_BOARD_POSTING,
                                 PostingSourceType.DIRECT_ATS_POSTING,
                                 PostingSourceType.DIRECT_EMPLOYER_POSTING,
                             }
@@ -614,7 +621,12 @@ def _snapshot(
     title_matches = {
         posting.posting_id: PostingTitleMatch.TARGET_VARIANT
         if posting.title_match_kind
-        in {"LEXICAL_EQUIVALENCE", "DESCRIPTIVE_SUFFIX_GROUNDED", "TARGET_VARIANT"}
+        in {
+            "LEXICAL_EQUIVALENCE",
+            "DESCRIPTIVE_SUFFIX_GROUNDED",
+            "TARGET_VARIANT",
+            "DESCRIPTION_SUPPORTED_SPECIALTY",
+        }
         else assess_title(
             posting.original_title,
             plan.search_title or "",
@@ -781,6 +793,7 @@ async def _retrieve_you_ats_market(
                         "LITERAL_EXACT",
                         "LEXICAL_EQUIVALENCE",
                         "DESCRIPTIVE_SUFFIX_GROUNDED",
+                        "DESCRIPTION_SUPPORTED_SPECIALTY",
                         "TARGET_VARIANT",
                     }
                     for item in deduplicate_postings(postings)[0]
@@ -892,7 +905,8 @@ async def retrieve_current_market(
 
     def target_evidence_count() -> int:
         return sum(
-            assess_title(
+            item.title_match_kind == "DESCRIPTION_SUPPORTED_SPECIALTY"
+            or assess_title(
                 item.normalized_title or item.original_title,
                 plan.search_title or "",
             )
@@ -1077,7 +1091,8 @@ async def retrieve_current_market(
                 )
 
         target_evidence_so_far = sum(
-            assess_title(
+            item.title_match_kind == "DESCRIPTION_SUPPORTED_SPECIALTY"
+            or assess_title(
                 item.normalized_title or item.original_title,
                 plan.search_title or "",
             )

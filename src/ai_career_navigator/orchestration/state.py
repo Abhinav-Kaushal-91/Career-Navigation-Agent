@@ -15,6 +15,8 @@ from ai_career_navigator.career import (
     PlanGenerationStatus,
     TimelineAnalysisStatus,
 )
+from ai_career_navigator.career.same_role import SameRoleAssessment
+from ai_career_navigator.career.transition import TransitionAssessment
 from ai_career_navigator.domain import (
     BridgeOutcome,
     BridgeRoleAssessment,
@@ -36,6 +38,7 @@ from ai_career_navigator.market import (
     PostingRetrievalAudit,
     TargetVariantAudit,
 )
+from ai_career_navigator.market.overview import EmployerOverview
 from ai_career_navigator.market.schemas import SearchPassReport
 
 from .approval import PlanReviewRequest, WorkflowActionRecord
@@ -146,6 +149,9 @@ class CareerGraphState(TypedDict):
     market_search_passes: NotRequired[list[SearchPassReport]]
     market_processing_status: MarketProcessingWorkflowStatus
     requirement_summary: MarketRequirementSummary | None
+    employer_overview: NotRequired[EmployerOverview | None]
+    same_role_assessment: NotRequired[SameRoleAssessment | None]
+    transition_assessment: NotRequired[TransitionAssessment | None]
     canonical_target_role_profile: CanonicalTargetRoleProfile | None
     initial_canonical_target_role_profile: CanonicalTargetRoleProfile | None
     posting_requirement_audits: list[PostingRequirementAudit]

@@ -1,6 +1,8 @@
 """Evidence-grounded V1 career-plan generation."""
 
+import json
 import logging
+import re
 from collections.abc import Sequence
 from uuid import UUID
 
@@ -36,30 +38,22 @@ from .plan_schemas import (
     CareerPlanDraftOutput,
     CareerPlanGenerationResult,
     PlanGenerationStatus,
+    PlanWordingRejection,
 )
 from .synthesis_schemas import CareerAssessmentSynthesis
 
 logger = logging.getLogger(__name__)
-_SAFE_WORDING_TOKENS = {
-    "a",
-    "an",
-    "and",
-    "as",
-    "for",
-    "in",
-    "the",
-    "through",
-    "using",
-    "with",
-    "to",
-    "of",
-    "your",
-    "that",
-    "which",
-    "it",
-    "by",
-    "is",
-    "are",
+# Do not discard conjunctions/prepositions: changing their order can change a condition.
+_WORDING_ARTICLES = {"a", "an", "the"}
+_WORDING_PHRASES = {
+    "removes the uncertainty regarding": "resolves the uncertainty about",
+    "removes the uncertainty about": "resolves the uncertainty about",
+    "resolves the uncertainty regarding": "resolves the uncertainty about",
+    "updated assessment establishes whether": "refreshed assessment determines whether",
+    "updated assessment determines whether": "refreshed assessment determines whether",
+    "refreshed assessment establishes whether": "refreshed assessment determines whether",
+    "for example": "e g",
+    "as part of": "within",
 }
 _WORDING_EQUIVALENTS = {
     "show": "demonstrate",
@@ -236,9 +230,13 @@ def _path_milestones(
                     "your confirmed evidence; check each employer's remaining conditions."
                 ),
                 measurable_outcome=(
-                    "A role-specific evidence package is used for selective applications."
+                    "For each selected posting, required and preferred expectations are mapped "
+                    "to confirmed examples; unresolved employer conditions are listed explicitly."
                 ),
-                evidence_to_create=["Role-specific evidence summary"],
+                evidence_to_create=[
+                    "Posting-specific requirement-to-evidence table with source links, "
+                    "confirmed examples and unresolved conditions"
+                ],
                 linked_requirement_ids=[
                     item.requirement_id for item in role.requirement_comparisons
                 ],
@@ -422,30 +420,76 @@ def _validate_plan_traceability(plan: CareerPlan, role: RoleAssessment) -> None:
                 raise PlanSynthesisValidationError("milestone exceeds the requested timeline")
 
 
-def _wording_tokens(value: str) -> set[str]:
-    return {_WORDING_EQUIVALENTS.get(token, token) for token in normalize_capability(value).split()}
+def _wording_tokens(value: str) -> tuple[str, ...]:
+    # Sentence punctuation must not hide a condition (e.g. "required.").
+    normalized = " ".join(re.findall(r"[a-z0-9+#]+", value.casefold()))
+    for phrase, replacement in _WORDING_PHRASES.items():
+        normalized = re.sub(r"\b" + re.escape(phrase) + r"\b", replacement, normalized)
+    # Narrow grammatical templates, not arbitrary reordering or new semantic inference.
+    normalized = re.sub(r"\bduring (?=(?:the )?\d{4}\b)", "in ", normalized)
+    normalized = re.sub(
+        r"^reassess readiness for (.+?) role once (?:the )?required evidence has been built$",
+        r"reassess \1 readiness after building the required evidence",
+        normalized,
+    )
+    return tuple(
+        _WORDING_EQUIVALENTS.get(token, token)
+        for token in normalized.split()
+        if token not in _WORDING_ARTICLES
+    )
 
 
 def _validate_wording(original: str, proposal: str) -> None:
     """Allow bounded grammatical/verb paraphrases without weakening factual anchors."""
 
-    old = _wording_tokens(original)
-    new = _wording_tokens(proposal)
-    safe = {_WORDING_EQUIVALENTS.get(token, token) for token in _SAFE_WORDING_TOKENS}
-    if not new.issubset(old | safe) or not (old - safe).issubset(new):
-        raise PlanSynthesisValidationError("model introduced or removed supported plan content")
-    # Retaining nouns alone must not turn a requested action into a negated one.
-    polar = {"no", "not", "never", "without", "avoid", "only", "must", "optional", "required"}
-    if (old & polar) != (new & polar):
-        raise PlanSynthesisValidationError("model changed action conditions")
+    # Preserve versions, durations and numeric qualifiers before text normalization.
+    numeric = r"(?:[<>]=?\s*)?\d+(?:[.\-/]\d+)*(?:\s*\+)?"
+    if re.findall(numeric, original) != re.findall(numeric, proposal):
+        raise PlanSynthesisValidationError("numeric value, version or qualifier changed")
+    if re.findall(r"[+#/<>=]", original) != re.findall(r"[+#/<>=]", proposal):
+        raise PlanSynthesisValidationError("technical symbol or comparison operator changed")
+    old, new = _wording_tokens(original), _wording_tokens(proposal)
+    polar = {
+        "no",
+        "not",
+        "never",
+        "without",
+        "avoid",
+        "only",
+        "must",
+        "optional",
+        "required",
+        "preferred",
+        "may",
+        "can",
+        "should",
+        "if",
+        "unless",
+        "before",
+        "after",
+        "and",
+        "or",
+    }
+    if tuple(t for t in old if t in polar) != tuple(t for t in new if t in polar):
+        raise PlanSynthesisValidationError("condition, obligation or polarity changed")
+    proficiency = {"great", "strong", "basic", "advanced", "expert", "proficient", "familiar"}
+    if tuple(t for t in old if t in proficiency) != tuple(t for t in new if t in proficiency):
+        raise PlanSynthesisValidationError("proficiency or strength qualifier changed")
+    if old != new:
+        raise PlanSynthesisValidationError("content or order changed outside allowed paraphrases")
 
 
 def _apply_model_wording(
-    plan: CareerPlan, role: RoleAssessment, gateway: ModelGateway
+    plan: CareerPlan,
+    role: RoleAssessment,
+    gateway: ModelGateway,
+    *,
+    rejections: list[PlanWordingRejection] | None = None,
 ) -> CareerPlan:
     response = gateway.generate_structured(
         role=ModelRole.REASONING,
         output_schema=CareerPlanDraftOutput,
+        validation_context={"plan_skeleton": json.loads(build_plan_prompt(plan))},
         system_prompt=SYSTEM_PROMPT,
         user_prompt=build_plan_prompt(plan),
         temperature=0,
@@ -468,11 +512,9 @@ def _apply_model_wording(
     expected_keys = {f"milestone-{index}" for index in range(len(plan.milestones))}
     if set(by_key) != expected_keys:
         raise PlanSynthesisValidationError("model changed milestone keys")
-    gaps = {item.gap_id: item for item in role.gaps}
-    updated = []
-    credential_supported = any(
-        item.category is GapCategory.CREDENTIAL_PREREQUISITE for item in role.gaps
-    )
+    if draft.risks != plan.risks or draft.assumptions != plan.assumptions:
+        raise PlanSynthesisValidationError("model changed grounded risks or assumptions")
+    # Structural tampering rejects the entire response before accepting any wording.
     for index, original in enumerate(plan.milestones):
         proposal = by_key[f"milestone-{index}"]
         if (
@@ -483,6 +525,14 @@ def _apply_model_wording(
             or proposal.dependencies != original.dependencies
         ):
             raise PlanSynthesisValidationError("model changed milestone traceability")
+    gaps = {item.gap_id: item for item in role.gaps}
+    updated = []
+    credential_supported = any(
+        item.category is GapCategory.CREDENTIAL_PREREQUISITE for item in role.gaps
+    )
+    for index, original in enumerate(plan.milestones):
+        proposal = by_key[f"milestone-{index}"]
+        issues = []
         if (
             len(original.linked_gap_ids) == 1
             and original.milestone_type is not MilestoneType.REASSESSMENT
@@ -490,14 +540,46 @@ def _apply_model_wording(
             anchor = normalize_capability(gaps[original.linked_gap_ids[0]].target_expectation)
             wording = normalize_capability(f"{proposal.action} {proposal.measurable_outcome}")
             if anchor not in wording:
-                raise PlanSynthesisValidationError("model removed the supported capability anchor")
-        _validate_wording(original.action, proposal.action)
-        _validate_wording(original.measurable_outcome, proposal.measurable_outcome)
+                issues.append(
+                    PlanWordingRejection(
+                        milestone_key=f"milestone-{index}",
+                        field="action",
+                        reason="supported capability anchor removed",
+                    )
+                )
+        for field in ("action", "measurable_outcome"):
+            try:
+                _validate_wording(getattr(original, field), getattr(proposal, field))
+            except PlanSynthesisValidationError as error:
+                issues.append(
+                    PlanWordingRejection(
+                        milestone_key=f"milestone-{index}", field=field, reason=str(error)
+                    )
+                )
         credential_words = {"certification", "certificate", "credential"}
         if not credential_supported and credential_words & set(
             normalize_capability(proposal.action).split()
         ):
-            raise PlanSynthesisValidationError("model introduced an unsupported credential")
+            issues.append(
+                PlanWordingRejection(
+                    milestone_key=f"milestone-{index}",
+                    field="action",
+                    reason="unsupported credential introduced",
+                )
+            )
+        if issues:
+            if rejections is not None:
+                rejections.extend(issues)
+            for issue in issues:
+                logger.info(
+                    "plan_wording_rejected milestone_key=%s field=%s reason=%s",
+                    issue.milestone_key,
+                    issue.field,
+                    issue.reason,
+                )
+            # Treat action/outcome as a pair; never mix a rejected action with a new outcome.
+            updated.append(original)
+            continue
         updated.append(
             original.model_copy(
                 update={
@@ -506,8 +588,6 @@ def _apply_model_wording(
                 }
             )
         )
-    if draft.risks != plan.risks or draft.assumptions != plan.assumptions:
-        raise PlanSynthesisValidationError("model changed grounded risks or assumptions")
     return plan.model_copy(update={"milestones": updated})
 
 
@@ -650,9 +730,19 @@ def generate_career_plan(
     _validate_plan_traceability(plan, role_assessment)
     fallback_used = False
     limitations: list[str] = []
+    wording_rejections: list[PlanWordingRejection] = []
     if model_gateway is not None:
         try:
-            plan = _apply_model_wording(plan, role_assessment, model_gateway)
+            plan = _apply_model_wording(
+                plan, role_assessment, model_gateway, rejections=wording_rejections
+            )
+            if wording_rejections:
+                fallback_used = True
+                count = len({item.milestone_key for item in wording_rejections})
+                limitations.append(
+                    f"Original wording retained for {count} milestone(s) after validation; "
+                    "accepted wording in other milestones was kept."
+                )
         except (ModelGatewayError, PlanSynthesisValidationError, TypeError, ValueError):
             fallback_used = True
             limitations.append(
@@ -679,4 +769,5 @@ def generate_career_plan(
         plan=plan,
         limitations=limitations,
         fallback_used=fallback_used,
+        wording_rejections=wording_rejections,
     )

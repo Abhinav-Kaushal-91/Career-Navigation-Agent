@@ -36,7 +36,8 @@ def _run_completion(*, requisitions=("REQ-42", "REQ-42"), first_changes=None):
     ) * 4
     pages = [
         MarketPageContent(
-            url=canonical_url,
+            # The requested page explicitly supplies a canonical vacancy URL.
+            url=job.url,
             canonical_job_url=canonical_url,
             requisition_id=requisitions[index],
             title=job.title,

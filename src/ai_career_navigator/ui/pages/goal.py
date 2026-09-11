@@ -139,8 +139,10 @@ def _render_goal_selection(*, demo: bool) -> None:
         for column, goal_type in zip(columns, goal_types[start : start + 3], strict=True):
             config = goal_intent_config(goal_type)
             with column:
-                with st.container(key=f"goal_direction_{goal_type.value.lower()}"):
-                    render_card(config.label, config.description, height=215)
+                with st.container(border=True, key=f"goal_direction_{goal_type.value.lower()}"):
+                    with st.container(height=145, border=False):
+                        st.markdown(f"**{config.label}**")
+                        st.caption(config.description)
                     if st.button(
                         "Choose this direction",
                         key=f"choose_goal_{goal_type.value.lower()}",
@@ -358,11 +360,11 @@ def _safe_live_failure_message(category: str | None) -> str:
         ),
         "MARKETTRANSPORTERROR": (
             "The live market sources could not be reached. Check the connection and retry; "
-            "NVIDIA extraction has not started."
+            "Model-based requirement extraction has not started."
         ),
         "MARKET_TRANSPORT_ERROR": (
             "The live market sources could not be reached. Check the connection and retry; "
-            "NVIDIA extraction has not started."
+            "Model-based requirement extraction has not started."
         ),
         "INTERRUPTED_RUN": (
             "The previous analysis run was interrupted before it finished. Your confirmed "

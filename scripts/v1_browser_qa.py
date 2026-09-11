@@ -16,11 +16,9 @@ from ai_career_navigator.ui.components.navigation import (
     render_app_navigation,
     surface_graph_workflow_state,
 )
-from ai_career_navigator.ui.pages.live_views import (
-    render_live_analysis,
-    render_live_market,
-    render_live_plan,
-)
+from ai_career_navigator.ui.pages.assessment import render_assessment
+from ai_career_navigator.ui.pages.goal import _render_goal_selection
+from ai_career_navigator.ui.pages.live_views import render_live_plan
 
 st.set_page_config(page_title="Career Navigator — V1 validation", layout="wide")
 initialize_session_state()
@@ -61,11 +59,17 @@ st.info(
 current = st.session_state.current_step
 render_app_navigation(current)
 renderers = {
-    "Market": render_live_market,
-    "Analysis": render_live_analysis,
+    "Market": render_assessment,
+    "Analysis": render_assessment,
     "Plan": render_live_plan,
 }
-if current in renderers:
-    renderers[current](st.session_state.live_graph_state, evidence_label=evidence_label)
-else:
-    st.info("This read-only harness covers Market, Analysis, and Plan. Select one in the sidebar.")
+with st.container(horizontal=True, horizontal_alignment="center"):
+    with st.container(width=1120):
+        if current == "Goal":
+            _render_goal_selection(demo=True)
+        elif current in renderers:
+            renderers[current](st.session_state.live_graph_state, evidence_label=evidence_label)
+        else:
+            st.info(
+                "Select Goal, Career assessment, or Plan in the sidebar to review these pages."
+            )

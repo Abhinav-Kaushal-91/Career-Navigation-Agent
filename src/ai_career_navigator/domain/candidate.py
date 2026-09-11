@@ -35,6 +35,7 @@ class EvidenceItem(BaseModel):
     context: str | None = None
     start_date: date | None = None
     end_date: date | None = None
+    is_current: bool | None = None
     outcome: str | None = None
     metric: str | None = None
     confirmation_status: EvidenceConfirmationStatus

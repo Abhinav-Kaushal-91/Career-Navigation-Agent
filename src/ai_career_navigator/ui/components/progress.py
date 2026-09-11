@@ -6,7 +6,7 @@ LIVE_ANALYSIS_STAGES = (
     "Reviewing your confirmed profile",
     "Identifying your strengths",
     "Searching the current market",
-    "Extracting employer requirements",
+    "Analyzing up to five job descriptions",
     "Comparing your experience",
     "Building your career path",
     "Preparing your career plan",

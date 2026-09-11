@@ -1,5 +1,983 @@
 # Current State
 
+## September 11 — GitHub snapshot validation
+
+Preparing the accumulated V1 code, tests, documentation and supplied job-description test inputs
+for the user-requested GitHub push. Full offline suite: **1071 passed, 8 failed** (26.52 s).
+Seven failures are in `tests/evaluation/test_v1_replay.py`; one is in
+`tests/scripts/test_run_goal_case_matrix.py`. The case-matrix mock emits incompatible
+assessment/comparison responses; replay expectations receive missing analysis/plan data.
+These older evaluation paths require migration/investigation, not weakened assertions.
+The focused 376-test UI/career/orchestration suite previously passed. This snapshot is not a
+full-suite or live-model quality acceptance. Credentials, raw run outputs, local databases and
+logs are excluded; `.streamlit/secrets.toml` is now explicitly ignored as well.
+
+## September 11 — concise public-copy contracts and Plan alignment
+
+Applied shared public wording guidance to same-role/transition initial and review prompts;
+aligned legacy synthesis and constrained plan-refinement prompts. Version suffix `concise-v1`
+distinguishes future runs. Reference fields, bounded calls, assessment policy and schemas stay
+unchanged. New concise narratives render complete (no first-sentence clipping); saved older
+runs retain the prior compact presentation. Plan actions/completion checks hide source notation
+while retaining original wording in details; standalone aliases get readable referents.
+376 UI/career/orchestration tests pass, changed-code lint passes, and both pages render the
+actual saved AI Engineer result through AppTest. No fresh model benchmark, Git push or online
+publication. Existing V3 semantic-quality issues remain unresolved.
+
+## September 11 — combined review presentation, without inline evidence
+
+Same-role/transition Analysis now shows a short readiness conclusion, a role overview
+grouped from existing COMMON/SPECIALIST/OPTIONAL competencies, and strength names.
+Original rationale, role narrative and individual-posting commentary remain in Run details.
+Known source aliases are removed from main-page copy without changing stored results,
+reference validation, accessibility, prompts or plans. This is presentation-only;
+the recorded V3 semantic issues remain unresolved. 34 focused regressions and lint pass.
+Restarted the read-only preview at 127.0.0.1:8530 and visually verified the updated
+saved five-description result. No new provider requests or online publication.
+
+## September 11 — V3 implemented; DeepSeek workflow passes, quality does not
+
+Implemented the role-neutral transition prompt replacement and supervised-practice /
+jurisdiction safeguards, retaining schemas, routing, same-role behavior and approval.
+Same Java demo/five AI files through DeepSeek: 214.69 s, two calls, NEAR_TERM_TARGET /
+MODERATE, seven strengths, 20 competencies, six draft actions, no reference issues.
+372 regressions and actual saved Analysis/Plan AppTest passed; Ruff passed.
+Material semantic failures remain (AI tenure overgeneralization, unconditional learning,
+Docker context, bundled skills, incomplete prose). Degree field is omitted by the model
+input builder. No claim of quality acceptance. See TRANSITION_V3_LIVE_VALIDATION.md.
+
+## September 11 — cross-profession prompt desktop validation
+
+Applied the unchanged proposed prompt to a fictional junior-plumber profile and five
+explicitly fictional welding descriptions, with seven input-variation checks.
+Assistant-authored assessment/self-review, not an API/model benchmark or app run.
+The approach distinguishes trainee entry from qualified welding readiness; proposed
+generic safety-supervision and jurisdiction/credential safeguards remain unapplied.
+See PLUMBER_TO_WELDER_PROMPT_VALIDATION.md. Production behavior is unchanged.
+
+## September 11 — independent assessment and prompt proposal
+
+Authored an independent assessment of the same Java demo and five AI job descriptions,
+separating credible AI-application direction from readiness for the advertised roles.
+Drafted a role-neutral replacement-prompt proposal with boundary examples and evaluation
+cases. No provider calls, production prompt/code changes or deployment in this activity.
+See INDEPENDENT_JAVA_TO_AI_ASSESSMENT.md and CAREER_ASSESSMENT_PROMPT_PROPOSAL.md.
+The proposal is not model-tested; existing semantic reliability issues remain open.
+
+## September 11 — unchanged V2 repeat reveals verdict instability
+
+Repeated the same five-file Java → AI Engineer test with identical first-call prompts
+and payload. DeepSeek took 229.34 s/two calls; final verdict ASPIRATIONAL/MODERATE versus
+NEAR_TERM_TARGET/MODERATE on the prior run. Backend/REST preserved; Docker production
+overclaim persists. 18 competencies, six draft actions; no processing issues. Actual
+Analysis/Plan AppTest passed. No rules/code/provider changes during this repeat.
+See the repeat section in TRANSITION_INTERPRETATION_V2_VALIDATION.md. Semantic reliability
+remains unresolved; successful execution does not establish stable career calibration.
+
+## September 11 — transition interpretation V2 and controlled live rerun
+
+Implemented four user-approved interpretation corrections in transition author/reviewer
+prompts; same-role defaults and retrieval/approval boundaries unchanged. Same five files,
+Java demo and DeepSeek: 189.65 s, two calls, NEAR_TERM_TARGET/MODERATE, 20 competencies,
+six draft actions, no processing issues. Base REST/cloud preserved; mixed skills split;
+unknowns clarified; plan narrowed to AI application engineering. Docker production attribution
+still overclaimed, so semantic quality is improved but not fully corrected.
+369 regression tests and changed-file Ruff passed. Actual saved output AppTest passed.
+See TRANSITION_INTERPRETATION_V2_VALIDATION.md for detailed results and limitations.
+
+## September 11 — live Java → AI Engineer transition test
+
+Five user-supplied AI descriptions/four employers, synthetic Java demo profile, actual
+Fireworks DeepSeek: 256.26 seconds, two calls, ASPIRATIONAL/HIGH, eight strengths,
+20 competencies and six draft-plan milestones. Schema/reference checks passed; actual
+Analysis/Plan AppTest rendering passed. Semantic issues remain (REST downgraded by an
+Azure-specific condition, uneven unknown handling, broad scope/confidence, zero transfer labels).
+See AI_ENGINEER_TRANSITION_LIVE_TEST.md. No browser, discovery calls or plan approval.
+Fixed a diagnostic-only employer-count assumption exposed by two Definity roles.
+
+## September 11 — separate generic career-transition rules
+
+Implemented `career-transition-assessment-v1` for ROLE_TRANSITION in the production
+graph, with a separate typed assessment, concise Analysis/Plan rendering and exact-version
+approval. Preserves strengths and distinguishes transferable evidence, clarification,
+learning and experience-building. Same-role prompts and other goal routes are unchanged.
+See CAREER_TRANSITION_RULES.md for the contract and verification limits.
+Live transition output quality has not yet been evaluated; this activity made no provider calls.
+Validation: 783 relevant tests passed; changed-file Ruff checks passed. Analysis and
+Plan were exercised with native Streamlit AppTest, not manual browser visual QA.
+
+## September 10 — full local website started with DeepSeek
+
+Saved local (git-ignored) environment role settings now all select
+`accounts/fireworks/models/deepseek-v4p1-flash` through Fireworks. Started the full
+production Streamlit application at http://127.0.0.1:8531/ for manual testing, not
+the read-only saved-result preview. This is loopback-only, not a public deployment.
+Latest implementation changes remain local/uncommitted and have not been pushed.
+
+
+## September 10 — DeepSeek comparison on unchanged same-role rules
+
+Actual Fireworks `deepseek-v4p1-flash` test completed in 124.79 seconds, two calls,
+APPLY_SELECTIVELY / MODERATE, 20 competencies, six plan steps and zero reference
+issues. Artifact: `outputs/local-descriptions/20260911T034636Z/results.json`.
+Same demo profile and four relevant supplied descriptions; no fresh retrieval.
+Docker project/production distinction and automated-testing/TDD separation are
+correct in the final output, unlike GLM. Remaining errors: frontend/React asks
+from Tactable are carried into the LTIMindtree action, and optional Kubernetes
+is framed too strongly among barriers. The output is also longer than desired.
+This is an improved single-case result, not general model acceptance.
+
+Configuration was NOT edited: the user's `FIREWORKS_MODEL` setting names DeepSeek,
+but Settings ignores that key and the role-specific model settings still name GLM.
+The test used process-only EXTRACTION_MODEL/REASONING_MODEL/VALIDATION_MODEL overrides.
+The normal website therefore still reads the saved GLM role settings.
+
+
+## September 10 — production same-role assessment path
+
+Implemented a separate same-role Current Market Analysis path using consolidated
+GLM assessment + critical review, short evidence aliases, concise Analysis/Plan,
+and existing exact-version approval. Legacy thresholds do not override this path;
+career-transition processing is unchanged. Actual hosted GLM run with the four
+relevant saved descriptions completed in 87.84 seconds / two calls, returned
+APPLY_SELECTIVELY (MODERATE), 13 competencies and a four-step draft plan.
+Zero reference-validation failures, but semantic QA is NOT passed: Docker production
+overclaim, automated-testing/TDD conflation, erroneous within-sample salary comparison,
+and inconsistent duty/qualification labels remain. See SAME_ROLE_LIVE_VALIDATION.md.
+
+
+## September 10 — title relevance corrected; full-description live rerun
+
+Added description-supported specialty relevance to the production discovery and
+extraction boundaries. Original titles, seniority/authority guards, source scopes,
+and same-vacancy identity rules are preserved. Four local descriptions (LTIMindtree,
+Kaseya, BMO, Tactable) now enter the batch as TARGET_VARIANT; Impro.AI remains
+outside the Java target. No employer-specific or Java-specific exception was added.
+
+Live GLM run `outputs/local-descriptions/20260911T023008Z/results.json` completed
+in 547.30 s with 15 model calls and no Adzuna/You discovery calls. Full bodies were
+sent unchanged (1,212 / 1,030 / 844 / 836 words). Extraction plus one repair took
+353.64 s; comparison 186.49 s; synthesis 6.83 s. The graph reached draft plan
+generation but this is NOT a quality acceptance pass: 30 draft themes, 23 initial
+rejections, eight repaired, 15 unresolved. Twelve comparisons: ten OPERATION_FAILED
+(five schema-validation errors, five semantic/grounding-validation errors), one
+UNKNOWN and one SUPPORTED (degree). Overall assessment and plan confidence remain
+INSUFFICIENT. The plan is an evidence-clarification draft, not an application-ready
+recommendation. No validation thresholds were relaxed to create a fit verdict.
+
+756 market/career/orchestration/UI/diagnostic tests passed, plus final focused
+checks. Streamlit AppTest rendered Analysis, Plan and Input files without errors.
+Read-only production-renderer preview starts directly on Analysis at localhost:8529.
+Browser navigation remained blocked by unavailable admin-policy verification; no
+visual browser QA or successful automatic opening is claimed. The earlier 8528
+preview still represents the pre-fix zero-call run. Production profile/session data
+and the five original text files were not changed.
+
+## September 10 — supplied-description diagnostic and read-only preview
+
+Tested the five user-saved files in `job-descriptions` against the unchanged Senior
+Java Developer demo goal. Bodies contain 451–1,212 words. The existing classifier
+returned one RELATED_TITLE and four IRRELEVANT; none qualified for the exact/variant
+batch. The graph reached market_ready then safely stopped, with zero model calls,
+no candidate assessment and no plan. This is a title-selection failure, not an LLM
+failure or proof of inadequate descriptions. No production policy was changed.
+
+Added `scripts/check_local_descriptions.py` (local retrieval injection, production
+downstream services, sanitized results) and `scripts/local_description_preview.py`
+(read-only existing Analysis/Plan renderers). Result:
+`outputs/local-descriptions/20260911T021429Z/results.json`.
+BMO's exact role title was absent from its body and taken from its filename;
+public posting URLs and current vacancy status were not verified. Original text
+files are unchanged. One importer regression passed; Streamlit AppTest rendered
+the assessment without exceptions. Preview starts on Analysis at localhost:8528.
+Browser-level inspection was blocked because the browser tool could not verify
+its admin-enforced policy. No bypass or alternate browser-control route was used.
+Target-role broadening or a title-selection policy change still needs user direction.
+
+## September 10 — fresh backend demo through analysis (no browser)
+
+Ran the production runtime with the synthetic demo through Education/Certification,
+live AI strength review and fresh Adzuna/You.com retrieval. Reached assessment synthesis
+in 195.35 s with eight GLM calls, but final accessibility/confidence remain insufficient.
+AI review succeeded (five suggestions, not auto-approved); 25 posting records retained;
+five truncated descriptions analyzed. Core Java themes were rejected by a mixed-section
+duty guard; two of four comparisons failed semantic output validation. This is not an
+end-to-end acceptance pass. See DEMO_TO_ANALYSIS_BACKEND_CHECK.md and the sanitized run
+under `outputs/demo-to-analysis/20260911T002304Z/`. Production rules and browser sessions
+were not changed during the test.
+
+## September 10 — recover individual batch theme validation failures
+
+The 8526 run failed at `FivePostingRoleProfile: themes.6:value_error`: a cross-field
+validation failure erased the whole batch. Exact rejected response content was not retained.
+Production now validates the transport envelope, then each theme independently, including
+grounding. Valid siblings survive; rejected themes receive one indexed repair request with
+no gateway retries. Invalid repairs cannot change accepted themes or downgrade core importance.
+Unresolved core/supporting qualifications or prerequisites withhold overall readiness.
+Processing status is explicit and the UI no longer calls a validation failure only a limited
+role sample. Existing saved runs are not recomputed automatically.
+
+Tests cover seventh-theme failure, valid repair, rejected repair, source IDs, core safeguards
+and native UI rendering. Live saved-public-description validation is tracked separately below.
+Verification: 801 Market/career/UI/orchestration/model tests plus 107 profile/script tests
+pass (908 total); scoped Ruff checks pass. Fresh production app on 8527 returns healthy
+and its Home page was inspected in the in-app browser. The existing 8526 session is preserved.
+
+First bounded live check (`outputs/five-posting-recovery/20260910T233725Z`) selected five
+saved public excerpts, not fresh vacancies. Initial response: 187.90 s, 13 invalid themes
+(invented headings, obligation conflicts). Repair: 303.91 s, 30,000 tokens, finish `length`;
+no usable requirements. Safe stop preserved. This is not an end-to-end success.
+The previously tested explicit GLM high-effort setting was absent from production; it is now
+wired into the exact deployment, and the repair prompt no longer repeats the whole-profile task.
+
+Follow-up high-effort checks: `20260910T234722Z` completed both calls in 104.53 s but
+recovered no requirements. With source-label prompt v3 and corrected-name repair,
+`20260910T235050Z` completed in 103.24 s (61.24 initial + 41.96 repair), recovered 3 themes
+and retained 7 unresolved themes. Canonical output includes one primary hiring theme
+(Database expertise), one optional Git theme and one experience prerequisite. Overall
+readiness remains blocked. This proves partial recovery, not successful career-analysis
+acceptance. Input was five saved short excerpts, including a company-only excerpt, not
+the user's current browser session or fresh/full descriptions. Outputs and exact wire bodies
+are saved under `outputs/five-posting-recovery/`; no candidate data or reasoning traces sent/stored.
+Source-label normalization and model classification quality remain limitations.
+Final verification after all changes: 913 tests pass across Market, career, UI,
+orchestration, models, profile and diagnostic scripts; scoped Ruff passes. Fresh production
+server restarted on 8527 with the updated GLM adapter and prompt v3. Full live workflow
+acceptance remains open; do not describe the partial extraction replay as a complete fix.
+
+## September 10 — live connection correction and word-ranked batch selection
+
+Replaced the batch's 600-character/70-word cutoff with descending word count among
+nonempty, in-scope exact/variant descriptions. Preserved source validation and uncertainty;
+length is not completeness. Saved real 28-posting selection replay now chooses five instead
+of zero (79, 73, 72, 69, 69 words), without a new model analysis.
+
+Live checks found the You.com MCP `extraction` argument now expects a string, while our
+adapter sent an object. The adapter now follows the advertised parameter type; full-page
+search succeeds. Adzuna search, You.com handshake/basic search and a tiny GLM structured
+response also succeeded. 397 scoped Market/UI tests pass. These checks do not establish
+fresh end-to-end career-analysis quality or that a fetched page is a complete JD.
+
+## September 10 — five-description production batch and approved Analysis layout
+
+The website now explicitly uses `analyze_five_postings`: one logical extraction request
+for up to five usable target descriptions, validated model grouping, role importance
+separate from source obligation, and shared canonical objects for comparison/Plan.
+The Analysis surface now has a role picture, full-width numbered competency table,
+separate gaps/questions and a next step. Specialist conditions stay in audit; additional
+advantages do not become baseline gaps. OR matches show the demonstrated alternative.
+Offline service replay reaches an untimed Plan. Fresh live-provider acceptance remains
+pending; prior saved runs are not recomputed. See FIVE_POSTING_PRODUCTION_BATCH.md.
+
+## September 10 — reference-aligned UI overhaul
+
+Revisited the user design ZIP and reconciled it with the later merged-assessment
+requirements. Applied a bounded native layout, compact shared typography, aligned
+Home/Goal cards, readable onboarding navigation, an assessment main/side layout,
+and a single Plan action sequence with secondary route/strength context. Removed
+duplicated Plan prose and session-persistence notices. Exact-version approval,
+unknown statuses, confidence warnings and safe stops are preserved.
+
+318 UI/career/plan-review tests pass; scoped Ruff checks pass. Browser inspection
+covered production Home/Education and frozen full-path, provisional and insufficient
+assessment replays, plus Plan top/footer controls. See UI_OVERHAUL_QA.md.
+
+Fresh production app: http://127.0.0.1:8520/. QA harness: port 8521. Existing app
+sessions were not stopped. No live model or retrieval request was made for this
+presentation pass. Extraction accuracy and complete live-workflow acceptance are
+still separate unresolved product checks, not fixed by layout work.
+
+## September 10 — remove repetitive assessment narrative
+
+The main assessment now contains verdict/confidence, competency table, gap names
+with severity (when present), and one short next step. Repeated strengths, focus,
+supporting-evidence prose and alert stacks were removed from the decision surface.
+One Run details section retains full rationale, deduplicated notes, posting leads,
+source audit JSON and search queries. Backend rules, model prompts, saved evidence
+and plan gate are unchanged. Automated rendering checks cover compact headings and
+diagnostic placement. No live model call or browser-session reset.
+
+## September 10 — readable competency block
+
+Replaced employer-expectation accordion/card nesting with one numbered native table
+(Competency / Context / You). Removed per-item evidence prose and source-detail
+dropdowns from that block; retained audit data and separate diagnostic details.
+Compact statuses preserve transferable/partial/unknown distinctions and never label
+processing failure as No. Backend policies and provider prompts are unchanged.
+Automated Streamlit rendering and status-mapping tests cover the new presentation;
+no live API call or current-session reset.
+
+## September 10 — bounded readiness without all-item completion veto
+
+Canonical readiness now needs two non-employer-specific baseline expectations and
+at least two / strictly more than half resolved comparisons, not every hiring item.
+Unverified mandatory baseline prerequisites and independent-source/content-quality
+gates still withhold the verdict. Unknown/failed comparisons remain visible but do
+not vote as deficits. Open questions cap confidence at Moderate and Apply now at
+Apply selectively. Specific candidate, employer and processing notes appear on the
+assessment page; existing comparisons and strengths remain intact. Fit thresholds,
+retrieval/model contracts and approved records are unchanged. See
+ASSESSMENT_RULES_QUICK_REFERENCE.md. 279 backend/UI/plan-review regressions and
+targeted Ruff checks pass (existing non-fatal pytest cache warning); no new live API
+run or browser-session replacement. Re-run analysis to update an old result.
+
+## September 10 — date-derived experience and uncertainty preservation
+
+Added an explicit-employment timeline calculator (union of intervals, current roles
+through the analysis date, no project/education inflation). Comparison v8 receives
+total/role tenure and missing-date questions; Profile Review shows calculated and
+self-reported experience separately. Explicit UNKNOWN and pending partial-match
+clarifications remain unknown. Synthesis no longer interprets clarification-linked
+insufficient-evidence gaps as low-fit barriers. A fresh GLM-configured app runs on
+127.0.0.1:8518; health check passed, older session untouched. No new live API run.
+374 career/profile/UI tests and targeted Ruff checks passed (non-fatal pytest
+cache-path warning). Automated Profile Review rendering passed; manual live-model
+verification is left to the user.
+See EXPERIENCE_DATE_CALCULATION.md for boundaries and manual checks.
+
+## September 10 — Plan wording validation corrected
+
+Plan-wording-v4 permits controlled paraphrases while protecting proficiency,
+versions/numeric qualifiers, conditions, technical symbols and word order. Valid
+milestones survive a wording failure elsewhere; each rejected action/outcome pair
+reverts together, with structured field/reason diagnostics. Structural tampering
+still rejects the full response. Saved GLM replay now accepts two of three rewritten
+milestones, retaining the original proficiency wording in the third. All immutable
+plan fields are unchanged. 197 targeted tests and Ruff pass; no new live call or
+browser validation. Uncertainty-to-Aspirational policy remains unchanged and pending.
+Replay: outputs/glm-plan-replay/20260910T172634Z. See GLM_PLAN_PHASE_FINDINGS.md.
+
+## September 10 — bounded GLM Plan diagnostic
+
+One live high-effort Plan call over four saved demo comparisons completed in
+4.34 seconds (779 input / 208 output tokens). Production rejected paraphrasing;
+deterministic fallback preserved IDs and no fixed timeline. The limited replay
+also exposed uncertainty gaps classified as Aspirational/Development and a
+contradictory no-material-gap rationale. Not a full five-JD workflow validation;
+experimental batch excluded, production unchanged. 47 targeted tests and Ruff
+pass. See GLM_PLAN_PHASE_FINDINGS.md and outputs/glm-plan-check/20260910T171111Z.
+
+## September 10 — GLM explicit-high reasoning succeeds at generation
+
+Verified GLM 5.3 rejects reasoning_effort=none as thinking-only. Changing only
+reasoning_effort to high completed the same five-JD task in 86.43 seconds with
+10,378 output tokens, versus a prior 246.26-second/30k truncation. Complete JSON,
+25 themes, all five IDs, 90 quote/ID checks pass. Semantic review still fails:
+duties labeled qualifications, missing eligibility/credentials, truncated theme
+names and source-completeness confusion. Diagnostic only; website unchanged.
+Seven targeted tests and Ruff pass. See GLM_REASONING_CONTROL_FINDINGS.md.
+
+
+## September 10 — five-description GLM test
+
+Selected five longer saved descriptions across five employers, no 500-character
+snippets. Unchanged consolidated contract failed after 246.26 seconds: 3,546 input
+tokens, 30,000 output tokens, finish=length, zero visible final JSON. Same safe
+failure as the ten- and 34-record GLM tests. No automatic retry or production change.
+See FULL_BATCH_ROLE_PROFILE_BENCHMARK.md for selection and all three measurements.
+
+
+## September 10 — same ten-record task on Nemotron
+
+NVIDIA Nemotron 3.5 Lightning returned schema-valid JSON in 276.52 seconds, 6,288
+input / 5,841 output tokens, finish=stop. Ten themes and all ten posting reviews;
+40/51 support rows pass narrow checks, 11 fail. Manual spot checks find additional
+duty-to-qualification promotion, cross-posting leakage and irrelevant theme support
+among quoted evidence. Completion succeeds where GLM capped out, but semantic
+quality does not pass. No website/provider configuration change or candidate/Plan
+output. See NEMOTRON_BATCH_COMPARISON.md and saved request/response/audit.
+
+
+## September 10 — ten-record consolidated follow-up
+
+Repeated the unchanged consolidated GLM contract on six longer descriptions plus
+four evidence-bearing snippets. 5,328 input tokens; 273.62 seconds; `length` at
+30,000 output tokens; zero visible final JSON. Safely rejected, no retry, no website
+change. Record-count reduction alone did not resolve this failure. See the follow-up
+table in FULL_BATCH_ROLE_PROFILE_BENCHMARK.md. Four targeted offline tests pass.
+
+
+## September 10 — full inventory single-call consolidation test
+
+Sent all 34 saved source records (28 snippets plus six retrieved JD documents,
+30,336 text characters) in one GLM request. Returned after 248.98 seconds with
+`finish_reason=length`, 10,023 input / 30,000 reported output tokens and no visible
+final JSON. Gateway safely rejected the response; no retry or production change.
+No complete role-profile quality assessment is possible from this failed attempt.
+See FULL_BATCH_ROLE_PROFILE_BENCHMARK.md. Three offline audit tests and Ruff pass.
+
+
+## September 10 — live two-worker extraction diagnostic
+
+Four saved public postings completed through Fireworks GLM and production extraction
+validation in 190.50 seconds with two workers, versus 369.99 seconds summed request
+durations (not a measured serial baseline). All four schema-valid, no retries or
+timeouts; 30/42 statements retained. One full body plus three short snippets is not
+a representative full-JD throughput test. Production website remains sequential.
+See PARALLEL_EXTRACTION_BENCHMARK.md for timings, quality caveats and raw artifacts.
+
+
+## September 10 — compact model output contracts
+
+Inference and comparison request one-sentence descriptions (320-character schema
+bounds); comparisons allow at most two exact excerpts of up to 320 characters.
+Extraction and synthesis request unique, concise limitations; conservative cleanup
+removes case/whitespace duplicates, not distinct conditions. Plan replies contain
+only milestone keys and editable action/outcome wording. Code restores immutable
+plan metadata and comparison requirement IDs; returned conflicting metadata still
+faces existing validation. Semantic dimensions and transferable capability labels
+remain model outputs. Prompts: inference v5, extraction v7, comparison v7,
+synthesis v6, plan wording v3. Output ceiling/timeouts unchanged. No live latency
+claim: provider reasoning and sequential calls can still dominate elapsed time.
+Validation: 920 tests passed (one pytest-cache filesystem warning), targeted Ruff
+checks passed, and git diff --check passed. No live provider run or forced server
+restart was performed for this change; existing session results are not regenerated.
+
+
+## September 9 — live GLM instruction test and server reload
+
+Used the actual Fireworks GLM gateway with saved public job text and the synthetic
+demo. Valid extraction returned 25 statements in 130.62 seconds. Replaying that
+same answer after generic role-label/verb-normalization fixes retained 21 rather
+than 17. Live comparisons preserve optional mentoring, satisfy a cloud OR through
+AWS, and do not convert generic Java into a complete Java 8 match.
+
+The test exposed missing date/current-role context and a model-generated stitched
+quote. Added source dates/current-employment context and an explicit contiguous-
+quote rule; retained strict grounding validation. Synthesis now explicitly keeps
+the evidence tracks distinct. Future audits stamp schema/pipeline/prompt versions.
+See `docs/GLM_BACKEND_CONTRACT_CHECK.md` for raw artifact locations, failures and
+acceptance limits. No full market/Plan completion is claimed by this small test.
+Final comparison prompt v6 passed schema/exact-quote validation with a partial
+match and microservices clarification, not Apply now. Semantic caveats remain
+around tenure wording and partial subtype; latency was 171.17 seconds. Final
+verification: 910 tests passed, targeted Ruff passed, and port 8517 restarted at
+23:34 with a healthy endpoint (`ok`). Seven live requests total; no new searches.
+
+## September 9 — broader grounded evidence comparison
+
+Implemented source-preserving hiring, preference and work-alignment tracks.
+Low recurrence no longer excludes employer-specific hiring conditions. Same
+concepts with different statement kinds remain distinct; source mandatory flags,
+years, qualifiers and provenance survive canonical projection and model prompts.
+The saved 60-item quote replay yields 6 hiring groups, 10 work-alignment groups
+and 1 preference; all remaining statements retain explicit audit dispositions.
+
+Coverage checks prevent one Java match or incomplete hiring comparisons from
+establishing overall Apply now. Duties/preferences do not create mandatory gaps;
+confirmed no-fixed-timeline is preserved. The combined assessment page separates
+tracks and moves long explanations into source details. Plan uses coverage-safe
+exploration or concrete posting-specific application evidence checks.
+
+Verification: 903 tests passed, targeted Ruff checks passed, and Streamlit AppTest
+rendered the three evidence tracks and audit disclosure without exceptions.
+Pytest reported only the existing local cache-directory warning. Offline replay
+details and limits: see `docs/EVIDENCE_PIPELINE_REPLAY.md`.
+No provider calls, provider-setting changes, session resets or edits to saved
+live results were made. Fresh live GLM acceptance remains outstanding.
+
+## September 9 — port 8517 connection failure investigation and restart
+
+Confirmed Explore demo seeds inputs and then uses the production GLM gateway;
+it does not select a separate NVIDIA provider. Demo-flow tests pass. The old
+NVIDIA transport-error label was hard-coded UI copy and is now provider-neutral.
+Fireworks worker errors now preserve timeout versus transport categories without
+logging credentials, provider bodies, or reasoning. Validators remain unchanged.
+
+Network probes failed with ConnectError under restricted execution and succeeded
+with approved external execution: You.com handshake, native-schema GLM streaming,
+production parser, and production subprocess gateway. This points to the launch
+environment; the original worker's generic errors do not prove the exact OS-level
+cause. Windows token restriction flags alone were not discriminating evidence.
+
+Bounded production-adapter verification outside the restricted environment:
+You.com returned 2 search results; Adzuna returned 2; GLM reviewed all 9 synthetic
+demo evidence items and SUCCEEDED with 5 pending strengths (Enterprise Systems
+Integration, Backend Service Design, Technical Design Review, API Documentation,
+Authentication Implementation). No inferred strengths were approved and no browser
+profile was used by the diagnostic. Diagnostic timeout was capped at 180 seconds;
+website settings remain 600 seconds, 30000 output tokens, zero retries.
+
+Restarted only the verified port-8517 server processes using approved external
+execution; new launcher PID 34168. Same URL returns HTTP 200 health=ok. Restart
+clears temporary session state; Explore demo refills inputs. Old failure logs
+are preserved; new logs use .streamlit-8517-network-restart.*.log. Full browser
+Market/Analysis/Plan acceptance remains unverified; connection recovery is not
+proof of complete job-description extraction or assessment quality.
+
+Reusable bounded check: scripts/check_live_connections.py (--search --demo opts
+into two small searches and a synthetic demo review; default is handshake/ping).
+Verification: 892 tests passed in 31.53s; targeted lint and git diff --check passed.
+Pytest emitted one non-failing cache-write warning; no cache cleanup was performed.
+
+## September 9 — live website switched to Fireworks GLM, 30k output ceiling
+
+At user request, ignored local package .env now routes extraction/reasoning/
+validation to accounts/fireworks/models/glm-5p3-flash via Fireworks. Global model
+output override is 30000, timeout 600s, retries 0, Fireworks streaming enabled.
+Gateway applies the override before inspection/dispatch. Defaults for unconfigured
+environments remain unchanged. No candidate facts, approvals or validators changed.
+
+Fireworks streaming now runs in an isolated, hidden transport worker. Parent
+communicate(timeout) kills/reaps a stalled worker rather than relying only on
+arriving chunks. Worker preserves final answer/token counts, discards reasoning,
+and rejects interrupted streams. Provider still passes length finishes to the
+gateway's truncation rejection. HTTP errors are typed without credential logs.
+
+Live production-adapter ping returned GLM connection successful (stop, 29 input /
+36 output tokens, 2.60s). Full regression suite: 890 passed; targeted lint passed.
+Fresh loopback Streamlit instance at http://127.0.0.1:8517 has HTTP 200 health=ok.
+User will manually exercise the workflow; no claim that a 30k full JD or end-to-end
+GLM workflow has succeeded. Existing older browser sessions should not be reused.
+
+## September 9 — Fireworks GLM saved-workflow partial test
+
+Configured FIREWORKS_MODEL accounts/fireworks/models/glm-5p3-flash is reachable.
+Initial thinking-disabled request failed 400; thinking-enabled repeat used same
+saved sources/prompts with streaming/20k. Full Cognizant probe reached 20k tokens
+and was rejected as truncated (227.56s). Five demo strength suggestions passed
+validation without approval. Three of 28 excerpts returned schema-valid outputs;
+only one hiring item and one responsibility survived. Fourth batch stream hit
+the diagnostic deadline; 24 postings were not sent. Six calls plus initial 400.
+Market gate INSUFFICIENT_EVIDENCE; no comparison/Plan. Website remains Nemotron.
+Important harness limitation: call 6 recorded 4209.43s because deadline checks
+run on arriving chunks, not an independent watchdog. Do not attribute that delay
+solely to model generation; host/stream cause unverified. Fix hard cancellation
+before another batch. Three offline tests/lint passed. Report:
+`outputs/fireworks-saved-market/20260909T221337Z/README.md`.
+
+## September 9 — streaming Qwen succeeds; 28-posting batch blocked by credits
+
+User-authorized streaming test completed the full Cognizant extraction in 263.84s,
+first chunk 0.65s, 2413 input/2792 output tokens, finish=stop under a 20k ceiling.
+Valid JSON: 18 raw, 8 retained (5 hiring/1 responsibility/2 preferences); current
+semantic/noncanonical rejections still remove Java experience and sponsorship.
+Next capability call and first batch posting call returned HTTP 402 (depleted HF
+included credits). Circuit breaker prevented remaining network requests: 3 actual
+calls total; only 1/28 batch postings submitted, 27 not sent. All 28 saved records
+contain 500-character excerpts, not complete JDs; no fresh retrieval. Market failed
+on service availability; no comparison/accessibility/Plan. No production switch or
+purchase. Report: `outputs/qwen-saved-market/20260909T215500Z/README.md`.
+Two offline stream tests and lint passed. No background calls remain.
+
+## September 9 — live Hugging Face Qwen extraction attempt
+
+User-authorized saved Cognizant test used Qwen/Qwen3.8-27B, 20k output ceiling,
+temperature 0, JSON-object output, thinking requested off, 600s client timeout.
+Two 400 responses exposed rejection of two system messages. Diagnostic combined
+their unchanged contents into one system message; third call ended HTTP 504 at
+120.079s with no final answer or usage. No backend acceptance result is available.
+No production model switch. Report: `outputs/qwen-live-extraction/20260909T214032Z/README.md`.
+The provider error recommends streaming; not attempted in this activity.
+
+## September 9 — supplied GLM Flash partial response review
+
+Attachment 2c1e303f-82b5-4c26-bbe8-f6f5c2dedc05 includes surrounding prompt text
+and an incomplete final answer. Final-answer JSON has invalid sponsorship-quote
+escapes and ends mid-string in item 20. Cause of truncation/copy corruption and
+provider settings are unknown. No complete production-valid GLM response supplied.
+Diagnostic only: isolate final answer, remove two known quote backslashes, replay
+the 19 complete objects with an empty diagnostic limitations array. All 19 quotes
+ground; 12 retained (3 responsibilities, 5 hiring, 3 preferences, 1 prerequisite),
+5 semantic rejections, 1 Java Development non-canonical rejection, 1 metadata
+exclusion. The concise sponsorship label survives, unlike null-label fallback in
+the Qwen/Nemotron cases. Visible GLM preserves years=6, cloud OR and frontend
+EXPOSURE but bundles AND skills and assigns LEADERSHIP maturity to mentoring.
+Partial subset is not full-response acceptance or a model ranking. No live calls,
+production edits or provider switch; surrounding reasoning text not persisted.
+
+## September 9 — full saved Qwen/Nemotron backend comparison
+
+Offline production-validator replay completed for the same full Cognizant JD.
+Nemotron retains 10/18 items; original Qwen fails JSON; diagnostic-only removal
+of two malformed backslashes yields 24/38 retained Qwen items. All parsed source
+quotes ground, but semantic validation rejects additional items. Both lose the
+Java experience requirement and sponsorship prerequisite; Qwen retains clearer
+duty boundaries and cloud ANY_OF. One employer cannot satisfy the canonical
+evidence gate: all cases stop INSUFFICIENT_EVIDENCE; no candidate/Plan model run.
+No live calls, provider switch or production fix. See
+`outputs/qwen-nemotron-comparison/20260909-cognizant/README.md` and item-level JSON.
+Qwen telemetry remains unavailable; no speed/cost or general winner claim.
+
+## September 9 — user-supplied Qwen extraction response review
+
+Read the user's Qwen response attachment b9709c52-713b-4dec-98b2-aec272528d4c.
+The original response fails PostingRequirementResult JSON parsing at line 64:
+invalid backslashes around the visa-sponsorship quote. Removing only those two
+backslashes in memory yields schema-valid output with 38 items: 14 responsibilities,
+13 hiring capabilities, six preferences, one prerequisite, four metadata items.
+All 38 source quotes pass the existing normalized _contains_quote check against
+the saved full Cognizant input. This is not a full downstream acceptance test.
+Qwen preserves years=6, cloud ANY_OF and preferred Agile/mentoring more faithfully
+than the saved Nemotron response. More items alone do not establish better accuracy.
+Original attachment and production code unchanged; no model call or provider switch.
+Manual transport/provider settings and response latency remain unverified.
+
+## September 9 — Qwen manual comparison input
+
+Exported `outputs/qwen-manual-test/cognizant-input.txt` from the successful saved
+20k Nemotron v5 Cognizant request: all system/schema and user-message contents
+preserved, combined with labelled sections for a single Hugging Face prompt box.
+This is the saved full-description test, not the fresh run's 500-character snippet.
+Single-message transport differs from the original API roles. No Qwen call made,
+no model switch, no credentials in the artifact, no comparison winner claimed.
+
+## September 9 — fresh full demo backend acceptance attempt
+
+Ran the actual editable Senior Java Developer demo through the production backend
+with fresh Adzuna/You.com and Nemotron, using diagnostic 20k output/600s timeout/no
+retry overrides only. Finished after 387.24s and 18 model calls at MARKET_READY /
+INSUFFICIENT_EVIDENCE. Four valid inferred strengths remain pending. Adzuna gave
+33 raw / 28 retained records, 17 employers; You.com gave zero retained direct jobs
+and zero successful enrichments. All 15 extraction inputs were 500-character
+excerpts; 14 schema-valid responses, 11 analyzed postings, six with accepted hiring
+requirements. Three model responses failed schema across extraction, variant
+validation and overview. Canonical baseline empty; comparison and Plan not reached.
+Safe stop passed, end-to-end acceptance failed. No production policy fixes made.
+
+New defects evidenced include invented source quotes (correctly rejected), genuine
+Cognizant duties misclassified as metadata, API paraphrase false rejection and an
+accepted incomplete preference. Initial ten-extraction budget expands by five in
+fallback. Auxiliary analysis-view export raised ValueError; graph/raw outputs
+saved. See `outputs/demo-profile-live/20260909T194458Z/README.md`. Diagnostic state
+is in-memory; saved sanitized artifacts persist. No browser QA claim.
+
+## September 9 — successful single Nemotron call with 20k diagnostic ceiling
+
+User-authorized Cognizant retry with current v5 prompt, 20,000 max output tokens,
+600-second timeout and no retries completed in 38.56 seconds. Provider reported
+2,598 input and 1,701 output tokens, finish_reason=stop. All 18 returned items passed
+schema; posting processing retained 10 and rejected 8. No null lists occurred in
+the returned answer (optional fields were mostly omitted); null repair remains
+offline-regression verified. The diagnostic script now supports request-budget
+override before gateway inspection; production budget/settings remain unchanged.
+Lint and an offline dispatch assertion confirm the diagnostic override.
+
+Live quality issues remain: duties mislabelled hiring capabilities, preferred
+Agile/mentoring mislabelled, missing structured years/alternatives and source-backed
+Java Development/Mentoring rejected by current guards. This test did not run the
+overview/candidate/Plan stages and does not establish a token-limit timeout fix.
+See `outputs/nemotron-live-overview/20260909T185859Z/README.md` for the full answer
+and item-level audit. Prior failed tests below are historical and preserved.
+
+## September 9 — narrow extraction list-format repair
+
+Requirement prompt v5 explicitly requests arrays for `qualifier_quotes` and
+`capability_options`, with `[]` rather than null when empty. A field-level before
+validator converts only nulls in those two ExtractedRequirement fields to empty
+lists before ordinary gateway/schema validation. The advertised schema remains
+non-nullable arrays; no global coercion or fabricated alternatives were added.
+ANY_OF cardinality, source/qualifier grounding, semantic alignment, category/enum,
+extra-field and contradictory-flag checks remain enforced. Timeout/token/retry
+settings are unchanged. The 42 added regressions include the real gateway plus
+extraction path with a fake provider; all 882 tests and targeted lint pass.
+No new live model call was made; provider latency remains unresolved. Previously
+exported request files intentionally preserve the original v4 diagnostic inputs.
+
+## September 9 — live Nemotron saved-JD diagnostic
+
+The exact Cognizant retry payload was exported unchanged for manual Nemotron
+testing as `outputs/nemotron-live-overview/cognizant-request.json`, with a separate
+`cognizant-playground.txt` containing the system/schema and user message texts.
+Export equality was verified against the saved request; no new provider call.
+
+Seven bounded model attempts produced zero accepted extractions: five 90-second
+timeouts and one list-field schema rejection across six saved descriptions, then
+one additional Cognizant timeout at 180 seconds outside the sandbox. No overview,
+candidate comparison or Plan model call could be validated. The empty canonical
+profile stopped safely; it was not substituted with a demo answer. This corpus is
+not the current portal's 27-posting run. No production settings were changed.
+See `outputs/nemotron-live-overview/README.md` and its two sanitized run records.
+Added a preflight-by-default bounded diagnostic script; lint and 15 overview tests
+pass. Live acceptance remains unproven; provider latency and invalid list outputs
+are concrete unresolved failures.
+
+## September 9 — combined career assessment implementation
+
+Market and Analysis now route to one production Career assessment screen, with one
+sidebar entry and backward-compatible internal route keys. Employer expectations
+appear alongside source-ID-linked candidate comparisons. Frequency charts, title
+mix, employer pie and prominent exact/expanded counters are absent from this route;
+source scope, counts and search queries remain under evidence details. Demonstrated
+strengths survive incomplete assessments. UNKNOWN comparisons appear as questions,
+OPERATION_FAILED as processing issues. No plan result means disabled Plan continuation.
+
+A bounded cross-posting model call organizes canonical expectations and supporting
+passages by professional capability dimension. This is structured-extract synthesis,
+not concatenation of all raw JDs or an unconstrained market-strategy generator.
+The model cannot create expectations, omit/duplicate IDs, blend duty/preference/
+prerequisite/scope boundaries or assert people management from mentoring alone.
+Invalid/unavailable organization falls back to labelled original-source grouping.
+Original requirements, comparison and accessibility policies retain ownership.
+Overview state is cleared on invalidation; existing sessions without it render a
+source-grouped view without automatically making a model call.
+
+Posting input preserves section line breaks; extraction instructions cover interpersonal
+capabilities, eligibility and incomplete content, and heading-fragment names are rejected.
+Comparison receives bounded professional-summary/core-competency context separately from
+approved evidence. Self-reported labels cannot establish ownership/maturity/production.
+
+Verification: 840 tests pass, including 15 new overview/contract regressions and updated
+combined-route assertions. Targeted lint and diff whitespace checks pass. Separate
+localhost:8516 browser harness exercised successful Senior Java → Plan, provisional
+Senior Python, and insufficient Instructional Designer states using frozen synthetic
+production-graph replays. Narrow layout inspected; no provider calls or plan approvals.
+User localhost:8515 session was not reset. See docs/ASSESSMENT_QA.md.
+
+Final fresh-session screenshots also verified the reduced heading and expanded
+employer/candidate source card at 1280px width, without repeated explanation.
+
+Not yet verified: fresh live Nemotron overview quality or a reconciled same-input A/B
+against the user's latest 27-posting portal run. Offline
+tests prove contracts/rendering, not better retrieval or model reasoning. Existing
+saved six-JD inventory is a different diagnostic corpus. No Git push/deployment.
+
+## September 9 — repeatable input-only demo shortcut
+
+Home's existing Explore demo button now loads a fresh editable Senior Java Developer
+test ProfileDraft through Education & Certifications. It opens Education with earlier
+sections reachable, uses manual/live workflow routing, and does not seed approvals,
+inferences, a goal, market evidence, assessment or plan. A synthetic-input badge remains
+visible in the sidebar; homepage copy discloses resetting current session progress.
+Each click clears prior derived state and creates fresh input entry IDs. Ordinary
+Start new analysis still opens a blank profile. Frozen demo illustrations remain for
+existing fixture tests, but are not selected by the homepage demo action.
+
+Verification: 825 tests pass, including four new shortcut/edit/reset/no-automatic-call
+regressions; targeted lint passes. Browser-level localhost:8515 verification clicked
+Explore demo and observed Education, saved 2018 Computer Science education, saved
+2023 synthetic Java certification, zero confirmed items and the enabled Continue to
+AI Strength Identification button. Left that page open. No live provider calls made.
+
+## September 9 — production retrieval update (offline verified)
+
+Supersedes the diagnostic-only status immediately below. Production deduplication
+now merges only supported vacancy identities (same posting ID/canonical URL or
+same employer requisition, with conflicting requisitions kept apart). Same-employer
+similar descriptions produce informational links, never automatic merges or JD
+transfers; different employers do not receive content-only duplicate links.
+
+The combined service retains validated related-title discoveries and attempts their
+missing-content retrieval within the shared budgets. Existing independent You.com
+discovery remains. Failed direct content completion can now search You.com using
+the Adzuna employer, complete original title and location. Each result is independently
+validated: a different relevant vacancy is added with seed lineage; a verified
+same-vacancy result can merge provenance and supply its better body. Individual
+LinkedIn/Indeed/Glassdoor/ZipRecruiter vacancy URLs are distinguished from guides
+and listing pages, labelled job-board copies, not employer-verified active postings.
+
+Full-page Markdown is requested when advertised by the MCP search schema; older
+servers use the existing Contents fallback. Returned page bodies are cached only
+against their exact result URL. No direct REST integration or dependency added.
+Enrichment and seed searches share bounded content/search budgets (default limits:
+three independent You searches, up to four seeded searches, five Adzuna searches;
+unused/failed work remains visible, not a claim of globally unavailable JDs).
+This is not automatic background continuation through every pending posting.
+
+Comparison/accessibility/canonical-cohort policies are unchanged. Related-role
+retention does not promote those roles into the baseline target. Possible duplicate
+counts are explicitly not verified unique-vacancy totals. Audit exports include
+possible-duplicate links. No credentials, live provider calls, push, or deployment
+were involved. Regression verification: full suite 821 tests; market subset 306.
+
+Latest user decision: keep same-employer/content-similar postings as separate jobs
+for now. Test inventory updated to 28 Adzuna plus six separate You.com jobs = 34
+operational records and six JD documents. Five possible duplicate flags are only
+informational, including the previously merged Cognizant content match. This is
+not 34 verified unique active vacancies. Production deduplication not modified.
+
+Offline replay of saved broad and refined You.com batches now preserves six
+distinct relevant JD documents in combined-job-and-jd-inventory.json/.md under
+outputs/senior-java-basic-case. 28 Adzuna seed rows plus five separately retained
+You discoveries yield 33 source records after one strong Cognizant content-based
+merge; four possible duplicates remain unresolved, so 33 is NOT a unique vacancy
+count. Additional Autodesk requisition retained independently. No new API/model
+calls or production changes; JD currentness/identity and job-board quality review
+remain required. Checked inventory counts, distinct URLs and substantive body lengths.
+
+Refined 28-posting You.com diagnostic: employer-focused queries, full_page Markdown,
+60s crawl timeout, three results; 26 employer-domain restrictions and two unrestricted
+queries. Three unique relevant substantive JDs (one Cognizant, two Autodesk), across
+four searches; 24 searches did not yield a relevant individual JD. One strong
+same-vacancy linkage remains Cognizant. Additional Autodesk vacancy is discovery,
+not a second enrichment of the original input. Coverage did not improve over prior
+five JD-bearing pages; restricting domains removed job-board copies. 29 calls total:
+one correction rerun restored Java accidentally removed from a reordered title.
+Saved all queries and bounded Markdown in outputs/senior-java-basic-case/refined-enrichment-results.json.
+No production or model changes.
+
+Batch employer enrichment diagnostic: reused September 7 Adzuna audit, skipped
+three aged-out entries, merged two identical URLs, searched remaining 28 including
+related titles via You.com (employer/title/Toronto/careers, count 3, full_page,
+concurrency 3; no employer domain restriction). Found five distinct relevant
+individual pages with substantive JD sections: Cognizant employer, Autodesk ATS,
+CGI Glassdoor, Astra North LinkedIn and Atyeti ZipRecruiter. Only Cognizant original
+5860849291 has previously established distinctive excerpt linkage; others require
+identity/currentness review. Multiple Cognizant searches hit the same employer URL.
+Seven searches were repeated because terminal truncation lost their first records;
+35 total API calls, no new Adzuna or model calls. Saved bounded page content in
+outputs/senior-java-basic-case/all-employer-enrichment-results.json; not a raw
+untruncated response archive. No production changes or safe-stop bypasses.
+
+Saved September 7 Adzuna 33-to-9 audit: 33 provider audit entries comprise three
+age-window exclusions, nine selected EXACT_TARGET/TARGET_VARIANT entries, and
+21 RELATED_TITLE entries excluded with expansion disabled. Two URLs repeat in
+the latter group. The intermediate adzuna_validated_count is 25, but complete
+historical merge lineage is not saved (duplicate_of null); do not attribute all
+24 nonselected entries to duplicates. Several related-title classifications merit
+review (Senior Developer - Java, Sr. Java Developer (Hybrid), Core/Backend Java).
+
+Employer enrichment probe succeeded for saved Adzuna Cognizant job 5860849291:
+one You.com title/employer/Toronto full_page search returned five results, one
+substantive JD and four page-not-found responses. Employer requisition 00069350121
+matches title, location, employer and distinctive Adzuna opening text; Adzuna has
+no requisition ID, so linkage is content-based, not ID-confirmed. No production
+changes or model calls. Summary: outputs/senior-java-basic-case/cognizant-enrichment-probe.json.
+
+Bounded Adzuna URL extraction probe (job 5870556705): You.com exact-ID snippet
+search returned no results; URL search with full_page returned five nonmatching
+Adzuna pages with security checks. One direct You.com Contents fetch of the exact
+job URL also returned a human-verification challenge, not a JD. Outcome:
+JD_UNAVAILABLE for this tested URL. No bypass, model calls, or production changes.
+
+Bounded Arbeitnow probe: three API requests returned 250/250/100 records. Three
+Java-title postings were found, all ARQ London (standard/senior/lead) with substantial,
+near-identical HTML descriptions. Pages 2/3 contained no empty descriptions and no
+Canada/Toronto location matches. The sample includes UK and France, not just Germany.
+Saved selected response records under outputs/senior-java-basic-case/arbeitnow-probe.json.
+No integration or model calls; not a complete-market or active-status validation.
+
+September 8 Toronto time: ran the three production You.com Senior Java Developer
+Toronto query-family searches only. Each returned 12 results (0.82/0.90/0.65 seconds).
+Captured wire arguments show domain filters translated to site operators, count 12,
+month/year/year freshness, and no country/language parameters supported by this
+connection. Results include non-target titles and non-Canadian locations; these are
+discovery hits, not validated postings. Saved title/URL comparison under
+outputs/senior-java-basic-case/you-query-results-20260908.json. No content fetches,
+Adzuna or Nemotron calls, and no retrieval code changes.
+
+A synthetic Senior Java Developer strengths-review request is available under
+`outputs/senior-java-basic-case/nemotron-request.json`, built offline using the
+production prompt/schema/payload builders. It includes three source-linked records
+(employment, personal project, education); goal preferences are intentionally not
+part of capability inference. No provider request or app approval was performed.
+
+Strength inference now resolves evidence IDs exact-first, with unique hexadecimal
+prefix repair (at least eight hex characters) scoped to the explicit evidence supplied
+in the current request. Gateway validation context stays local, outside the provider
+payload; the field validator repairs before UUID validation. Unknown, ambiguous,
+malformed, too-short and duplicate-after-repair references fail. Successful prefix
+resolutions emit a count-only log; downstream evidence retains full UUIDs. Other model
+flows retain their existing validation. 155 profile/model/orchestration tests passed;
+no live call or semantic capability changes were made in this step.
+
+Capability inference v4 removes reasoning_summary and source_context_summary from
+the output contract. The UI uses description; inferred evidence retains that description
+and source IDs without a duplicate generated context. Prompts, demo data, fixtures and
+the local request package match. Profile/UI/orchestration tests: 182 passed with one
+Market AppTest 3-second timeout; the design-handoff module passed on isolated rerun.
+Targeted Ruff passed. No live call was made; the 10,000-token limit is unchanged.
+
+Capability inference v3 now instructs reusable professional names, semantic duplicate
+avoidance, preservation of business actor roles and evidence-relevant limitations.
+Schema descriptions carry this guidance; deterministic filtering also reserves exact
+Core Competency list entries. No role-specific name blacklist or semantic rewrite was
+added. The review payload/package is updated. All 59 profile tests and targeted Ruff
+checks pass. Prompt-contract tests do not establish live model compliance; no live
+call was made. Output cap remains 10,000 tokens.
+
+At user request, capability inference now permits 10,000 output tokens instead of
+2,048. The local Nemotron review request and package were updated to match. All
+19 profile inference tests pass, including the request-budget regression assertion.
+No live call was made; timeout, retry settings and other model flows are unchanged.
+
+The September 8 resume input now has a local, Git-ignored `nemotron-package` directory
+containing normalized evidence, exact system/user prompts, output schema and assembled
+NVIDIA request body. Export used production builders offline, retained the existing
+2048-token limit, and made no new model call. No successful response is claimed.
+
+## Resume-based strengths test — September 8, 2026
+
+A user-authorized backend test used the current `infer_capabilities` service and unchanged
+`capability-inference-v2` prompt on a two-page supplied resume. Four employment records, two
+independent projects, two education records and six credentials/training entries were normalized
+into 14 source-linked evidence items. Professional summary and core competencies were retained;
+name, contact information and profile links were excluded. Employment maturity started at APPLIED,
+independent projects at DEMONSTRATED, and education/training at EXPOSURE; inferred outputs were
+to remain unconfirmed. Test-only approval flags enabled the source-input service gate without
+creating any approval or profile record in the website, database or memory store.
+
+With the saved-file-only NVIDIA configuration, the existing 2,048-token output limit, a 90-second
+timeout and at most one retry, both provider calls timed out. Total elapsed time: 180.54 seconds.
+Actual outcome: FAILED / ModelTimeoutError; zero validated capabilities. The local ignored
+`outputs/resume-skills-test-20260908/` folder preserves the minimized input and actual result.
+No Adzuna, You.com, goal selection, market analysis or candidate approval was performed.
+Any separately presented assistant resume review is not Nemotron output or a successful product test.
+
+A second user-requested run of the same input and production inference contract completed after
+179.27 seconds with FAILED / ModelTimeoutError. Unlike the first run, provider tracking recorded
+one returned response (3,680 input tokens, 2,048 output tokens) followed by one timed-out request.
+The returned response did not pass gateway validation; the single repair/retry then timed out.
+Zero capabilities were validated by the service. Reaching the configured output cap suggests
+possible truncation, but this runner did not retain the rejected response's finish reason or
+validation issue, so its exact rejection reason is not established. No rejected content was
+substituted or published as model-generated skills. The separate actual result is retained in
+the ignored `outputs/resume-skills-test-20260908/result-attempt-2.json` artifact.
+
+## NVIDIA connectivity check — September 8, 2026
+
+One user-authorized, profile-free structured request to the currently configured
+`nvidia/nemotron-3.5-lightning-30b-a3b` model through the production gateway timed out after
+30.11 seconds (`ModelTimeoutError`). The request asked only for a JSON status of `ready`,
+with 32 output tokens, thinking disabled, a 30-second timeout and zero retries. Inspection
+and external tracing were disabled for this check. No response passed schema validation.
+This reproduces a timeout with a tiny input; it does not distinguish provider/model latency
+from the network path. No production settings or application code were changed.
+
+A second explicitly requested identical check also timed out after 30.10 seconds, with zero
+automatic retries and no profile data. Both tiny-input checks failed; the underlying provider
+versus network cause remains unconfirmed.
+
+A third explicitly requested identical check timed out after 30.12 seconds, again without
+automatic retries or profile data. Three consecutive tiny-input checks have now failed.
+
+An offline comparison against commit `9df5bd5` found identical NVIDIA URLs, authentication
+header construction, request bytes and timeout arguments for equivalent tiny text and structured
+requests (dummy credentials and intercepted transport; no network calls). The HTTP transport itself
+was unchanged. However, the UI gateway refactor replaced its hard-coded one retry with the Settings
+value, currently two retries. This increases repeated-timeout waiting from approximately 180 to
+270 seconds per posting, but cannot explain the three zero-retry connectivity failures. A direct
+network/provider isolation check remains needed; this audit does not establish NVIDIA as the cause.
+
+At the user's request, one live tiny-input comparison loaded the NVIDIA adapter and gateway
+directly from commit `9df5bd5` into an isolated Python process, without replacing checkout files.
+Their shared model schemas, errors, roles, protocols and provider base are unchanged between
+that commit and HEAD. Using the current configured key/model and the same prompt, 32-token
+output limit, 30-second timeout and zero retries, the old implementation also raised
+`ModelTimeoutError` after 30.17 seconds. This reproduces the failure without the recent adapter
+and gateway changes; it is not a recreation of the historical environment/model or a full old-app
+acceptance test. No profile data was sent and no production settings were changed.
+
+After the user saved the replacement key (package `.env` modified September 8 at 13:22 local),
+the old adapter/gateway check was repeated using a diagnostic Settings subclass with only explicit
+initialization and dotenv sources. OS environment and secret-directory overrides were bypassed;
+no cached settings were used. The key came only from the newly saved package `.env` and was never
+printed. The same tiny request timed out after 30.20 seconds with zero retries. VS Code's disabled
+terminal environment injection did not affect this file-only test. Current app configuration
+and checkout code remain unchanged.
+
+The next user-requested repeat of the same old-commit, saved-file-only test succeeded in
+18.16 seconds, returning the schema-validated status `ready` from
+`nvidia/nemotron-3.5-lightning-30b-a3b`, with zero retries. This confirms that this saved-key/model
+combination can complete a tiny request now; it does not prove full-workflow reliability or that
+old code is superior, since the immediately preceding identical old-code test timed out.
+
+The subsequent user-requested latest-code check (`f83947b` gateway and adapter), using the same
+saved-file-only configuration, prompt, model, output limit, 30-second timeout and zero retries,
+also succeeded: validated `ready` in 27.33 seconds. Both old and new connection paths have now
+completed the tiny request. These sequential observations do not establish a code-caused latency
+difference or resolve the earlier intermittent timeouts and full-workflow reliability limitations.
+
 ## GitHub handoff checks — September 7, 2026
 
 The user requested publication of the accumulated code, regression tests and documentation to

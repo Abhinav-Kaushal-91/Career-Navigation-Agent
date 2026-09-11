@@ -11,10 +11,37 @@ from ai_career_navigator.domain import (
     ConfidenceLevel,
     MatchType,
     RequirementCategory,
+    RequirementStatementType,
 )
 from ai_career_navigator.market import CanonicalTargetRoleProfile, RoleProfileStatus
 from tests.career.test_gap_analysis import NOW, inputs
 from tests.career.test_synthesis import Finding, SynthesisScenario, build_scenario
+
+
+def test_unmatched_preferences_and_duties_do_not_create_hiring_gaps() -> None:
+    profile, goal, snapshot, market, comparisons = inputs(
+        [RequirementCategory.TECHNICAL] * 3,
+        [MatchType.DIRECT_MATCH, MatchType.NO_CONFIRMED_MATCH, MatchType.NO_CONFIRMED_MATCH],
+    )
+    requirements = list(market.requirements)
+    requirements[1] = requirements[1].model_copy(
+        update={
+            "statement_type": RequirementStatementType.PREFERENCE,
+            "preferred": True,
+            "mandatory": False,
+        }
+    )
+    requirements[2] = requirements[2].model_copy(
+        update={
+            "statement_type": RequirementStatementType.ROLE_RESPONSIBILITY,
+            "mandatory": False,
+        }
+    )
+    market = market.model_copy(update={"requirements": requirements})
+    result = assess_candidate_accessibility(profile, goal, snapshot, market, comparisons)
+    assert result.role_assessment.gaps == []
+    assert len(result.role_assessment.requirement_comparisons) == 3
+    assert result.role_assessment.candidate_accessibility is CandidateAccessibility.APPLY_NOW
 
 
 @pytest.mark.parametrize(
@@ -26,7 +53,7 @@ from tests.career.test_synthesis import Finding, SynthesisScenario, build_scenar
         (False, RoleProfileStatus.PROVISIONAL, ConfidenceLevel.MODERATE),
     ],
 )
-def test_canonical_confidence_caps_three_posting_assessment_without_changing_fit(
+def test_empty_canonical_profile_withholds_readiness_but_preserves_comparisons(
     all_direct: bool,
     profile_status: RoleProfileStatus,
     target_confidence: ConfidenceLevel,
@@ -84,20 +111,14 @@ def test_canonical_confidence_caps_three_posting_assessment_without_changing_fit
     ).role_assessment
 
     assert uncapped.confidence is ConfidenceLevel.HIGH
-    assert capped.confidence is target_confidence
-    assert capped.candidate_accessibility is uncapped.candidate_accessibility
+    assert capped.confidence is ConfidenceLevel.INSUFFICIENT
+    assert capped.candidate_accessibility is CandidateAccessibility.INSUFFICIENT_CANDIDATE_EVIDENCE
     assert capped.requirement_comparisons == uncapped.requirement_comparisons
     assert len(capped.gaps) == len(uncapped.gaps)
 
     uncapped_synthesis = synthesize_career_assessment(profile, uncapped, market, None)
     capped_synthesis = synthesize_career_assessment(profile, capped, capped_market, None)
     assert uncapped_synthesis.confidence is ConfidenceLevel.HIGH
-    assert capped_synthesis.confidence is target_confidence
-    assert capped_synthesis.accessibility is uncapped_synthesis.accessibility
-    assert capped_synthesis.accessibility is (
-        CandidateAccessibility.APPLY_NOW
-        if all_direct
-        else CandidateAccessibility.NEAR_TERM_TARGET
-    )
-    if target_confidence is ConfidenceLevel.LOW:
-        assert "tentative" in capped_synthesis.accessibility_rationale
+    assert capped_synthesis.confidence is ConfidenceLevel.INSUFFICIENT
+    assert capped_synthesis.accessibility is CandidateAccessibility.INSUFFICIENT_CANDIDATE_EVIDENCE
+    assert "fewer than two" in capped_synthesis.accessibility_rationale

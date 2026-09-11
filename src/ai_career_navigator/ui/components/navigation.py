@@ -8,11 +8,13 @@ import streamlit as st
 
 WORKFLOW_STEPS = ("Profile", "Goal", "Market", "Analysis", "Plan")
 APP_VIEWS = ("Home", *WORKFLOW_STEPS)
+VISIBLE_VIEWS = ("Home", "Profile", "Goal", "Career assessment", "Plan")
 SESSION_DEFAULTS = {
     "current_step": "Home",
     "highest_reached_step": "Home",
     "profile_confirmed": False,
     "profile_input_mode": None,
+    "sample_profile_loaded": False,
     "current_profile_step": "About You",
     "highest_reached_profile_step": "About You",
     "profile_draft": None,
@@ -155,9 +157,18 @@ def reset_workflow(profile_mode: str) -> None:
 
 
 def reset_demo() -> None:
-    """Begin a fresh, clearly labeled synthetic demonstration."""
+    """Prefill through Education, then use the ordinary live/manual workflow."""
+    from ai_career_navigator.ui.demo_data import sample_profile_draft
 
-    reset_workflow("demo")
+    for key, value in SESSION_DEFAULTS.items():
+        st.session_state[key] = deepcopy(value)
+    st.session_state.pop("strengths_selection", None)
+    st.session_state.profile_input_mode = "manual"
+    st.session_state.sample_profile_loaded = True
+    st.session_state.profile_draft = sample_profile_draft().model_dump(mode="json")
+    st.session_state.current_profile_step = "Education"
+    st.session_state.highest_reached_profile_step = "Education"
+    go_to("Profile")
 
 
 def invalidate_workflow_after_goal_change() -> None:
@@ -211,14 +222,16 @@ def render_app_navigation(current: str) -> None:
         st.title("Career Navigator")
         st.caption("Evidence-grounded career strategy")
         st.divider()
-        selected = st.radio(
+        displayed = "Career assessment" if current in {"Market", "Analysis"} else current
+        selected_label = st.radio(
             "Stage",
-            APP_VIEWS,
-            index=APP_VIEWS.index(current),
+            VISIBLE_VIEWS,
+            index=VISIBLE_VIEWS.index(displayed),
             key=f"stage_navigation_{current.lower()}",
             disabled=analysis_active,
         )
-        if selected != current:
+        selected = "Market" if selected_label == "Career assessment" else selected_label
+        if selected_label != displayed:
             if can_navigate(selected, highest):
                 go_to(selected)
             else:
@@ -237,6 +250,11 @@ def render_app_navigation(current: str) -> None:
             st.badge("Synthetic data", color="orange")
             st.badge("Demo mode", color="blue")
             st.caption("Nothing is saved in demo mode.")
+        elif st.session_state.get("sample_profile_loaded"):
+            st.badge("Synthetic test profile", color="orange")
+            st.caption(
+                "Prefilled inputs only. AI review and analysis use the normal live workflow."
+            )
 
 
 def render_workflow_actions(

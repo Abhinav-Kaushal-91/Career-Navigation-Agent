@@ -1,0 +1,94 @@
+Senior Full Stack Developer
+Location
+Toronto, ON•Hybrid work
+&nbsp;
+Benefits
+Pulled from the full job description
+
+Vision care
+Dental care
+Stock options
+Life insurance
+Extended health care
+&nbsp;
+Full job description
+We’re looking for a senior full-stack developer with architectural ambition, who likes building real things, solving messy problems, and owning code end-to-end.
+
+Please read carefully what we're looking for. You will find a link to apply via our GitHub org at the bottom of this job description.
+
+This is not a “sit in meetings and move tickets around” role. We’re a small team, so everyone touches real product, real architecture, and real production issues.
+
+What you'll work on
+
+You’ll help build and improve our platform using:
+
+TypeScript
+React
+Node.js
+Azure
+Serverless architecture
+AI/LLM-based product features
+You’ll work across the stack, from UI changes to backend logic, integrations, architecture decisions, performance, reliability, and production support.
+
+What we're looking for
+
+On the technical level, you:
+
+Have strong full-stack development experience
+Can own features from idea to production
+Can write clean, practical, maintainable code
+Understand architecture, but don't over-engineer everything
+Enjoy AI and want to build real AI-powered product features
+Can work independently without needing every tiny detail spelled out
+Are comfortable challenging ideas and being challenged back
+Like mentoring and being mentored
+Actually love tech and building software
+On the personal level, you:
+
+Are a down-to-earth person
+Are tech-savvy
+Are excited to build things
+Live and breathe code and technology
+What we are NOT looking for
+
+This is probably not the right role if you:
+
+Are a pure ticket-taker who doesn't take initiative
+Need heavy process around every decision
+Avoid ownership
+Overthink and turn simple problems into architecture museums
+Chase “AI” as a buzzword but are not interested in building real product
+Work setup
+
+The role is mostly remote, but you should be located in Toronto or the surrounding area because occasional office presence will be needed.
+
+The vibe
+
+Small team
+Real ownership
+Practical architecture
+AI-heavy product work without the corporate buzzword nonsense
+Using AI tools IS A MUST! We can't be an AI company without using AI tools ourselves.;)
+To apply
+
+Please follow this link to apply:
+
+https://kind-pond-0382ebe0f.7.azurestaticapps.net/
+
+It will ask you to login with your GitHub account to continue. Then, you will be able to create a private repository in our Impro.AI hiring org. Your user will be invited to that repo for the hiring process.
+
+Other methods of communication for this application will not get a reply.
+
+Pay: $110,000.00-$140,000.00 per year
+
+Benefits:
+
+Dental care
+Extended health care
+Life insurance
+Stock options
+Vision care
+Location:
+
+Toronto, ON (preferred)
+Work Location: Hybrid remote in Toronto, ON (Toronto District)

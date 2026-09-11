@@ -1862,7 +1862,17 @@ Possible outcomes:
 
 Conceptual responsibilities:
 
-- Identify transferable capabilities
+Case_ID	Expected_Career_Verdict	Predicted_Career_Verdict	Verdict_Exact_Match	Actual_Strengths	Actual_Gaps	Actual_Match_Types	Actual_Gap_Severity	Evidence_Groundedness	Verdict_Reasonableness	Evidence_Coverage	Overall_PASS_FAIL	Latency	Token_Usage	Cost	LangSmith_Trace_ID
+CN-001	ready_now		0								FAIL	0.994 seconds	0		e5a0b462-c677-4ab9-a1c9-4c7c9f018781
+CN-002	strong_fit_minor_gaps		0								FAIL	1.71 seconds	0		75c2b5f5-7cfc-420b-9008-25af2d526e43
+CN-003	strong_fit_minor_gaps		0								FAIL	13.989 seconds	0		e2011660-560b-49c0-aa08-477c0f4db1ae
+CN-004	ready_now	insufficient_evidence	0	Senior Java Developer with 7 years of experience building enterprise web applications using Java, S…	Java; Computer Science or Software Engineering Degree	Partial Match; No Match	Material; Major				FAIL	177.844 seconds	30,844		56086f76-3277-43e8-95e1-1641e632649b
+CN-005	strong_fit_minor_gaps		0								FAIL	2.895 seconds	0		cb557027-2f8e-400d-9498-f51f3e7e9ab7
+CN-006	adjacent_fit		0								FAIL	452.058 seconds	16,023		12ba0060-7c3c-434d-9e3e-f93d776b16b6
+CN-007	adjacent_fit		0								FAIL	305.606 seconds	19,513		86148f53-48b0-4671-93c9-9bce955c863d
+CN-008	adjacent_fit		0								FAIL	44.979 seconds	4,816		a1c1530c-bbfa-47e5-be49-eec2a24c1df7
+CN-009	significant_upskilling		0								FAIL	357.306 seconds	17,944		e660a251-31d4-4425-b796-221b38caabc0
+CN-010	significant_upskilling		0								FAIL	81.34 seconds	7,072		b34d8d10-6aaf-4611-a3e1-1e783516f6c4- Identify transferable capabilities
 - Classify gaps
 - Identify hard blockers
 - Classify role accessibility

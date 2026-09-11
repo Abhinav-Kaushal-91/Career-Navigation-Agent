@@ -1,0 +1,48 @@
+AI Engineer
+About the job
+Orion Innovation is a premier, award-winning, global business and technology services firm. Orion delivers game-changing business transformation and product development rooted in digital strategy, experience design, and engineering, with a unique combination of agility, scale, and maturity. We work with a wide range of clients across many industries including financial services, professional services, telecommunications and media, consumer products, automotive, industrial automation, professional sports and entertainment, life sciences, ecommerce, and education.
+
+Job Title: AI Engineer
+
+Type: Hybrid
+
+Location: Mississauga, ON
+
+Project Overview:
+
+We are seeking a skilled AI Engineer to contribute to a new project focusing on Agentic AI applications. This is an exciting opportunity to work remotely, leveraging your expertise in artificial intelligence to deliver innovative solutions aligned with project objectives.
+
+Role Overview:
+
+We are seeking a highly skilled Agentic AI Engineer to design and deploy autonomous AI agents that transform how work is captured, analyzed, and executed across automation programs. This role will focus on building AI-driven systems that can reason, take action, and manage workflows, significantly reducing reliance on traditional Business Analysis and Project Management activities. The successful candidate will lead the development of AI-powered automation design capabilities, including auto-generation of Process Definition Documents (PDDs), workflow orchestration, and intelligent decision-making.
+
+Key Responsibilities:
+
+Agentic AI Development & Deployment
+AI-Driven PDD & Automation Package Generation
+Prompt Engineering & Knowledge Systems
+Process Optimization & Automation Strategy
+Governance, Risk & Responsible AI
+
+
+Core Skills & Qualifications:
+
+5+ years of building AI agents or autonomous systems
+Strong expertise in Agentic AI frameworks (e.g., LangChain, AutoGen, similar) and Prompt engineering & LLM orchestration
+Familiarity with RPA platforms and workflow automation tools
+Strong analytical and systems-thinking mindset
+Ability to translate unstructured business inputs into structured automation logic
+
+
+Orion is an equal opportunity employer, and all qualified applicants will receive consideration for employment without regard to race, color, creed, religion, sex, sexual orientation, gender identity or expression, pregnancy, age, national origin, citizenship status, disability status, genetic information, protected veteran status, or any other characteristic protected by law.
+
+Candidate Privacy Policy
+
+Orion Systems Integrators, LLC And Its Subsidiaries And Its Affiliates (collectively, “Orion,” “we” Or “us”) Are Committed To Protecting Your Privacy. This Candidate Privacy Policy (orioninc.com) (“Notice”) Explains
+
+What information we collect during our application and recruitment process and why we collect it;
+How we handle that information; and
+How to access and update that information.
+
+
+Your use of Orion services is governe

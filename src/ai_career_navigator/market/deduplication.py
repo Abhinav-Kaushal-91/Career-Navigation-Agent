@@ -1,6 +1,7 @@
 """Conservative URL and posting deduplication."""
 
 from collections.abc import Iterable
+from difflib import SequenceMatcher
 from uuid import uuid4
 
 from ai_career_navigator.domain import JobPosting
@@ -28,17 +29,6 @@ def deduplicate_search_results(
         seen.add(canonical)
         retained.append(result)
     return retained, duplicates
-
-
-def _posting_key(posting: JobPosting) -> tuple[str, str, str] | None:
-    employer = normalize_employer(posting.employer)
-    if not employer:
-        return None
-    return (
-        employer.casefold(),
-        normalized_comparison(posting.normalized_title or posting.original_title),
-        (posting.location or "").strip().casefold(),
-    )
 
 
 def deduplicate_postings(postings: Iterable[JobPosting]) -> tuple[list[JobPosting], int]:
@@ -71,9 +61,22 @@ def same_vacancy(first: JobPosting, second: JobPosting) -> bool:
     if first.canonical_job_url and second.canonical_job_url:
         if canonicalize_url(first.canonical_job_url) == canonicalize_url(second.canonical_job_url):
             return True
-    return bool(
-        _posting_key(first) is not None
-        and _posting_key(first) == _posting_key(second)
-        and first.content_fingerprint
-        and first.content_fingerprint == second.content_fingerprint
-    )
+    # Reused descriptions (even by the same employer) do not identify a vacancy.
+    return False
+
+
+def possible_duplicate(
+    first: JobPosting, second: JobPosting, first_text: str, second_text: str
+) -> bool:
+    """Informational only: never use this result to merge records or transfer a JD."""
+    employer = normalize_employer(first.employer)
+    if (
+        not employer
+        or employer.casefold() != (normalize_employer(second.employer) or "").casefold()
+    ):
+        return False
+    if same_vacancy(first, second):
+        return False
+    left = normalized_comparison(first_text)[:4000]
+    right = normalized_comparison(second_text)[:4000]
+    return min(len(left), len(right)) >= 100 and SequenceMatcher(None, left, right).ratio() >= 0.9

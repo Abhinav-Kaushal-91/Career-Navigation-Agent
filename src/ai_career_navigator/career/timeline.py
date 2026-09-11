@@ -52,10 +52,13 @@ def assess_timeline(
     """Classify a requested timeline from accessibility and path constraints."""
 
     months = goal.target_timeline_months
-    if role.candidate_accessibility is CandidateAccessibility.INSUFFICIENT_CANDIDATE_EVIDENCE:
+    if (
+        months is not None
+        and role.candidate_accessibility is CandidateAccessibility.INSUFFICIENT_CANDIDATE_EVIDENCE
+    ):
         return _unsupported(goal, role, "Candidate evidence is insufficient for timeline analysis.")
     hard = [item for item in role.gaps if item.hard_blocker]
-    if hard:
+    if hard and months is not None:
         return _unsupported(
             goal,
             role,

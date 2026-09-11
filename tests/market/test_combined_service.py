@@ -372,14 +372,17 @@ def test_enrichment_failure_preserves_primary_posting() -> None:
     assert any("unavailable" in limitation for limitation in result.posting_evidence[0].limitations)
 
 
-def test_cross_source_duplicates_do_not_inflate_market_signals() -> None:
+def test_same_employer_and_description_without_identity_stay_separate() -> None:
     first = job(1)
     duplicate = first.model_copy(
         update={"provider_job_id": "adz-duplicate", "url": "https://other.example/job/1"}
     )
     result = run(FakeAdzunaMarketSearchClient([page(first, duplicate)]))
-    assert result.snapshot.validated_posting_count == 1
-    assert result.snapshot.duplicate_posting_count == 1
+    assert result.snapshot.validated_posting_count == 2
+    assert result.snapshot.duplicate_posting_count == 0
+    assert result.snapshot.distinct_employer_count == 1
+    assert all(item.possible_duplicate_posting_ids for item in result.posting_evidence)
+    assert all(item.duplicate_of is None for item in result.posting_audits)
 
 
 def test_adzuna_failure_preserves_parallel_you_lane_in_degraded_mode() -> None:

@@ -1,5 +1,253 @@
 # Tasks
 
+- [x] Run full offline validation before the requested GitHub snapshot: 1071 passed, 8 failed.
+- [ ] Repair/migrate older V1 replay and goal-case-matrix mocks/evaluation for the current
+  assessment paths; seven replay failures and one matrix failure remain. Do not relax assertions.
+
+- [x] Align same-role/transition author and reviewer prompts with concise combined public copy;
+  retain references only in structured fields and preserve substantive conditions.
+- [x] Align legacy synthesis/plan wording guidance and same-role/transition Plan rendering.
+- [x] Verify 376 UI/career/workflow tests, lint and saved AI Engineer Analysis/Plan rendering.
+- [ ] Evaluate concise-v1 wording in a new authorized live model run; not claimed by mock tests.
+
+- [x] Replace posting-by-posting Analysis prose with a combined role overview; keep
+  source notation and supporting narratives out of the main review. Preserve the raw audit.
+- [x] Verify 34 presentation/same-role/transition regressions without provider calls.
+
+- [x] Implement transition V3 practical assessment and cross-profession safety/authorization safeguards.
+- [x] Run the unchanged Java demo/five AI descriptions through DeepSeek and inspect the actual draft plan.
+- [x] Verify 372 regressions, changed-file lint and rendering of the actual saved result.
+- [ ] Resolve V3 live semantic deviations and approved education/certification capability omission;
+  execution passes but quality acceptance remains open. See TRANSITION_V3_LIVE_VALIDATION.md.
+
+- [x] Document assistant-reviewed junior-plumber to welder case and seven input variations.
+- [ ] Review proposed generic supervised-practice and jurisdiction/credential safeguards;
+  obtain domain review and run actual-model repeated tests before claiming validation.
+
+- [x] Independently assess the Java-to-AI case and draft role-neutral assessment/plan prompts.
+- [ ] Review and evaluate CAREER_ASSESSMENT_PROMPT_PROPOSAL.md before any production replacement;
+  no live model run or production change was made for this proposal.
+
+- [x] Repeat V2 with unchanged inputs/rules and compare exact first-call payloads.
+- [ ] Resolve repeatability issue: identical inputs produced NEAR_TERM_TARGET then ASPIRATIONAL;
+  Docker attribution and some mixed-skill grouping remain inconsistent. Findings recorded;
+  no further rule changes authorized or applied during the repeat test.
+
+- [x] Implement the four approved transition interpretation corrections and explicit final review.
+- [x] Rerun unchanged AI descriptions/profile/model; document improvement without forcing verdict.
+- [x] Verify same-role reviewer isolation, regression suite and actual saved-result rendering.
+- [ ] Remaining live semantic QA: Docker project-vs-production attribution, broad cloud labels,
+  and retention of important employer-specific conditions. No claim of complete semantic correctness.
+
+- [x] Run the Java demo → AI Engineer case through the live production transition graph
+  using all five saved AI descriptions. Save initial/review outputs and draft plan.
+- [x] Verify actual saved Analysis/Plan output using AppTest; keep plan unapproved.
+- [ ] Review documented semantic deviations before changing transition rules further:
+  broad-strength downgrades, uneven unknown handling, role direction and confidence.
+
+- [x] Implement generic, separate career-transition rules and production Analysis/Plan routing.
+- [x] Cover transfer grounding, strengths, safe stop, exact-plan approval and native UI in tests.
+- [x] Run a live transition evaluation with the chosen profile and relevant target-role descriptions;
+  semantic deviations documented separately from passing contract checks.
+
+- [x] Switch saved local role-specific model settings to DeepSeek and start the full
+  Streamlit app on localhost:8531 for manual testing; do not expose it publicly.
+- [ ] Commit/push and public deployment remain separate, unperformed release steps.
+
+- [x] Retest the same supplied-description case using actual Fireworks DeepSeek:
+  124.79 seconds, two calls; Docker and testing/TDD distinctions improved.
+- [ ] Same-role semantic QA still needed: prevent cross-employer frontend requirements
+  and optional Kubernetes expectations from becoming barriers for the wrong posting.
+  Saved role-specific model settings remain GLM; DeepSeek test used process-only overrides.
+
+- [x] Implement production same-role assessment rules, consolidated GLM call + review,
+  source aliases, native Analysis/Plan and exact-version plan review; preserve transition flow.
+- [x] Run hosted GLM on the supplied descriptions through the production graph; save
+  raw final responses and reviewed assessment. Latest: 87.84 seconds, two calls.
+- [ ] Semantic acceptance for same-role GLM: fix/validate production-context overclaims,
+  common-vs-specialist conflation, obligation labels and unsupported salary comparisons.
+  Do not equate zero schema/reference errors with a correct assessment.
+- [ ] Validate additional same-role professions before creating a separate transition rule set.
+
+
+- [x] Correct title-only rejection with description-supported specialty relevance; preserve original titles, rank/function boundaries and deduplication identity. Four supplied Java-compatible descriptions now reach GLM; one unrelated stack remains excluded.
+- [x] Rerun local descriptions through comparisons, synthesis and draft Plan; publish the actual saved result at localhost:8529. 547.30 seconds, 15 model calls; insufficient overall assessment remains, not a quality pass.
+- [ ] Diagnose/fix the separate extraction and comparison validation losses on the saved full-description responses: 15 unresolved themes and ten failed comparisons. Preserve the raw source/result record and safety guards.
+
+- [x] Test five full user-supplied descriptions with the unchanged demo goal and publish a local read-only assessment preview. Zero model calls: title gate excluded all five from extraction. See CURRENT_STATE; not an analysis acceptance pass.
+- [x] User authorized fixing description-based relevance while retaining the Senior Java Developer goal; reran extraction, comparison and plan with that goal unchanged.
+- [ ] Visually inspect the saved-file preview when the browser tool's admin-policy verification is available. Streamlit AppTest passed; browser navigation was blocked.
+
+- [x] Run a fresh no-browser backend test from the education-complete synthetic demo through AI review, retrieval and analysis. Completed in 195.35 s; analysis reached but final assessment insufficient. See DEMO_TO_ANALYSIS_BACKEND_CHECK.md.
+- [ ] Correct false rejection of hiring evidence under mixed skills/responsibilities headings; verify candidate comparison output consistency for evidence-reference rules. Do not count node completion as an assessment-quality pass.
+
+- [x] Isolate invalid five-posting themes, repair rejected indexes once, retain valid source-grounded siblings and preserve core/eligibility readiness guards.
+- [x] Distinguish extraction processing failures from insufficient market evidence in the assessment UI; regression-test recovery, source lineage and safe stopping.
+- [x] Apply the previously tested explicit-high GLM setting; run bounded saved-source checks with captured wire bodies. Final check: 103.24 s, 3 repaired themes, 7 unresolved; no false overall-fit success.
+- [ ] Resolve remaining model classification/source-label failures on representative full descriptions; the current saved-excerpt replay is still insufficient for overall career assessment.
+- [ ] Complete a fresh full website run after theme-recovery changes; a saved-public-JD extraction check is not an end-to-end acceptance run.
+
+- [x] Replace fixed batch length/keyword/quality gates with longest-first word ranking of relevant nonempty descriptions; regression-test the user's example and replay saved Adzuna input.
+- [x] Probe Adzuna, You.com and configured GLM connections; correct and live-verify You.com MCP full-page parameter type; retain regression coverage for legacy object and unknown schemas.
+
+- [x] Wire up-to-five consolidated extraction into the website runtime; preserve source-level validation, role importance, OR alternatives and downstream canonical contracts.
+- [x] Apply the approved full-width Analysis composition; keep source detail secondary and genuine gaps separate from unknowns.
+- [x] Test synthetic batch → comparison → synthesis → untimed Plan and inspect the production renderers in the browser.
+- [ ] Run a fresh live-provider acceptance case with the new production batch prompt; record completeness, timing and semantic deviations separately from offline QA.
+
+- [x] Reconcile the supplied Streamlit design with latest merged-assessment instructions; overhaul shared typography/canvas, Home/Goal cards, onboarding navigation, assessment composition and Plan action presentation.
+- [x] Verify native browser rendering for saved full/provisional/insufficient cases and reachable Plan controls; run 318 UI/career/plan-review tests and scoped Ruff checks. See UI_OVERHAUL_QA.md.
+- [ ] Complete a fresh live provider workflow acceptance run separately; UI verification does not establish semantic extraction/comparison correctness.
+
+- [x] Remove repetitive assessment prose and warning stacks; retain one verdict, competency table, material gaps, next step and a single diagnostic section. Preserve backend and navigation safeguards.
+
+- [x] Replace employer-expectation dropdowns with one numbered competency/status table; remove per-item evidence prose, preserve context and unknown states, and verify automated rendering.
+
+- [x] Replace all-hiring-item readiness veto with a strict-majority baseline gate, preserving mandatory prerequisites, source/quality safeguards, named questions and calibrated confidence. Add backend and rendered assessment regression checks; publish ASSESSMENT_RULES_QUICK_REFERENCE.md.
+
+- [x] Calculate total and same-role employment tenure from dates without overlap inflation; preserve unknown dates and technology-specific duration. Pass backend totals to comparison v8 and display them on Profile Review.
+- [x] Preserve explicit UNKNOWN/pending comparison clarification instead of promoting it to support; account for clarification-linked uncertainty in synthesis. Saved partial-evidence replay now selects Exploration, not Development.
+- [x] Start fresh GLM app on 127.0.0.1:8518 for manual verification without stopping the previous session; verify health endpoint and automated Profile Review rendering.
+
+- [x] Test Plan via GLM high using four saved comparisons: 4.34 seconds, 208 output tokens; record rejected paraphrasing and safe fallback, immutable lineage and no-fixed-timeline preservation. 47 targeted tests pass.
+- [x] Reconcile clarification-only uncertainty across comparison and synthesis for the identified partial-evidence case; retain full live-workflow acceptance as a separate task.
+- [x] Align Plan paraphrase permissions with bounded validation: plan-wording-v4, protected qualifiers/conditions, ordered comparison, milestone-pair fallback and field/reason diagnostics. Saved response replay accepts two of three rewrites; 197 targeted tests pass.
+
+- [x] Investigate GLM reasoning compatibility and isolate one request setting: none rejected as thinking-only; high completes unchanged five-JD consolidation in 86.43 seconds, 10,378 tokens. Preserve exact controls and output audits; add seven passing control/audit tests.
+- [ ] Correct the consolidated contract's duty/preference/qualification separation, prerequisite coverage, atomic labels and source-completeness distinctions before production adoption; high-effort generation success is not semantic acceptance.
+
+
+- [x] Test five selected longer descriptions across five employers on GLM with unchanged consolidated contract: 246.26 seconds, 30k ceiling reached, no final JSON; preserve diagnostics without retry or production changes.
+
+
+- [x] Replay the exact ten-record consolidated task once on the saved Nemotron model via the NVIDIA adapter. Record successful completion (276.52 seconds), 11/51 automated support failures and additional semantic/source-attribution defects; do not adopt the result into production.
+
+
+- [x] Repeat the consolidated benchmark with exactly ten selected records and unchanged model/prompt/schema/limits: failed safely after 273.62 seconds, 30k output limit, no final JSON. Preserve request and selected-source manifest.
+
+
+- [x] Test one consolidated GLM request over the full available 34-record corpus, not the four-case sample; retain sanitized request/metrics/failure. Hit 30k output ceiling after 248.98 seconds, with no final JSON; safe rejection verified.
+- [ ] Agree on next batch strategy after full-corpus token-limit failure; do not promote unvalidated consolidation or treat snippets as complete descriptions.
+
+
+- [x] Run a four-posting, two-worker live GLM extraction benchmark using saved public text, current compact prompts, no retries and a shared deadline; record timing and validation results (190.50 seconds total).
+- [ ] If approved, integrate bounded extraction concurrency and per-posting progress into production, then benchmark representative full descriptions. Diagnostic runner alone does not change website latency.
+
+
+- [x] Compact model descriptions/excerpts, deduplicate limitations and reconstruct immutable plan/comparison metadata in code; add compact-reply and tamper regression tests.
+- [ ] Measure live latency and quality with compact contracts against the same saved case; shorter visible output does not prove reduced provider reasoning time.
+
+
+- [x] Restart port 8517, exercise the production GLM extraction/comparison contracts at the backend, preserve raw final answers and failures, correct generic normalization and missing source-date/current-role input, tighten contiguous-quote instructions, and add audit version stamps. See GLM_BACKEND_CONTRACT_CHECK.md.
+- [ ] Evaluate extraction completeness and comparison repeatability across a broader corpus; the focused live contract test is not a full Market → Assessment → Plan acceptance run.
+
+- [x] Retain and classify all 60 saved statements; compare uncommon grounded hiring expectations, preferences and duties in separate tracks; preserve source conditions; add accessibility coverage guards and aligned Plan/UI behavior. Offline replay documented in EVIDENCE_PIPELINE_REPLAY.md.
+- [ ] Run a fresh user-approved live GLM analysis with full posting bodies; inspect all comparison tracks, unresolved evidence, plan grounding and latency. Offline quote replay is not live-model acceptance.
+
+- [x] Investigate port-8517 AI/market errors: confirm demo uses GLM, reproduce restricted-network failures and approved-execution success, remove stale NVIDIA copy, preserve typed streaming transport/timeout errors, verify two small provider searches plus successful nine-item demo strength review, and restart the verified server on the same port. No end-to-end acceptance claim.
+- [ ] Manually retry demo on restarted port 8517 and verify full market/assessment/plan behavior; session data is temporary and must be refilled after restart.
+
+- [x] Configure the actual local website for Fireworks GLM 5.3 Flash and a 30,000-token output ceiling across live roles; enable streaming with isolated-worker cancellation, preserve validation/approval semantics, verify live ping and 890 regression tests, serve fresh local manual-test URL on port 8517.
+- [ ] Complete manual/full-JD GLM acceptance at 30k; connection success and a larger ceiling do not prove extraction quality or end-to-end completion.
+
+- [x] Run configured Fireworks GLM 5.3 Flash against frozen inputs: thinking-required rejection corrected diagnostically; full JD truncated at 20k; five strengths validated; 3 batch postings returned, 1 timed out, 24 not sent. Market safe stop, no Plan, no production switch. Save raw final answers and failure lineage.
+- [ ] Add independent diagnostic stream deadline/cancellation and verify it before another batch; existing per-chunk deadline check allowed a recorded 4209s interval. Do not label that interval as verified provider generation time.
+
+- [x] Retry Qwen with streaming and prepare frozen 28-posting workflow: full Cognizant probe returned valid JSON (263.84s, 2413/2792 tokens, 8/18 retained). Batch blocked by explicit HTTP 402 credit exhaustion; record 1/28 submitted, 27 not sent, no downstream assessment/Plan. Preserve production configuration.
+- [ ] Resume the bounded saved-market Qwen test only after inference credits/provider access are available; do not mislabel credit/circuit-breaker failures as unavailable job descriptions or insufficient candidate evidence.
+
+- [x] Attempt saved Cognizant extraction through HF Qwen; preserve original instruction/data contents, diagnose system-message transport rejection and record HTTP 504 at 120.079s after message consolidation. No final answer/usage, so backend comparison could not run. Production unchanged.
+- [x] Test bounded streaming Qwen extraction: completed beyond the prior 120s non-streaming cutoff; retain final answer and usage without reasoning traces. Wider batch remains credit-blocked.
+
+- [x] Review supplied GLM Flash final-answer fragment against the same Cognizant source and backend: original malformed/truncated; diagnostic 19 complete items yield 12 retained, including sponsorship prerequisite. Preserve explicit partial-subset caveat; no full-response, latency or general quality claim.
+
+- [x] Compare saved Qwen and Nemotron Cognizant extractions through the same production gateway, semantic/quote validation, canonicalization and Market gate; preserve original and diagnostic repair separately. Document 10 versus 24 retained items, backend information loss and single-employer safe stop. No live model calls or production changes.
+- [ ] Address demonstrated rejection of explicit Java experience and typed sponsorship constraints, paraphrase false negatives and duty-to-qualification leakage; benchmark a frozen multi-employer corpus before selecting a provider or claiming full workflow success.
+
+- [x] Review user-supplied Qwen Cognizant response against saved Nemotron output: original JSON invalid at line 64; diagnostic-only in-memory escape repair gives 38 schema-valid items and all source quotes pass normalized grounding. Document semantic improvements without claiming full pipeline acceptance or changing production code.
+
+- [x] Export one copy/paste Qwen test input with the saved Cognizant description and identical v5 instruction/schema/user contents; disclose single-message packaging, preserve original requests, make no live call.
+
+- [x] Run actual demo through one fresh bounded production backend workflow with Adzuna, You.com and Nemotron; save inputs/raw final responses/validation and expected-v-actual report in `outputs/demo-profile-live/20260909T194458Z/README.md`. Four pending strengths; safe stop at Market; no comparison or Plan. Acceptance failed, not a completed happy path.
+- [ ] Resolve live zero-JD enrichment yield and four seed-search MarketToolErrors; preserve explicit attempted/deferred states and obtain useful employer text before another acceptance run.
+- [ ] Correct newly demonstrated responsibility/paraphrase false rejections, incomplete preference acceptance and variant/overview schema failures; clarify ten-plus-five extraction budget. Do not weaken source-quote safeguards.
+
+- [x] Run one v5 Cognizant Nemotron request with the user-requested 20,000-output-token diagnostic ceiling: 38.56 seconds, 18 returned / 10 retained / 8 rejected; save raw final JSON and audit. Production defaults unchanged; no full-workflow or timeout-resolution claim.
+- [ ] Review newly evidenced semantic failures: duty/preference boundaries, explicit years/alternatives, and over-strict rejection of Java Development and Mentoring. Do not treat schema success as semantic accuracy.
+
+- [x] Add explicit v5 extraction array instructions and null-to-empty normalization only for qualifier_quotes/capability_options; preserve source grounding and ANY_OF checks. Add 42 regressions; 882 full-suite tests and targeted lint pass. No live call or timeout changes.
+
+- [x] Export and verify the exact recorded Cognizant Nemotron request and playground message text for the user's manual test; no additional model call.
+
+- [x] Run bounded Nemotron extraction against six saved public JDs and one extended Cognizant retry; preserve failures and exact request/validation records in `outputs/nemotron-live-overview/README.md`. Zero accepted extractions; overview not reached.
+- [ ] Resolve live extraction timeouts and invalid list-field output before claiming the combined assessment workflow works with Nemotron. A 180-second diagnostic retry did not resolve the timeout.
+
+- [x] Merge active Market/Analysis presentation into one Career assessment route; preserve legacy keys, Plan approval and safe-stop boundaries.
+- [x] Add bounded source-linked cross-posting expectation organization, professional capability dimensions, model-output validation and explicit source-grouping fallback.
+- [x] Preserve JD section structure, reject heading fragments and distinguish self-reported profile context from comparison evidence.
+- [x] Verify 840 regressions and isolated browser replays of successful, provisional and insufficient states; document remaining QA scope.
+- [ ] Reconcile the current portal run with a frozen source corpus and benchmark old/new model output on identical inputs. No fresh provider-quality claim yet.
+- [x] Spot-check the final heading and expanded expectation/source card at 1280px desktop width in a fresh QA session; narrow success/provisional/safe-stop checks also completed.
+
+- [x] Change existing Explore demo into repeatable, input-only Senior Java Developer prefilling through Education & Certifications, then ordinary manual/live workflow. Verify editable values, fresh-state resets, no automatic model calls, blank-profile behavior and localhost browser handoff (825 tests passing).
+
+- [x] Implement conservative identity-only deduplication; retain same-employer similar JDs as separate records with informational flags and audit lineage.
+- [x] Add bounded Adzuna-seeded You.com full-page/Markdown discovery, independent new-vacancy validation and provenance-safe completion; retain related-title discoveries without changing canonical/comparison policy.
+- [x] Verify offline retrieval and downstream regressions (306 market tests; 821 full-suite tests). No live calls or deployment during implementation.
+- [ ] Run a separately bounded live acceptance case after these retrieval changes; verify actual MCP full-page support, JD yield, pending outcomes and exact vacancy lineage. Offline tests are not evidence of improved live yield.
+
+- [x] Apply user instruction to test inventory: no content-only merges; retain all six You.com JD jobs separately from 28 Adzuna seed jobs (34 operational records).
+
+- [x] Consolidate saved Adzuna-seeded You.com results into separate job/JD inventories, preserving new relevant discoveries and possible duplicate links: six JD documents; 33 source records, not a verified unique vacancy total. Offline diagnostic only.
+
+- [x] Rerun 28 saved Adzuna postings using refined employer queries/full-page Markdown; compare outcome honestly (three relevant distinct JDs vs prior five JD-bearing pages; one strong original identity match). Preserve domain and normalization limitations; no production edits.
+
+- [x] Run bounded employer/title/location enrichment on all 28 unique non-aged-out Adzuna audit entries, including related titles; save reviewed outcomes and disclose seven logging-recovery repeat calls. Five distinct relevant JD-bearing pages found, not five fully verified same-vacancy enrichments.
+
+- [x] Enumerate all 33 saved Adzuna audit entries and explain final nine: three aged out, 21 related-title entries not selected, nine exact/variant entries retained; disclose incomplete intermediate deduplication lineage. No code changed.
+
+- [x] Test Adzuna metadata to You.com employer-page enrichment for Cognizant Toronto Java posting: one usable JD, four unavailable pages; preserve content-based identity caveat and separate required/preferred criteria.
+
+- [x] Test snippets/exact-job-ID/full-page sequence on Adzuna job 5870556705; confirm exact URL Contents fetch is blocked by human verification and report JD unavailable without substituting unrelated content.
+
+- [x] Probe Arbeitnow with three bounded public requests; assess Java title coverage and description quality without integrating or calling models.
+
+- [x] Run three bounded public You.com query-family searches and save exact wire queries plus 36 title/URL results for user console comparison; no LLM or Adzuna calls.
+
+- [x] Export synthetic Senior Java Developer strengths-review request using current prompt/schema and 10,000-token limit; no live call.
+
+- [x] Add exact-first, request-scoped unique evidence-ID prefix repair before UUID validation, count-only logging and regression coverage; 155 tests passed.
+
+- [x] Use one description per inferred capability, remove redundant explanation fields, align UI and request package, and verify affected tests (Market timeout passed on rerun).
+
+- [x] Tighten strengths inference v3 and schema guidance, filter exact Core Competency duplicates, refresh review package; 59 profile tests pass. Live semantic quality remains to be verified.
+
+- [x] Increase capability-inference output cap to 10,000 tokens, update the review package, and verify 19 inference tests; no live call.
+
+- [x] Export the complete credential-free resume Nemotron review package using production builders; no live request made.
+
+## Resume-based strengths test — September 8, 2026
+
+- [x] Read both resume pages and minimize personal data for the user-authorized test
+- [x] Run current strengths inference with 14 source-linked evidence items
+- [x] Preserve the failed actual result: two timeouts, 180.54 seconds, no validated skills
+- [x] Keep goals unselected and all skill suggestions unconfirmed
+- [x] Repeat the unchanged structured contract: one returned but unvalidated response at the output cap, then a retry timeout; no validated skills
+
+## NVIDIA connectivity diagnosis — September 8, 2026
+
+- [x] Run one tiny, profile-free structured request through the configured NVIDIA gateway
+- [x] Record the actual timeout: 30.11 seconds, zero retries, no validated response
+- [x] Repeat once at user request: identical request timed out after 30.10 seconds
+- [x] Third user-requested check: identical request timed out after 30.12 seconds
+- [x] Compare previous/current NVIDIA requests offline: equivalent requests are byte-identical
+- [x] Identify the UI retry increase from one to two as an added waiting-time regression
+- [x] Test the old committed NVIDIA adapter/gateway live: same tiny request timed out in 30.17 seconds
+- [x] Repeat old-code test after replacement-key save, using dotenv-only settings: timeout in 30.20 seconds
+- [x] Next user-requested identical old-code repeat succeeded: validated `ready` in 18.16 seconds
+- [x] Latest-code comparison with the same saved-file-only settings succeeded: `ready` in 27.33 seconds
+- [ ] Isolate provider/model availability from network-path issues before repeating live analysis
+
 ## GitHub handoff checks — September 7, 2026
 
 - [x] Re-run the full offline suite before publication: 791 passed

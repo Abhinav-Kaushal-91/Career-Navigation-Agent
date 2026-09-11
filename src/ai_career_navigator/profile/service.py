@@ -49,6 +49,7 @@ def _explicit_evidence(
     context: str | None = None,
     start_date=None,
     end_date=None,
+    is_current: bool | None = None,
     outcome: str | None = None,
     metric: str | None = None,
     created_at: datetime,
@@ -64,6 +65,7 @@ def _explicit_evidence(
         context=context,
         start_date=start_date,
         end_date=end_date,
+        is_current=is_current,
         outcome=outcome,
         metric=metric,
         confirmation_status=EvidenceConfirmationStatus.EXPLICIT,
@@ -101,6 +103,7 @@ def evidence_from_draft(draft: ProfileDraft, *, created_at: datetime) -> list[Ev
                 context=experience.location,
                 start_date=experience.start_date,
                 end_date=experience.end_date,
+                is_current=experience.current,
                 created_at=created_at,
             )
         )

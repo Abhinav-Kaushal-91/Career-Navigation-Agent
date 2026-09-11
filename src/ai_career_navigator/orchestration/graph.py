@@ -92,7 +92,7 @@ def build_career_graph(*, checkpointer: BaseCheckpointSaver | None = None) -> Co
     builder.add_conditional_edges(
         "market_processing",
         route_after_market_processing,
-        {"ready": "market_ready", "end": END},
+        {"ready": "market_ready", "review": "final_plan_review", "end": END},
     )
     builder.add_conditional_edges(
         "market_ready",

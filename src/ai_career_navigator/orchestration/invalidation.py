@@ -59,6 +59,8 @@ def _plan_and_path_clear() -> dict[str, object]:
 
 def _candidate_analysis_clear() -> dict[str, object]:
     return {
+        "same_role_assessment": None,
+        "transition_assessment": None,
         "requirement_comparisons": [],
         "candidate_comparison_status": None,
         "comparison_limitations": [],
@@ -79,6 +81,7 @@ def _market_and_downstream_clear() -> dict[str, object]:
         "market_posting_audits": [],
         "market_processing_status": MarketProcessingWorkflowStatus.NOT_STARTED,
         "requirement_summary": None,
+        "employer_overview": None,
         "canonical_target_role_profile": None,
         "initial_canonical_target_role_profile": None,
         "posting_requirement_audits": [],

@@ -1,0 +1,283 @@
+Job details
+Here’s how the job details align with your profile.
+Pay
+
+$205,000–$240,000 a year
+&nbsp;
+Location
+Toronto, ON
+&nbsp;
+Full job description
+About Kaseya
+
+Kaseya is the leading provider of AI-powered IT management and cybersecurity software, serving Managed Service Providers (MSPs) and internal IT organizations worldwide. Our comprehensive platform helps organizations efficiently manage, secure, and automate their IT environments, driving operational efficiency and long-term business success.
+
+Backed by Insight Partners, a leading global software investor, Kaseya has experienced sustained double-digit growth and continues to expand its global footprint. Today, Kaseya supports customers in more than 20 countries and manages over 15 million endpoints worldwide.
+
+Founded in 2000, Kaseya was built by builders - and we're still building. We look for people who create rather than wait, who see a hard problem and lean in, and who treat challenges as raw material. At Kaseya, everyone plays a role in shaping the future of IT: whether you're in engineering, product, sales, marketing, customer support, or operations, your work helps protect, defend, and optimize IT environments across the globe.
+
+We're building teams that grow, perform, and make an impact. If you're driven by the itch to make things better - a product, a process, a career - you'll fit right in.
+
+At Kaseya, we don't just raise the bar. We build it.
+
+
+Senior Software Engineer – Data Platform
+Location: Toronto, Canada
+
+Why Kaseya?
+Kaseya powers millions of endpoints and serves thousands of customers worldwide. We are building a new Data & AI Platform that will unify data across Kaseya products and enable new customer experiences, automation, analytics, and AI capabilities.
+
+We are looking for strong backend software engineers who want to solve large-scale data problems.
+
+This is a software engineering role within the Data & AI Platform organization. You will design and build distributed backend services and platform infrastructure responsible for ingesting, processing, serving, and exposing data across Kaseya products.
+
+This is not a traditional ETL, BI, analytics engineering, or data warehousing role.
+
+Strong candidates typically come from backend engineering, distributed systems, infrastructure, streaming, or software-oriented data platform backgrounds.
+
+What You'll Build
+You will work on greenfield platform capabilities that sit across Kaseya's product ecosystem.
+
+You will:
+
+Design and build backend services, APIs, and distributed platform components used by internal engineering teams and customer-facing products
+
+Build highly available services capable of processing and serving large volumes of data
+
+Design event-driven and asynchronous systems using technologies such as Kafka and other distributed messaging platforms
+
+Develop services responsible for data ingestion, enrichment, routing, transformation, and delivery
+
+Build APIs and service interfaces that expose platform capabilities to other engineering teams
+
+Design systems that operate correctly under concurrency, partial failures, retries, duplicate events, and high load
+
+Solve distributed-systems problems involving:
+
+partitioning
+
+ordering
+
+idempotency
+
+retries
+
+state management
+
+backpressure
+
+consistency
+
+fault tolerance
+
+delivery guarantees
+
+Build reusable frameworks and platform primitives that can be adopted across multiple Kaseya products
+
+Design service contracts, APIs, schemas, and integration patterns between independently developed systems
+
+Improve platform performance, scalability, reliability, and operational efficiency
+
+Build production observability using metrics, logging, tracing, dashboards, and alerting
+
+Write automated unit, integration, and system tests
+
+Own services throughout their lifecycle, including design, implementation, deployment, production support, incident response, and optimization
+
+Participate in architecture reviews and technical design discussions
+
+Collaborate closely with Product, Infrastructure, Security, AI, and other Software Engineering teams
+
+Mentor engineers and help establish strong software engineering standards
+
+What We're Looking For
+Required
+6+ years of professional software engineering experience
+
+Significant recent hands-on experience building backend, platform, or distributed systems
+
+Strong programming ability in one or more general-purpose languages such as:
+
+Java
+
+Go
+
+Python
+
+Scala
+
+Rust
+
+C++
+
+Experience designing and developing production APIs, microservices, backend services, or platform services
+
+Strong understanding of software engineering fundamentals, including:
+
+data structures and algorithms
+
+concurrency
+
+asynchronous programming
+
+API design
+
+testing
+
+debugging
+
+system design
+
+Experience designing or operating distributed systems in production
+
+Experience with event-driven architectures or distributed messaging systems such as:
+
+Kafka
+
+Kinesis
+
+Event Hubs
+
+Pub/Sub
+
+RabbitMQ
+
+similar technologies
+
+Experience building systems that handle failures, retries, duplicate processing, ordering, and distributed state
+
+Experience operating cloud-native production systems on AWS, Azure, or GCP
+
+Experience owning production services, including troubleshooting, monitoring, incident response, and reliability improvements
+
+Experience working with Docker and containerized production environments
+
+Strongly Preferred
+Deep production experience with Apache Kafka
+
+Experience with streaming frameworks such as:
+
+Apache Flink
+
+Spark Structured Streaming
+
+Kafka Streams
+
+Apache Beam
+
+Experience designing high-throughput or low-latency systems
+
+Experience with CDC, event sourcing, asynchronous processing, or message-driven architectures
+
+Experience designing partitioning and sharding strategies
+
+Understanding of message delivery semantics such as at-most-once, at-least-once, and effectively/exactly-once processing
+
+Experience implementing idempotent and fault-tolerant services
+
+Experience with Kubernetes and production container orchestration
+
+Infrastructure-as-code experience with Terraform, Pulumi, CloudFormation, or similar tooling
+
+CI/CD and deployment automation experience
+
+Experience with distributed caching, queues, key-value stores, or high-performance databases
+
+Experience designing developer-facing platforms or shared infrastructure used by multiple engineering teams
+
+Strong observability and SRE practices using technologies such as Prometheus, Grafana, Datadog, OpenTelemetry, or similar systems
+
+Experience conducting architecture reviews or authoring technical design documents, RFCs, or ADRs
+
+Data Platform Experience
+You do not need to come from a traditional Data Engineering background.
+
+However, you should be comfortable working with data-intensive systems.
+
+Relevant experience may include:
+
+Real-time data ingestion
+
+Streaming platforms
+
+Distributed processing
+
+Change Data Capture
+
+Data-serving infrastructure
+
+Large-scale analytical systems
+
+Data APIs
+
+Lakehouse infrastructure
+
+Distributed storage systems
+
+High-volume event processing
+
+Experience with technologies such as the following is useful, but not a substitute for strong software engineering fundamentals:
+
+Spark
+
+Databricks
+
+Snowflake
+
+Iceberg
+
+Delta Lake
+
+BigQuery
+
+Redshift
+
+Candidates whose experience is primarily focused on ETL development, BI/reporting, dimensional modeling, dashboards, or data warehouse implementation without substantial backend software engineering experience are unlikely to be a fit for this role.
+
+Bonus
+Experience building infrastructure supporting machine learning or AI systems
+
+Experience building AI/LLM backend services
+
+Experience with vector databases or high-scale retrieval systems
+
+Experience with RAG infrastructure or AI data pipelines
+
+Experience developing internal developer platforms
+
+Experience with large multi-tenant SaaS systems
+
+Experience mentoring engineers or leading cross-team technical initiatives
+
+What Strong Candidates Tend to Look Like
+You may have previously held titles such as:
+
+Senior Software Engineer
+
+Backend Engineer
+
+Distributed Systems Engineer
+
+Platform Engineer
+
+Infrastructure Engineer
+
+Streaming Platform Engineer
+
+Data Platform Engineer
+
+Software Engineer, Data Infrastructure
+
+Your title matters less than what you have actually built.
+
+We are particularly interested in engineers who can demonstrate hands-on ownership of production software systems and explain the architectural decisions, trade-offs, failures, and operational challenges behind them.
+
+The expected base salary range for this position is CAD $205,000 to $240,000 per year. Where a candidate falls within this range depends on job-related factors such as experience, skills, and qualifications. This range reflects base salary only and does not include variable compensation or other components of the total package.
+
+Additional Information
+Kaseya provides equal employment opportunity to all employees and applicants without regard to race, religion, age, ancestry, gender, sex, sexual orientation, national origin, citizenship status, physical or mental disability, veteran status, marital status, or any other characteristic protected by applicable law.
+
+#IND525
+
+Additional information
+Kaseya provides equal employment opportunity to all employees and applicants without regard to race, religion, age, ancestry, gender, sex, sexual orientation, national origin, citizenship status, physical or mental disability, veteran status, marital status, or any other characteristic protected by applicable law.

@@ -115,13 +115,18 @@ def test_fake_graph_interrupt_checkpoint_resume_reaches_market_ready(
     assert resumed.state["inferred_evidence"][0].confirmation_status is (
         EvidenceConfirmationStatus.REJECTED_INFERENCE
     )
-    assert len(provider.calls) == 4  # inference was not recomputed; synthesis is a new call
+    assert (
+        len(provider.calls) == 5
+    )  # identical atomic source conditions use deterministic comparison
+    assert resumed.state["employer_overview"] is not None
     assert resumed.state["requirement_comparisons"][0].match_type.value == "DIRECT_MATCH"
-    assert resumed.state["candidate_accessibility"].value == "APPLY_NOW"
+    assert resumed.state["candidate_accessibility"].value == "INSUFFICIENT_CANDIDATE_EVIDENCE"
     assert resumed.state["role_assessment"].gaps == []
-    assert resumed.state["bridge_outcome"].value == "NO_BRIDGE_REQUIRED"
-    assert resumed.state["timeline_assessment"].classification.value == "REALISTIC"
-    assert resumed.state["career_plan"].path_type.value == "DIRECT"
+    assert (
+        resumed.state["timeline_assessment"].classification.value
+        == "UNSUPPORTED_INSUFFICIENT_EVIDENCE"
+    )
+    assert resumed.state["career_plan"].path_type.value == "EXPLORATION"
     assert resumed.state["career_plan"].plan_status.value == "DRAFT"
     assert content_store.get(resumed.state["run_id"])
     audit_path = Path(resumed.state["audit_artifact_path"])
@@ -131,7 +136,12 @@ def test_fake_graph_interrupt_checkpoint_resume_reaches_market_ready(
     assert audit["postings"][0]["requirements"][0]["source_quote"] == "Python required"
     assert audit["comparisons"][0]["selected_evidence"][0]["capability"] == "Python"
     assert "functional_overlap" in audit["comparisons"][0]
-    assert audit["plan"]["path_type"] == "DIRECT"
+    assert audit["plan"]["path_type"] == "EXPLORATION"
+    assert audit["schema_version"] == 2
+    assert audit["pipeline_version"] == "grounded-evidence-tracks-v1"
+    assert audit["prompt_versions"]["extraction"] == "market-requirements-v7"
+    assert audit["prompt_versions"]["comparison"] == "candidate-comparison-v9"
+    assert audit["prompt_versions"]["synthesis"] == "career-assessment-synthesis-v6-concise-v1"
 
 
 def test_graph_stops_before_analysis_and_plan_when_target_profile_is_insufficient(

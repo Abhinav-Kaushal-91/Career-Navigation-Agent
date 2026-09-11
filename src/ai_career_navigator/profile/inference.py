@@ -1,6 +1,7 @@
 """Grounded capability inference, validation, mapping, and human decisions."""
 
 import logging
+import re
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
@@ -104,6 +105,13 @@ def filter_duplicate_inferences(
     # This prevents a retry from proposing a confirmed, pending, or rejected
     # item again while retaining deliberately narrow textual matching.
     seen = {normalize_capability(item.capability) for item in profile.evidence_items}
+    # Core competencies may be prose grouped under headings. Reserve exact list
+    # entries, not fuzzy substrings: related but distinct functions must survive.
+    seen.update(
+        normalize_capability(entry)
+        for entry in re.split(r"[;,:\n\u2022]+", profile.core_competencies or "")
+        if entry.strip()
+    )
     retained: list[InferredCapability] = []
     for inference in result.inferred_capabilities:
         normalized = normalize_capability(inference.capability)
@@ -132,7 +140,6 @@ def _to_evidence(
         capability=inference.capability,
         description=inference.description,
         maturity_level=inference.proposed_maturity,
-        context=inference.source_context_summary,
         confirmation_status=EvidenceConfirmationStatus.INFERRED_PENDING,
         confidence=inference.confidence,
         approved_by_user=False,
@@ -166,10 +173,13 @@ def infer_capabilities(
         response = model_gateway.generate_structured(
             role=ModelRole.EXTRACTION,
             output_schema=CapabilityInferenceResult,
+            validation_context={
+                "allowed_evidence_ids": tuple(item.evidence_id for item in context.evidence)
+            },
             system_prompt=SYSTEM_PROMPT,
             user_prompt=build_user_prompt(context),
             temperature=0,
-            max_tokens=2048,
+            max_tokens=10000,
             metadata={
                 "task_type": "capability_inference",
                 "prompt_version": PROMPT_VERSION,

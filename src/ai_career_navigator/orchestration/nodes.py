@@ -34,6 +34,7 @@ from ai_career_navigator.market.errors import (
     MarketConfigurationError,
     MarketIntelligenceError,
 )
+from ai_career_navigator.market.overview import synthesize_employer_overview
 from ai_career_navigator.profile import InferenceRunStatus, add_inferred_evidence
 
 from .approval import (
@@ -124,6 +125,8 @@ def initialize_run(
             "market_processing_status", MarketProcessingWorkflowStatus.NOT_STARTED
         ),
         "requirement_summary": state.get("requirement_summary"),
+        "same_role_assessment": state.get("same_role_assessment"),
+        "transition_assessment": state.get("transition_assessment"),
         "canonical_target_role_profile": state.get("canonical_target_role_profile"),
         "initial_canonical_target_role_profile": state.get("initial_canonical_target_role_profile"),
         "posting_requirement_audits": state.get("posting_requirement_audits", []),
@@ -543,6 +546,95 @@ def market_processing(
     goal = state["confirmed_goal"]
     assert goal is not None and goal.target_role is not None
     processing_inputs = runtime.context.content_store.get_processing_inputs(state["run_id"])
+    from ai_career_navigator.career.same_role import (
+        assess_same_role,
+        assessment_plan,
+        is_same_role,
+    )
+    from ai_career_navigator.career.transition import assess_career_transition, is_career_transition
+
+    transition = is_career_transition(state.get("confirmed_profile"), goal)
+    if transition or is_same_role(state.get("confirmed_profile"), goal):
+        assessment_key = "transition_assessment" if transition else "same_role_assessment"
+        assess = assess_career_transition if transition else assess_same_role
+        profile = state["confirmed_profile"]
+        try:
+            assessment = assess(
+                profile, goal, processing_inputs, runtime.context.model_gateway
+            )
+            plan = assessment_plan(assessment, profile, goal)
+        except Exception as error:
+            runtime.context.logger.warning(
+                "%s_failed run_id=%s category=%s",
+                assessment_key,
+                state["run_id"],
+                type(error).__name__,
+            )
+            return {
+                "same_role_assessment": None,
+                "transition_assessment": None,
+                "career_plan": None,
+                "market_processing_status": MarketProcessingWorkflowStatus.FAILED,
+                "workflow_status": WorkflowStatus.FAILED,
+                "current_stage": WorkflowStage.MARKET_PROCESSING,
+                "last_error": f"{assessment_key.upper()}_PROCESSING_FAILED",
+                "limitations": [
+                    "Model assessment did not complete. Saved inputs are unchanged; "
+                    "this is not a candidate skill gap."
+                ],
+                "updated_at": runtime.context.clock(),
+            }
+        _log_node(
+            runtime,
+            run_id=state["run_id"],
+            node=assessment_key,
+            started=started,
+            status="PARTIAL" if assessment.processing_issues else "SUCCEEDED",
+            limitation_count=len(assessment.processing_issues),
+            route="final_plan_review",
+        )
+        from .audit import persist_same_role_audit
+
+        audit_path = None
+        try:
+            audit_path = str(
+                persist_same_role_audit(
+                    state,
+                    assessment,
+                    plan,
+                    directory=runtime.context.settings.run_audit_directory,
+                )
+            )
+        except OSError:
+            runtime.context.logger.warning(
+                "same_role_audit_persistence_failed run_id=%s", state["run_id"]
+            )
+        return {
+            "same_role_assessment": None if transition else assessment,
+            "transition_assessment": assessment if transition else None,
+            "audit_artifact_path": audit_path,
+            "candidate_accessibility": assessment.accessibility,
+            "career_plan": plan,
+            "career_plan_status": PlanGenerationStatus.SUCCEEDED
+            if plan
+            else PlanGenerationStatus.LIMITED,
+            "market_processing_status": MarketProcessingWorkflowStatus.LIMITED
+            if assessment.processing_issues
+            else MarketProcessingWorkflowStatus.SUCCEEDED,
+            "current_stage": WorkflowStage.CAREER_PLAN_READY
+            if plan
+            else WorkflowStage.CANDIDATE_ASSESSMENT_READY,
+            "workflow_status": WorkflowStatus.WAITING_FOR_HUMAN
+            if plan
+            else WorkflowStatus.INSUFFICIENT_EVIDENCE,
+            "human_action_required": HumanAction.FINAL_PLAN_REVIEW if plan else None,
+            "limitations": _unique(assessment.limitations, assessment.processing_issues),
+            "degraded_mode": bool(assessment.processing_issues),
+            "completed_stages": _completed(state, WorkflowStage.MARKET_PROCESSING)
+            + [WorkflowStage.CANDIDATE_ASSESSMENT_READY]
+            + ([WorkflowStage.CAREER_PLAN_READY] if plan else []),
+            "updated_at": runtime.context.clock(),
+        }
     if state.get("market_source_ids") and not processing_inputs:
         error_category = "TRANSIENT_MARKET_CONTENT_UNAVAILABLE"
         result = None
@@ -600,6 +692,8 @@ def market_processing(
         )
         return {
             "current_stage": WorkflowStage.MARKET_PROCESSING,
+            "same_role_assessment": None,
+            "transition_assessment": None,
             "market_processing_status": MarketProcessingWorkflowStatus.FAILED,
             "workflow_status": WorkflowStatus.FAILED,
             "last_error": error_category,
@@ -658,8 +752,14 @@ def market_processing(
     )
     update = {
         "current_stage": WorkflowStage.MARKET_PROCESSING,
+        "same_role_assessment": None,
+        "transition_assessment": None,
         "market_processing_status": processing_status,
         "requirement_summary": result.summary,
+        "employer_overview": synthesize_employer_overview(
+            result.canonical_profile,
+            runtime.context.model_gateway,
+        ),
         "market_snapshot": snapshot,
         "canonical_target_role_profile": result.canonical_profile,
         "initial_canonical_target_role_profile": result.initial_canonical_profile,

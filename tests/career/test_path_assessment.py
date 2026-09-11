@@ -337,10 +337,17 @@ def test_timeline_scenarios(accessibility, months, bridge, expected) -> None:
     assert result.assessment.classification is expected
 
 
-def test_approved_no_fixed_timeline_is_supported_without_fake_precision() -> None:
+@pytest.mark.parametrize(
+    "accessibility",
+    [
+        CandidateAccessibility.NEAR_TERM_TARGET,
+        CandidateAccessibility.INSUFFICIENT_CANDIDATE_EVIDENCE,
+    ],
+)
+def test_approved_no_fixed_timeline_is_supported_without_fake_precision(accessibility) -> None:
     result = assess_timeline(
         goal(months=None),
-        role(CandidateAccessibility.NEAR_TERM_TARGET, [gap("Production AI")]),
+        role(accessibility, [gap("Production AI")]),
         bridge_result(BridgeOutcome.RECOMMENDED_BRIDGE, helpful=True),
         snapshot([]),
     )

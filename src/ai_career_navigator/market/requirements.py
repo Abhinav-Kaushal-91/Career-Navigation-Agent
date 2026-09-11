@@ -22,6 +22,7 @@ from ai_career_navigator.market.processing import (
     assess_title,
     classify_and_segment_source,
     classify_seniority,
+    classify_title_for_seniority,
 )
 from ai_career_navigator.market.requirement_prompts import (
     PROMPT_VERSION,
@@ -167,7 +168,13 @@ def canonical_capability(value: str) -> str:
 
 
 def _is_concise_capability(value: str) -> bool:
-    return bool(value) and len(value) <= 80 and len(value.split()) <= 8
+    heading = re.match(
+        r"^(?:key responsibilities|responsibilities|minimum qualifications|"
+        r"required qualifications|what you will do)(?:\b|$)",
+        value,
+        re.I,
+    )
+    return bool(value) and not heading and len(value) <= 80 and len(value.split()) <= 8
 
 
 def _is_role_label_restatement(value: str, title: str) -> bool:
@@ -360,6 +367,19 @@ def _assessment_from_evidence(
     text = evidence.primary_content.markdown.strip()
     if not text:
         return None
+    title_match = (
+        PostingTitleMatch(evidence.title_classification)
+        if evidence.title_classification
+        else assess_title(posting.original_title, target_role, posting_text=text)
+    )
+    # Enrichment can supply specialty evidence absent from the discovery title.
+    # Re-evaluate secondary/rejected headings, preserving original titles and level.
+    if title_match in {PostingTitleMatch.RELATED_TITLE, PostingTitleMatch.IRRELEVANT}:
+        content_match = classify_title_for_seniority(
+            posting.original_title, target_role, None, posting_text=text
+        )
+        if content_match is PostingTitleMatch.TARGET_VARIANT:
+            title_match = content_match
     candidate = PostingCandidate(
         posting_id=posting.posting_id,
         source_id=posting.source_id,
@@ -402,7 +422,7 @@ def _assessment_from_evidence(
         selected_content_source=(
             evidence.selected_content_source.value if evidence.selected_content_source else None
         ),
-        title_classification=evidence.title_classification,
+        title_classification=title_match.value,
         posting_date=posting.posting_date,
         requisition_id=posting.requisition_id,
         canonical_job_url=posting.canonical_job_url,
@@ -414,11 +434,7 @@ def _assessment_from_evidence(
         geography_evidence_text=posting.location_evidence_text,
         requested_geography_scope=posting.requested_geography_scope,
         matched_geography_scope=posting.matched_geography_scope,
-        title_match=(
-            PostingTitleMatch(evidence.title_classification)
-            if evidence.title_classification
-            else assess_title(posting.original_title, target_role)
-        ),
+        title_match=title_match,
     )
 
 
@@ -586,6 +602,14 @@ def extract_posting_requirements(
             failure_category=type(error).__name__,
         )
 
+    return validate_posting_requirements(assessment, extracted)
+
+
+def validate_posting_requirements(
+    assessment: PostingCandidateAssessment, extracted: PostingRequirementResult
+) -> _ExtractionOutcome:
+    """Use the same grounding checks for single-posting and batch responses."""
+    candidate = assessment.candidate
     requirements: list[RoleRequirement] = []
     unsupported = 0
     rejected = 0
@@ -658,6 +682,54 @@ def extract_posting_requirements(
             )
             continue
         group = _item_group(item)
+        # A job-title/domain introduction is role context, not proof of prior qualifications.
+        if (
+            item.item_type is RequirementItemType.HIRING_CAPABILITY
+            and re.match(r"(?i)(?:this position is for|we are looking for)\b", item.source_quote)
+            and not re.search(
+                r"(?i)\b(?:requires?|must|experience (?:with|in)|knowledge (?:of|in))\b",
+                item.source_quote,
+            )
+        ):
+            audit_items.append(
+                PostingRequirementAuditItem(
+                    source_quote=item.source_quote,
+                    normalized_capability=item.normalized_capability,
+                    category=item.category,
+                    item_type=item.item_type,
+                    accepted=False,
+                    final_classification="RETAINED_ROLE_CONTEXT",
+                    rejection_or_override_reason=(
+                        "A role description alone is not a prior qualification."
+                    ),
+                )
+            )
+            continue
+        if (
+            group is RequirementItemType.HIRING_CAPABILITY
+            and not item.mandatory
+            and not item.preferred
+            and not (
+                item.source_section and _contains_quote(item.source_section, candidate.posting_text)
+            )
+            and normalize_requirement(item.source_quote)
+            == normalize_requirement(item.normalized_capability or "")
+            and not QUALIFICATION_PATTERN.search(item.source_quote)
+        ):
+            audit_items.append(
+                PostingRequirementAuditItem(
+                    source_quote=item.source_quote,
+                    normalized_capability=item.normalized_capability,
+                    category=item.category,
+                    item_type=item.item_type,
+                    accepted=False,
+                    final_classification="UNRESOLVED_QUALIFICATION_CONTEXT",
+                    rejection_or_override_reason=(
+                        "A standalone concept lacks a qualification statement or source heading."
+                    ),
+                )
+            )
+            continue
         if group is RequirementItemType.METADATA_NON_REQUIREMENT:
             rejected += 1
             audit_items.append(
@@ -675,9 +747,10 @@ def extract_posting_requirements(
             )
             continue
         capability = canonical_capability((item.normalized_capability or item.source_quote).strip())
-        if not _is_concise_capability(capability) or _is_role_label_restatement(
-            capability, candidate.title
-        ):
+        title_only = _is_role_label_restatement(capability, candidate.title) and not (
+            QUALIFICATION_PATTERN.search(item.source_quote)
+        )
+        if not _is_concise_capability(capability) or title_only:
             rejected += 1
             audit_items.append(
                 PostingRequirementAuditItem(
@@ -704,7 +777,11 @@ def extract_posting_requirements(
                     category=item.category,
                     item_type=item.item_type,
                     accepted=False,
-                    final_classification="REJECTED_SEMANTIC_MISMATCH",
+                    final_classification=(
+                        "REJECTED_SEMANTIC_MISMATCH"
+                        if alignment_reason and "strengthens" in alignment_reason
+                        else "UNRESOLVED_NORMALIZATION"
+                    ),
                     rejection_or_override_reason=alignment_reason,
                 )
             )
@@ -751,6 +828,9 @@ def extract_posting_requirements(
         preferred = group is RequirementItemType.PREFERENCE or (
             item.preferred if comparison_eligible else False
         )
+        explicit_years = re.search(
+            r"(?i)(?<![\d-])(\d+(?:\.\d+)?)\+?\s+years?\b", item.source_quote
+        )
         requirement = RoleRequirement(
             posting_id=candidate.posting_id,
             category=item.category,
@@ -766,9 +846,26 @@ def extract_posting_requirements(
             qualifier_quotes=item.qualifier_quotes,
             relationship=item.relationship,
             capability_options=item.capability_options,
-            mandatory=item.mandatory if comparison_eligible else False,
+            mandatory=(
+                not preferred
+                and comparison_eligible
+                and (
+                    item.mandatory
+                    or bool(
+                        re.search(
+                            r"(?i)\b(?:must|required|requires|essential)\b", item.source_quote
+                        )
+                    )
+                )
+            ),
             preferred=preferred,
-            years_required=item.years_required,
+            years_required=(
+                item.years_required
+                if item.years_required is not None
+                else float(explicit_years[1])
+                if explicit_years
+                else None
+            ),
             maturity_expected=item.maturity_expected,
             extraction_confidence=item.confidence,
         )
@@ -785,6 +882,9 @@ def extract_posting_requirements(
             )
         )
     limitations = list(extracted.limitations)
+    unresolved = sum(item.final_classification.startswith("UNRESOLVED_") for item in audit_items)
+    if unresolved:
+        limitations.append(f"{unresolved} source statements need context or normalization review.")
     if unsupported:
         limitations.append(
             f"Rejected {unsupported} requirements without exact support in the posting text."
@@ -1134,6 +1234,7 @@ def analyze_market_requirements(
     allow_related_titles: bool = True,
     enable_target_variant_expansion: bool = False,
     posting_limit: int | None = None,
+    batch_mode: bool = False,
     now: datetime | None = None,
 ) -> MarketRequirementAnalysis:
     """Run the amended 5B flow without candidate-profile data or career reasoning."""
@@ -1190,8 +1291,15 @@ def analyze_market_requirements(
     ]
     if structured:
         all_eligible.sort(key=_scope_order)
+    batch = None
     eligible = list(all_eligible)
-    if posting_limit is not None:
+    if batch_mode:
+        from ai_career_navigator.market.batch_profile import extract_batch, select_batch
+
+        eligible = select_batch(eligible, target_role, target_seniority, posting_limit)
+        batch = extract_batch(eligible, target_role, geography, target_seniority, model_gateway)
+        limitations.extend(batch.limitations)
+    elif posting_limit is not None:
         eligible = _select_employer_diverse(eligible, posting_limit, target_role, target_seniority)
 
     extracted: list[tuple[PostingCandidateAssessment, list[RoleRequirement]]] = []
@@ -1199,7 +1307,11 @@ def analyze_market_requirements(
     posting_audits: list[PostingRequirementAudit] = []
     failed_extraction_count = 0
     for assessment in eligible:
-        outcome = extract_posting_requirements(assessment, model_gateway)
+        outcome = (
+            batch.outcomes[assessment.candidate.posting_id]
+            if batch is not None
+            else extract_posting_requirements(assessment, model_gateway)
+        )
         limitations.extend(outcome.limitations)
         quality, audit = _quality_and_audit(
             assessment,
@@ -1251,10 +1363,12 @@ def analyze_market_requirements(
         summary=initial_summary,
         posting_audits=posting_audits,
         generated_at=timestamp,
+        consolidation_groups=batch.groups if batch is not None else None,
     )
     variant_audits: list[TargetVariantAudit] = []
     expansion_attempted = bool(
-        enable_target_variant_expansion
+        not batch_mode
+        and enable_target_variant_expansion
         and allow_related_titles
         and initial_profile.profile_status is RoleProfileStatus.INSUFFICIENT
     )
@@ -1404,9 +1518,19 @@ def analyze_market_requirements(
         summary=summary,
         posting_audits=posting_audits,
         generated_at=timestamp,
+        consolidation_groups=batch.groups if batch is not None else None,
     )
+    if batch is not None:
+        from ai_career_navigator.market.batch_profile import finalize_batch_profile
+
+        canonical_profile, posting_audits = finalize_batch_profile(
+            canonical_profile, batch, eligible, posting_audits
+        )
+        initial_profile = canonical_profile
+        if batch.incomplete and status is RequirementRunStatus.SUCCEEDED:
+            status = RequirementRunStatus.PARTIAL
     canonical_requirements = [
-        item.as_role_requirement() for item in canonical_profile.comparison_requirements
+        item.as_role_requirement() for item in canonical_profile.assessment_requirements
     ]
     return MarketRequirementAnalysis(
         status=status,

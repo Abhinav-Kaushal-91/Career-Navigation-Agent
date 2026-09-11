@@ -17,7 +17,9 @@ from ai_career_navigator.domain import (
     RequirementStatementType,
     RoleRequirement,
 )
+from ai_career_navigator.domain.market import SourceExpectation
 from ai_career_navigator.market.schemas import MarketSourceProvider, SourceAgreement
+from ai_career_navigator.models.output_text import unique_statements
 
 
 class SourceContentType(StrEnum):
@@ -132,7 +134,6 @@ class PostingCandidate(BaseModel):
         "employer",
         "location",
         "location_evidence_text",
-        "posting_text",
         mode="before",
     )
     @classmethod
@@ -140,6 +141,12 @@ class PostingCandidate(BaseModel):
         if isinstance(value, str):
             return " ".join(value.split())
         return value
+
+    @field_validator("posting_text", mode="before")
+    @classmethod
+    def preserve_posting_sections(cls, value: object) -> object:
+        # Headings and bullets distinguish duties from qualifications. Do not flatten them.
+        return value.strip() if isinstance(value, str) else value
 
 
 class PostingCandidateAssessment(BaseModel):
@@ -209,6 +216,12 @@ class ExtractedRequirement(BaseModel):
     confidence: ConfidenceLevel
     item_type: RequirementItemType = RequirementItemType.HIRING_CAPABILITY
 
+    @field_validator("qualifier_quotes", "capability_options", mode="before")
+    @classmethod
+    def normalize_empty_optional_lists(cls, value: object) -> object:
+        """Repair only empty-list nulls; preserve all substantive validation."""
+        return [] if value is None else value
+
     @model_validator(mode="after")
     def validate_flags(self) -> "ExtractedRequirement":
         if self.mandatory and self.preferred:
@@ -223,6 +236,8 @@ class PostingRequirementResult(BaseModel):
 
     requirements: list[ExtractedRequirement] = Field(default_factory=list)
     limitations: list[str] = Field(default_factory=list)
+
+    _unique_limitations = field_validator("limitations", mode="before")(unique_statements)
 
 
 class PostingExtractionQuality(BaseModel):
@@ -250,6 +265,8 @@ class PostingExtractionQuality(BaseModel):
 
 class PostingRequirementAuditItem(BaseModel):
     """Bounded requirement-level provenance without retaining a complete posting body."""
+
+    audit_item_id: UUID = Field(default_factory=uuid4)
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -374,6 +391,9 @@ class CanonicalRoleRequirement(BaseModel):
     mandatory_signal: bool = False
     preferred_signal: bool = False
     employer_specific: bool = False
+    role_importance: Literal["CORE", "SUPPORTING", "ADDITIONAL", "SPECIALIST"] | None = None
+    importance_reason: str | None = None
+    source_expectations: list[SourceExpectation] = Field(default_factory=list)
     frequency_band: RequirementFrequency
     primary_support_ratio: float = Field(ge=0, le=1)
     employer_support_count: int = Field(ge=0)
@@ -415,7 +435,13 @@ class CanonicalRoleRequirement(BaseModel):
             requirement_id=self.canonical_requirement_id,
             posting_id=(self.baseline_posting_ids or self.supporting_posting_ids)[0],
             category=self.category,
-            statement_type=RequirementStatementType.HIRING_CAPABILITY,
+            statement_type={
+                CanonicalRequirementKind.ROLE_RESPONSIBILITY: (
+                    RequirementStatementType.ROLE_RESPONSIBILITY
+                ),
+                CanonicalRequirementKind.PREFERENCE: RequirementStatementType.PREFERENCE,
+                CanonicalRequirementKind.PREREQUISITE: RequirementStatementType.PREREQUISITE,
+            }.get(self.requirement_kind, RequirementStatementType.HIRING_CAPABILITY),
             requirement_text=self.representative_source_quotes[0],
             normalized_capability=self.display_name,
             source_section=self.source_section,
@@ -425,6 +451,8 @@ class CanonicalRoleRequirement(BaseModel):
             mandatory=self.mandatory_signal,
             preferred=self.preferred_signal,
             employer_specific=self.employer_specific,
+            role_importance=self.role_importance,
+            source_expectations=self.source_expectations,
             years_required=self.years_required,
             maturity_expected=self.expected_maturity,
             frequency_within_sample=self.primary_support_ratio,
@@ -457,20 +485,50 @@ class CanonicalTargetRoleProfile(BaseModel):
     optional_signals: list[CanonicalRoleRequirement] = Field(default_factory=list)
     related_context: list[CanonicalRoleRequirement] = Field(default_factory=list)
     limitations: list[str] = Field(default_factory=list)
+    coverage_limitations: list[str] = Field(default_factory=list)
+    extraction_processing_status: Literal["COMPLETE", "PARTIAL", "FAILED"] = "COMPLETE"
+    construction_method: Literal["POSTING_AGGREGATION", "FIVE_POSTING_BATCH"] = (
+        "POSTING_AGGREGATION"
+    )
+    selected_posting_ids: list[UUID] = Field(default_factory=list)
 
     @property
     def comparison_requirements(self) -> tuple[CanonicalRoleRequirement, ...]:
-        if self.profile_status is RoleProfileStatus.INSUFFICIENT:
-            return ()
+        """Hiring expectations, including uncommon employer-specific conditions."""
         return tuple(
             item
-            for item in [*self.requirements, *self.prerequisites]
-            if item.requirement_scope
-            in {
-                CanonicalRequirementScope.CORE,
-                CanonicalRequirementScope.SECONDARY,
-                CanonicalRequirementScope.PREREQUISITE,
+            for item in [*self.requirements, *self.prerequisites, *self.optional_signals]
+            if item.requirement_kind
+            not in {
+                CanonicalRequirementKind.ROLE_RESPONSIBILITY,
+                CanonicalRequirementKind.PREFERENCE,
             }
+            and item.role_importance not in {"ADDITIONAL", "SPECIALIST"}
+        )
+
+    @property
+    def assessment_requirements(self) -> tuple[CanonicalRoleRequirement, ...]:
+        """Hiring, preference and work-alignment tracks without duplicate groups."""
+        if self.construction_method == "FIVE_POSTING_BATCH":
+            return tuple(
+                item
+                for item in [
+                    *self.requirements,
+                    *self.prerequisites,
+                    *self.preferences,
+                    *self.optional_signals,
+                ]
+                if item.role_importance != "SPECIALIST"
+            )
+        return tuple(
+            {
+                item.canonical_requirement_id: item
+                for item in [
+                    *self.responsibilities,
+                    *self.preferences,
+                    *self.comparison_requirements,
+                ]
+            }.values()
         )
 
 

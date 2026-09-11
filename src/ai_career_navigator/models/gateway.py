@@ -98,6 +98,7 @@ class ModelGateway:
         sleeper: Callable[[float], None] = time.sleep,
         retry_delay_seconds: float = 0.25,
         inspector: LocalModelInspector | None = None,
+        max_output_tokens: int | None = None,
     ) -> None:
         if timeout_seconds <= 0:
             raise ModelConfigurationError("model timeout must be greater than zero")
@@ -112,6 +113,9 @@ class ModelGateway:
         self._sleeper = sleeper
         self._retry_delay_seconds = retry_delay_seconds
         self.inspector = inspector
+        if max_output_tokens is not None and max_output_tokens <= 0:
+            raise ModelConfigurationError("output token override must be positive")
+        self._max_output_tokens = max_output_tokens
 
     @classmethod
     def from_settings(
@@ -135,6 +139,7 @@ class ModelGateway:
             },
             timeout_seconds=settings.model_timeout_seconds,
             max_retries=settings.max_retries,
+            max_output_tokens=settings.model_max_output_tokens,
             sleeper=sleeper,
             inspector=(
                 LocalModelInspector(
@@ -181,6 +186,8 @@ class ModelGateway:
         temperature: float = 0.0,
         max_tokens: int = 1024,
         metadata: dict[str, MetadataValue] | None = None,
+        validation_context: dict[str, Any] | None = None,
+        max_retries: int | None = None,
     ) -> ModelResponse:
         """Generate and strictly validate JSON against the supplied Pydantic model."""
 
@@ -193,15 +200,27 @@ class ModelGateway:
             response_schema_name=output_schema.__name__,
             metadata=metadata or {},
         )
-        return self._execute(request=request, output_schema=output_schema)
+        return self._execute(
+            request=request,
+            output_schema=output_schema,
+            validation_context=validation_context,
+            max_retries=max_retries,
+        )
 
     def _execute(
         self,
         *,
         request: ModelRequest,
         output_schema: type[StructuredModel] | None = None,
+        validation_context: dict[str, Any] | None = None,
+        max_retries: int | None = None,
     ) -> ModelResponse:
+        if max_retries is not None and (max_retries < 0 or max_retries > self._max_retries):
+            raise ModelConfigurationError("per-call retries may only reduce the configured limit")
+        retry_limit = self._max_retries if max_retries is None else max_retries
         model = self._model_for(request.role)
+        if self._max_output_tokens is not None:
+            request = request.model_copy(update={"max_tokens": self._max_output_tokens})
         retry_count = 0
         validation_retry_used = False
         call_id = str(uuid4())
@@ -215,7 +234,7 @@ class ModelGateway:
                     model=model,
                     schema=output_schema.model_json_schema() if output_schema else None,
                     timeout_seconds=self._timeout_seconds,
-                    max_retries=self._max_retries,
+                    max_retries=retry_limit,
                     attempt=retry_count + 1,
                 )
             try:
@@ -234,10 +253,12 @@ class ModelGateway:
                     )
                 self._validate_routing(response, request=request, expected_model=model)
                 if output_schema is not None:
-                    response = self._validated_response(response, output_schema)
+                    response = self._validated_response(
+                        response, output_schema, validation_context=validation_context
+                    )
             except ModelResponseValidationError as error:
                 self._inspect_failure(call_id, retry_count, error)
-                if validation_retry_used or retry_count >= self._max_retries:
+                if validation_retry_used or retry_count >= retry_limit:
                     self._log_failure(request, model, retry_count, error)
                     raise
                 validation_retry_used = True
@@ -251,7 +272,7 @@ class ModelGateway:
                 raise
             except ModelGatewayError as error:
                 self._inspect_failure(call_id, retry_count, error)
-                if not error.retryable or retry_count >= self._max_retries:
+                if not error.retryable or retry_count >= retry_limit:
                     self._log_failure(request, model, retry_count, error)
                     raise
                 retry_count += 1
@@ -315,7 +336,10 @@ class ModelGateway:
 
     @staticmethod
     def _validated_response(
-        response: ModelResponse, output_schema: type[StructuredModel]
+        response: ModelResponse,
+        output_schema: type[StructuredModel],
+        *,
+        validation_context: dict[str, Any] | None = None,
     ) -> ModelResponse:
         if response.finish_reason == "length":
             raise ModelResponseValidationError(
@@ -334,7 +358,7 @@ class ModelGateway:
                 f"model output failed validation for {output_schema.__name__}: invalid_structure"
             ) from error
         try:
-            validated = output_schema.model_validate(candidate)
+            validated = output_schema.model_validate(candidate, context=validation_context)
         except ValidationError as error:
             schema = output_schema.model_json_schema()
             safe_details = ", ".join(

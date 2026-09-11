@@ -21,6 +21,25 @@ MODELS = {
 }
 
 
+def test_bounded_repair_can_disable_gateway_retries():
+    from pydantic import BaseModel
+
+    class Reply(BaseModel):
+        ok: bool
+
+    provider = FakeModelProvider([ModelTimeoutError("timeout"), '{"ok": true}'])
+    model = gateway(provider, max_retries=2)
+    with pytest.raises(ModelTimeoutError):
+        model.generate_structured(
+            role=ModelRole.EXTRACTION,
+            output_schema=Reply,
+            system_prompt="Return JSON",
+            user_prompt="Test",
+            max_retries=0,
+        )
+    assert len(provider.calls) == 1
+
+
 def gateway(provider: FakeModelProvider, *, max_retries: int = 2) -> ModelGateway:
     return ModelGateway(
         provider=provider,

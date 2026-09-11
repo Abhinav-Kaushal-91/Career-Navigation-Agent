@@ -62,6 +62,37 @@ def _rebuild(requirements, assessments, audits, summary):
     )[0]
 
 
+def test_same_concept_preserves_required_preferred_and_duty_tracks() -> None:
+    _, requirements, assessments, audits, summary = _build(
+        [
+            ("Python required", "Python", PostingTitleMatch.EXACT_TARGET, "A"),
+            ("Python preferred", "Python", PostingTitleMatch.EXACT_TARGET, "B"),
+            ("Develop using Python", "Python", PostingTitleMatch.EXACT_TARGET, "C"),
+        ]
+    )
+    requirements[1] = requirements[1].model_copy(
+        update={
+            "statement_type": RequirementStatementType.PREFERENCE,
+            "preferred": True,
+            "mandatory": False,
+        }
+    )
+    requirements[2] = requirements[2].model_copy(
+        update={
+            "statement_type": RequirementStatementType.ROLE_RESPONSIBILITY,
+            "mandatory": False,
+        }
+    )
+    profile = _rebuild(requirements, assessments, audits, summary)
+    assert len(profile.assessment_requirements) == 3
+    assert len(profile.comparison_requirements) == 1
+    hiring = profile.comparison_requirements[0]
+    assert hiring.employer_specific
+    assert hiring.source_expectations[0].expectation_status == "REQUIRED"
+    assert profile.preferences[0].source_expectations[0].expectation_status == "PREFERRED"
+    assert len({item.canonical_requirement_id for item in profile.assessment_requirements}) == 3
+
+
 def test_related_maturity_confidence_and_years_cannot_raise_primary_baseline() -> None:
     _, requirements, assessments, audits, summary = _build(
         [
@@ -119,9 +150,11 @@ def test_related_qualification_cannot_promote_primary_duties_into_hiring_require
     ]
     profile = _rebuild(requirements, assessments, audits, summary)
     assert not profile.comparison_requirements
-    assert profile.responsibilities[0].comparison_requirement_ids == []
+    assert profile.responsibilities[0].comparison_requirement_ids == [
+        item.requirement_id for item in requirements[:2]
+    ]  # Work alignment retains duty lineage, but is not a hiring comparison.
     assert profile.responsibilities[0].responsibility_support_count == 2
-    assert profile.responsibilities[0].qualification_support_count == 1
+    assert profile.responsibilities[0].qualification_support_count == 0
 
 
 def test_primary_threshold_distribution_does_not_select_exceptional_maximum() -> None:
@@ -410,8 +443,10 @@ def test_mixed_duty_and_qualification_keep_separate_lineage() -> None:
     )
 
     item = profile.comparison_requirements[0]
-    assert item.responsibility_support_count == 2
+    assert item.responsibility_support_count == 0
     assert item.qualification_support_count == 2
+    assert profile.responsibilities[0].responsibility_support_count == 2
+    assert profile.responsibilities[0].qualification_support_count == 0
     assert item.representative_source_quotes[0] == "Product discovery experience required"
     assert item.comparison_requirement_ids == [
         requirement.requirement_id for requirement in requirements

@@ -26,6 +26,12 @@ from ai_career_navigator.market import MarketRequirementAnalysis
 from ai_career_navigator.models import ModelGateway, ModelGatewayError, ModelRole
 
 from .bridge_policy import material_gaps
+from .evidence_coverage import (
+    comparison_is_resolved,
+    is_hiring_expectation,
+    readiness_coverage_issue,
+    readiness_coverage_notes,
+)
 from .synthesis_prompts import PROMPT_VERSION, SYSTEM_PROMPT, build_synthesis_prompt
 from .synthesis_schemas import (
     AdvantageStrengthType,
@@ -179,6 +185,9 @@ def _payload(
                 "requirement_name": requirements[item.requirement_id].normalized_capability
                 or requirements[item.requirement_id].requirement_text,
                 "requirement_category": requirements[item.requirement_id].category.value,
+                "statement_type": requirements[item.requirement_id].statement_type.value,
+                "employer_specific": requirements[item.requirement_id].employer_specific,
+                "preferred": requirements[item.requirement_id].preferred,
                 "requirement_frequency": frequencies.get(item.requirement_id),
                 "match_type": item.match_type.value if item.match_type else "INSUFFICIENT",
                 "candidate_maturity": (
@@ -630,7 +639,8 @@ def _fallback_draft(
     advantages = []
     for item in supported[:6]:
         name = (
-            requirements[item.requirement_id].normalized_capability
+            item.matched_alternative
+            or requirements[item.requirement_id].normalized_capability
             or requirements[item.requirement_id].requirement_text
         )
         advantages.append(
@@ -821,17 +831,28 @@ def _accessibility(
         if item.comparison_scope in _PRIMARY_SCOPES
         and item.requirement_id in requirements
         and not requirements[item.requirement_id].employer_specific
+        and is_hiring_expectation(requirements[item.requirement_id])
     ]
     employer_specific_checks = sum(
         item.comparison_scope in _PRIMARY_SCOPES
         and item.requirement_id in requirements
         and requirements[item.requirement_id].employer_specific
+        and is_hiring_expectation(requirements[item.requirement_id])
         and item.match_type not in {MatchType.DIRECT_MATCH, MatchType.TRANSFERABLE_MATCH}
         for item in role.requirement_comparisons
     )
     counts = {match: sum(item.match_type is match for item in primary) for match in MatchType}
+    unresolved_ids = {
+        requirement_id
+        for gap in role.gaps
+        if gap.severity is GapSeverity.INSUFFICIENT_EVIDENCE and gap.clarification_needed
+        for requirement_id in (gap.requirement_ids or [gap.requirement_id])
+    }
     insufficient = sum(
-        item.match_type is None or item.confidence is ConfidenceLevel.INSUFFICIENT
+        item.match_type is None
+        or item.confidence is ConfidenceLevel.INSUFFICIENT
+        or (item.evidence_status == "UNKNOWN" and bool(item.clarification_needed))
+        or item.requirement_id in unresolved_ids
         for item in primary
     )
     primary_gaps = [
@@ -880,6 +901,16 @@ def _accessibility(
         "partial_ownership_scope_count": 0,
         "employer_specific_checks": employer_specific_checks,
     }
+    coverage_issue = readiness_coverage_issue(analysis, role.requirement_comparisons)
+    coverage_notes = readiness_coverage_notes(analysis, role.requirement_comparisons)
+    diagnostics["coverage_note"] = (
+        "Unanswered evidence questions and processing checks remain listed separately; "
+        "they are not confirmed capability deficits."
+        if coverage_notes else ""
+    )
+    if coverage_issue:
+        diagnostics["confidence_note"] = coverage_issue
+        return CandidateAccessibility.INSUFFICIENT_CANDIDATE_EVIDENCE, diagnostics
     if not primary or insufficient * 2 >= len(primary):
         return CandidateAccessibility.INSUFFICIENT_CANDIDATE_EVIDENCE, diagnostics
     if sum(item.confidence is ConfidenceLevel.LOW for item in primary) * 2 >= len(primary):
@@ -890,6 +921,11 @@ def _accessibility(
         return CandidateAccessibility.INSUFFICIENT_CANDIDATE_EVIDENCE, diagnostics
     if blocking_count:
         return CandidateAccessibility.POOR_FIT, diagnostics
+
+    if analysis.canonical_profile is not None:
+        # Missing/failed comparisons remain in provenance and diagnostics, not fit votes.
+        primary = [item for item in primary if comparison_is_resolved(item)]
+        counts = {match: sum(item.match_type is match for item in primary) for match in MatchType}
 
     def comparison_weight(item: object) -> float:
         if item.match_type is MatchType.PARTIAL_MATCH:
@@ -962,6 +998,8 @@ def _accessibility(
             "Some observed employers have additional requirements to check; "
             "these do not define an unmet requirement for every target opening."
         )
+    if result is CandidateAccessibility.APPLY_NOW and coverage_notes:
+        result = CandidateAccessibility.APPLY_SELECTIVELY
     primary_confidences = {item.confidence for item in primary}
     if role.confidence is ConfidenceLevel.LOW or ConfidenceLevel.LOW in primary_confidences:
         diagnostics["confidence_note"] = (
@@ -1008,6 +1046,8 @@ def _rationale(
         theme_label = "theme" if len(gaps) == 1 else "themes"
         verb = "requires" if len(gaps) == 1 else "require"
         burden = f"{len(gaps)} material gap {theme_label} still {verb} stronger direct evidence."
+    elif diagnostics.get("coverage_note"):
+        burden = "Completed comparisons support this assessment; remaining checks are unresolved."
     else:
         burden = "No material target-role gap remains in the usable comparison evidence."
     conclusions = {
@@ -1035,10 +1075,11 @@ def _rationale(
         ),
     }
     second = f"{burden} {conclusions[accessibility]}"
-    return (
+    return _bounded_text(
         f"{first} {second} {diagnostics.get('confidence_note', '')} "
-        f"{diagnostics.get('employer_specific_note', '')}"
-    ).strip()
+        f"{diagnostics.get('employer_specific_note', '')} {diagnostics.get('coverage_note', '')}",
+        900,
+    )
 
 
 def _assessment_summary(
@@ -1190,6 +1231,8 @@ def synthesize_career_assessment(
         )
     )
     limitations = list(draft.limitations)
+    coverage_notes = readiness_coverage_notes(analysis, role.requirement_comparisons)
+    limitations = list(dict.fromkeys([*limitations, *coverage_notes]))
     if fallback and model_gateway is not None:
         limitations.append(
             "Semantic synthesis was unavailable; validated deterministic grouping was used."
@@ -1200,6 +1243,8 @@ def synthesize_career_assessment(
         else role.confidence
     )
     if fallback and model_gateway is not None and confidence is ConfidenceLevel.HIGH:
+        confidence = ConfidenceLevel.MODERATE
+    if coverage_notes and confidence is ConfidenceLevel.HIGH:
         confidence = ConfidenceLevel.MODERATE
     status = (
         CareerSynthesisStatus.INSUFFICIENT
@@ -1222,6 +1267,7 @@ def synthesize_career_assessment(
             target_alignments,
             grouped,
             complete=accessibility is not CandidateAccessibility.INSUFFICIENT_CANDIDATE_EVIDENCE
+            and not coverage_notes
             and bool(role.requirement_comparisons)
             and all(
                 item.match_type is not None

@@ -45,10 +45,103 @@ from ai_career_navigator.profile.inference_schemas import (
     CapabilityInferenceResult,
     InferredCapability,
 )
+from ai_career_navigator.profile.schemas import (
+    AboutYou,
+    CertificationEntry,
+    EducationEntry,
+    ExperienceEntry,
+    ProfileDraft,
+    ProjectEntry,
+    ProjectStage,
+    ProjectType,
+)
 
 DEMO_LABEL = "Synthetic demonstration data"
 DEMO_DATE = date(2026, 9, 2)
 DEMO_DATETIME = datetime(2026, 9, 2, 16, 0, tzinfo=UTC)
+
+
+def sample_profile_draft() -> ProfileDraft:
+    """Fresh editable input only: no approved strengths, goal or canned analysis."""
+    return ProfileDraft(
+        about=AboutYou(
+            current_role="Senior Java Developer",
+            years_professional_experience=8,
+            current_location="Toronto, Canada",
+            career_stage=CareerStage.MID_CAREER,
+            career_summary=(
+                "SYNTHETIC TEST PROFILE — not real employment history. Senior Java developer "
+                "with eight years of experience building and supporting enterprise backend "
+                "applications using Java, Spring Boot, REST APIs, PostgreSQL and AWS. "
+                "Responsible for production services, automated testing, incident support "
+                "and mentoring developers."
+            ),
+        ),
+        core_competencies_text=(
+            "Java; Spring Boot; REST API Development; PostgreSQL; SQL Optimization; AWS; "
+            "Git; Docker; CI/CD; JUnit; Automated Testing; Production Incident Support; "
+            "Code Review; Technical Mentoring"
+        ),
+        experiences=[
+            ExperienceEntry(
+                job_title="Senior Java Developer",
+                organization="Demo Software Company (fictional)",
+                start_date=date(2018, 9, 1),
+                current=True,
+                location="Toronto, Canada",
+                accomplishments=[
+                    "Designed and maintained Java and Spring Boot backend services "
+                    "used in production.",
+                    "Built REST APIs integrating billing and customer-management systems.",
+                    "Optimized PostgreSQL queries, reducing average response times by 30%.",
+                    "Deployed containerized services to AWS using automated CI/CD pipelines.",
+                    "Wrote JUnit integration and unit tests and supported production incidents.",
+                    "Mentored two developers and reviewed code and technical designs.",
+                ],
+            )
+        ],
+        projects=[
+            ProjectEntry(
+                name="Order Management API — synthetic test project",
+                project_type=ProjectType.PERSONAL,
+                delivery_stage=ProjectStage.PROTOTYPE,
+                context="Personal portfolio application; not a production employer system.",
+                contribution=(
+                    "Built an order-management application using Java, Spring Boot and PostgreSQL. "
+                    "Added authentication, validation, automated unit and integration tests, "
+                    "Docker packaging and API documentation."
+                ),
+                capabilities_used=[
+                    "Java",
+                    "Spring Boot",
+                    "PostgreSQL",
+                    "Docker",
+                    "REST APIs",
+                    "JUnit",
+                ],
+                maturity=EvidenceMaturity.DEMONSTRATED,
+                outcome=(
+                    "Working personal prototype; no production users or commercial impact claimed."
+                ),
+                measurable_impact="Documented and tested 12 REST endpoints in a local environment.",
+            )
+        ],
+        education=[
+            EducationEntry(
+                qualification="Bachelor of Science",
+                field_of_study="Computer Science",
+                institution="Demo University (fictional)",
+                completion_year=2018,
+            )
+        ],
+        certifications=[
+            CertificationEntry(
+                name="Oracle Certified Professional: Java SE 17 Developer — synthetic test entry",
+                issuer="Oracle (test data; no real credential claimed)",
+                year=2023,
+            )
+        ],
+    )
 
 
 def demo_id(name: str) -> UUID:
@@ -115,10 +208,6 @@ DEMO_INFERENCE_RESULT = CapabilityInferenceResult(
             ],
             proposed_maturity=EvidenceMaturity.PRODUCTION,
             confidence=ConfidenceLevel.MODERATE,
-            reasoning_summary=(
-                "Supported by explicit REST API integration and enterprise automation evidence."
-            ),
-            source_context_summary="Production automation and API integration delivery.",
         )
     ],
     limitations=["This is synthetic inference for product demonstration only."],

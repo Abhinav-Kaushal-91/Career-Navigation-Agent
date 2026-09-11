@@ -6,9 +6,32 @@ from pathlib import Path
 from typing import Any
 from uuid import UUID
 
+from ai_career_navigator.career.comparison_prompts import PROMPT_VERSION as COMPARISON_VERSION
+from ai_career_navigator.career.plan_prompts import PROMPT_VERSION as PLAN_VERSION
+from ai_career_navigator.career.synthesis_prompts import PROMPT_VERSION as SYNTHESIS_VERSION
 from ai_career_navigator.market import MarketRequirementAnalysis
+from ai_career_navigator.market.batch_profile import PROMPT_VERSION as BATCH_VERSION
+from ai_career_navigator.market.requirement_prompts import PROMPT_VERSION as EXTRACTION_VERSION
 
 from .state import CareerGraphState
+
+
+def persist_same_role_audit(state, assessment, plan, *, directory: Path) -> Path:
+    """Keep cited excerpts and final interpretation, never full JDs or reasoning traces."""
+    directory.mkdir(parents=True, exist_ok=True)
+    destination = directory / f"{UUID(str(state['run_id']))}.json"
+    temporary = destination.with_suffix(".tmp")
+    payload = {
+        "run_id": str(state["run_id"]),
+        "mode": "CAREER_TRANSITION"
+        if assessment.rule_version.startswith("career-transition-")
+        else "SAME_ROLE",
+        "assessment": assessment.model_dump(mode="json"),
+        "plan": plan.model_dump(mode="json") if plan else None,
+    }
+    temporary.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    temporary.replace(destination)
+    return destination
 
 
 def persist_run_audit(
@@ -47,6 +70,7 @@ def persist_run_audit(
             canonical = canonical_by_id.get(item.canonical_requirement_id)
             requirement_rows.append(
                 {
+                    "audit_item_id": str(item.audit_item_id),
                     "source_requirement_id": (
                         str(item.source_requirement_id) if item.source_requirement_id else None
                     ),
@@ -98,6 +122,7 @@ def persist_run_audit(
             "title_classification": audit.title_classification,
             "seniority_classification": audit.seniority_classification.value,
             "duplicate_of": audit.duplicate_of,
+            "possible_duplicate_posting_ids": audit.possible_duplicate_posting_ids,
             "selected_content_source": (
                 audit.selected_content_source.value if audit.selected_content_source else None
             ),
@@ -140,7 +165,16 @@ def persist_run_audit(
 
     plan = state.get("career_plan")
     payload = {
-        "schema_version": 1,
+        "schema_version": 2,
+        "pipeline_version": "grounded-evidence-tracks-v1",
+        "prompt_versions": {
+            "extraction": BATCH_VERSION
+            if getattr(canonical_profile, "construction_method", None) == "FIVE_POSTING_BATCH"
+            else EXTRACTION_VERSION,
+            "comparison": COMPARISON_VERSION,
+            "synthesis": SYNTHESIS_VERSION,
+            "plan": PLAN_VERSION,
+        },
         "run_id": str(run_id),
         "generated_at": datetime.now(UTC).isoformat(),
         "target_role": getattr(canonical_profile, "target_role", None),
@@ -150,6 +184,8 @@ def persist_run_audit(
             {
                 "canonical_requirement_id": str(item.canonical_requirement_id),
                 "display_name": item.display_name,
+                "role_importance": item.role_importance,
+                "importance_reason": item.importance_reason,
                 "employer_support_count": item.employer_support_count,
                 "posting_support_count": item.posting_support_count,
                 "responsibility_support_count": item.responsibility_support_count,
@@ -166,6 +202,11 @@ def persist_run_audit(
                     str(value) for value in item.qualification_requirement_ids
                 ],
                 "source_agreement": item.source_agreement.value,
+                "requirement_scope": item.requirement_scope.value,
+                "requirement_kind": item.requirement_kind.value,
+                "source_expectations": [
+                    source.model_dump(mode="json") for source in item.source_expectations
+                ],
                 "representative_source_quotes": item.representative_source_quotes,
             }
             for item in canonical_items

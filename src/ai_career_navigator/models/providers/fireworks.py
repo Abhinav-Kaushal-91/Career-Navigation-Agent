@@ -1,6 +1,8 @@
 """Fireworks adapter using its documented OpenAI-compatible HTTP endpoint."""
 
 import json
+import subprocess
+import sys
 import time
 from collections.abc import Callable
 from http.client import HTTPResponse
@@ -38,12 +40,21 @@ class FireworksProvider(BaseModelProvider):
 
     provider_name = "fireworks"
 
-    def __init__(self, api_key: SecretStr | str, *, http_post: HttpPost | None = None) -> None:
+    def __init__(
+        self,
+        api_key: SecretStr | str,
+        *,
+        http_post: HttpPost | None = None,
+        streaming: bool = False,
+        reasoning_effort: str | None = None,
+    ) -> None:
         secret = api_key.get_secret_value() if isinstance(api_key, SecretStr) else api_key
         if not secret:
             raise ModelConfigurationError("Fireworks API key is required")
         self._api_key = secret
         self._http_post = http_post or _standard_http_post
+        self._streaming = streaming
+        self._reasoning_effort = reasoning_effort
 
     def generate_text(
         self, *, request: ModelRequest, model: str, timeout_seconds: float
@@ -91,6 +102,17 @@ class FireworksProvider(BaseModelProvider):
         }
         if response_format is not None:
             payload["response_format"] = response_format
+        effort = self._reasoning_effort
+        if effort is None and model == "accounts/fireworks/models/glm-5p3-flash":
+            # This deployment is thinking-only. Explicit high completed the saved
+            # controlled batch; omission exhausted its output budget. See findings doc.
+            effort = "high"
+        if effort is not None:
+            payload["reasoning_effort"] = effort
+
+        if self._streaming:
+            payload.update(stream=True, stream_options={"include_usage": True})
+            return self._stream_response(payload, request, model, timeout_seconds)
 
         started = time.perf_counter()
         try:
@@ -128,9 +150,55 @@ class FireworksProvider(BaseModelProvider):
             raise ModelAuthenticationError("Fireworks authentication failed")
         if status_code == 429:
             raise ModelRateLimitError("Fireworks rate limit reached")
+        if status_code in {408, 504}:
+            raise ModelTimeoutError("Fireworks request timed out")
         if status_code >= 500:
             raise ModelUnavailableError("Fireworks is temporarily unavailable")
         raise ModelProviderError(f"Fireworks request failed with HTTP status {status_code}")
+
+    def _stream_response(self, payload, request, model, timeout_seconds):
+        """Isolate network streaming so the parent can enforce a hard deadline."""
+        started = time.perf_counter()
+        process = subprocess.Popen(
+            [sys.executable, "-m", "ai_career_navigator.models.providers.fireworks_stream_worker"],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        )
+        try:
+            output, _ = process.communicate(
+                json.dumps(
+                    {
+                        "api_key": self._api_key,
+                        "payload": payload,
+                        "timeout": timeout_seconds,
+                    }
+                ).encode(),
+                timeout=timeout_seconds,
+            )
+        except subprocess.TimeoutExpired:
+            process.kill()
+            process.communicate()
+            raise ModelTimeoutError("Fireworks streaming deadline exceeded") from None
+        try:
+            envelope = json.loads(output)
+        except (ValueError, TypeError):
+            raise ModelProviderError("Fireworks stream worker returned no valid result") from None
+        if "error_status" in envelope:
+            self._raise_http_error(envelope["error_status"])
+        if envelope.get("worker_error") == "timeout":
+            raise ModelTimeoutError("Fireworks streaming request timed out")
+        if envelope.get("worker_error") == "transport":
+            raise ModelUnavailableError("Fireworks connection could not be established")
+        if envelope.get("worker_error"):
+            raise ModelProviderError("Fireworks stream did not finish safely")
+        return self._normalize(
+            output,
+            request=request,
+            requested_model=model,
+            latency_ms=(time.perf_counter() - started) * 1000,
+        )
 
     def _normalize(
         self,
@@ -150,6 +218,10 @@ class FireworksProvider(BaseModelProvider):
             raise ModelProviderError("Fireworks returned an invalid response envelope") from error
 
         usage = payload.get("usage") or {}
+        if "</think>" in content:
+            content = content.rsplit("</think>", 1)[-1].strip()
+        elif "<think>" in content:
+            raise ModelProviderError("Fireworks returned reasoning without a final answer")
         finish_reason = choice.get("finish_reason")
         warnings = ["Response may be truncated"] if finish_reason == "length" else []
         return ModelResponse(

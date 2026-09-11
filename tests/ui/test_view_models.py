@@ -533,26 +533,19 @@ def test_live_market_and_analysis_render_real_state_metrics() -> None:
         for collection in (market.markdown, market.caption, market.subheader, market.info)
         for item in collection
     )
-    assert "Market dimensions" in market_text
-    assert "4 of 15 validated postings were successfully analyzed (27% coverage)" in market_text
-    assert "related titles do not affect target-role frequency" in market_text
-    assert "Directional sample" in market_text
-    assert "What this means for your search" in market_text
-    assert "secondary context" in market_text
+    assert "Competency match" in market_text
+    assert "15 retained postings · 4 analyzed" in market_text
+    assert "Related roles do not define the baseline" in market_text
+    assert "Next step" in market_text
+    assert "Where to focus" not in market_text
     assert "Synthetic demonstration data" not in market_text
-    market_metrics = {metric.label: metric.value for metric in market.metric}
-    assert market_metrics["Exact target postings"] == "6"
-    assert market_metrics["Target variants"] == "0"
-    assert market_metrics["Related-title evidence"] == "9"
-    assert market_metrics["Expanded market evidence"] == "15"
+    assert not market.metric
+    assert "Exact: 6; variants: 0; related: 9" in market_text
     assert not any("Observed evidence" in frame.value.columns for frame in market.dataframe)
-    assert "How this sample is calculated" in {item.label for item in market.expander}
-    assert {metric.label: metric.value for metric in analysis.metric}["Directly aligned"] == "1"
-    assert "Requirements covered" not in {metric.label for metric in analysis.metric}
-    assert {metric.label: metric.value for metric in analysis.metric}["Partial matches"] == "2"
-    assert not any("%" in metric.value for metric in analysis.metric)
-    metric_values = {metric.label: metric.value for metric in analysis.metric}
-    assert metric_values["Material career gaps"] == str(len(DEMO_CAREER_SYNTHESIS.grouped_gaps))
+    assert {item.label for item in market.expander} == {"Run details"}
+    assert not analysis.metric
+    assert not market.get("plotly_chart") and not analysis.get("plotly_chart")
+    assert _rendered_text(market) == _rendered_text(analysis)
 
 
 def test_provisional_variant_supported_state_renders_market_analysis_and_plan() -> None:
@@ -563,15 +556,14 @@ def test_provisional_variant_supported_state_renders_market_analysis_and_plan() 
     assert not market.exception
     assert not analysis.exception
     assert not plan.exception
-    metrics = {metric.label: metric.value for metric in market.metric}
-    assert metrics["Exact target postings"] == "1"
-    assert metrics["Target variants"] == "2"
+    assert "Exact: 1; variants: 2" in _rendered_text(market)
     assert "Limited target-role evidence" not in _rendered_text(market)
-    assert "Candidate accessibility" in _rendered_text(analysis)
+    assert "Confidence:" in _rendered_text(analysis)
     assert "Your career strategy" in _rendered_text(plan)
-    for page in (market, analysis, plan):
-        assert "Provisional target-role evidence" in _rendered_text(page)
-        assert "not every employer" in _rendered_text(page)
+    for page in (market, analysis):
+        assert "Limited role sample" in _rendered_text(page)
+        assert "not the whole market" in _rendered_text(page)
+    assert "Provisional target-role evidence" in _rendered_text(plan)
 
 
 def test_insufficient_state_is_controlled_across_market_analysis_and_plan() -> None:
@@ -582,27 +574,35 @@ def test_insufficient_state_is_controlled_across_market_analysis_and_plan() -> N
     assert not market.exception
     assert not analysis.exception
     assert not plan.exception
-    assert "Limited target-role evidence" in _rendered_text(market)
-    assert "More evidence is needed" in _rendered_text(analysis)
+    assert "Limited role sample" in _rendered_text(market)
+    assert "Overall fit not established yet" in _rendered_text(analysis)
     assert "A reliable career plan cannot be built yet" in _rendered_text(plan)
     assert "Approve Plan" not in {button.label for button in plan.button}
+    assert next(button for button in market.button if button.label == "Continue to Plan").disabled
+    assert "Market" not in market.radio[0].options
+    assert "Analysis" not in market.radio[0].options
+    assert "Career assessment" in market.radio[0].options
 
 
 def test_empty_market_does_not_claim_opportunities_were_found_or_zero_percent_coverage() -> None:
     app = _render_evidence_boundary_view("Market", provisional=False)
     state = app.session_state["live_graph_state"]
-    state["market_snapshot"] = MARKET_SNAPSHOT.model_copy(update={
-        "validated_posting_count": 0, "exact_title_count": 0,
-        "target_variant_count": 0, "related_title_count": 0,
-    })
+    state["market_snapshot"] = MARKET_SNAPSHOT.model_copy(
+        update={
+            "validated_posting_count": 0,
+            "exact_title_count": 0,
+            "target_variant_count": 0,
+            "related_title_count": 0,
+        }
+    )
     state["requirement_summary"] = None
     app.session_state["live_graph_state"] = state
     app.run()
     text = _rendered_text(app)
     assert not app.exception
-    assert "no postings passed validation" in text
+    assert "no postings passed validation" in text.lower()
     assert "opportunities were found" not in text
-    assert "coverage unavailable: no validated postings" in text
+    assert "0 retained postings" in text
     assert "(0% coverage)" not in text
 
 
@@ -627,16 +627,13 @@ def test_analysis_render_uses_synthesis_content_and_hides_internal_ids() -> None
     assert "100% requirements covered" not in text.casefold()
     assert "fit percentage" not in text.casefold()
     assert DEMO_CAREER_SYNTHESIS.accessibility.value not in text
-    assert all(item.title in text for item in DEMO_CAREER_SYNTHESIS.demonstrated_strengths)
+    assert "What you already demonstrate" not in text
     assert "Relevant target requirements" not in text
     assert "Supporting evidence" not in {item.label for item in analysis.expander}
-    assert all(item.target_requirement in text for item in DEMO_CAREER_SYNTHESIS.target_alignments)
-    assert all(item.display_title in text for item in DEMO_CAREER_SYNTHESIS.grouped_gaps)
-    assert all(
-        requirement in text
-        for item in DEMO_CAREER_SYNTHESIS.grouped_gaps
-        for requirement in item.underlying_requirement_names
-    )
+    for gap in DEMO_CAREER_SYNTHESIS.grouped_gaps:
+        assert gap.display_title in text
+    assert not any("Gap" in table.value.columns for table in analysis.table)
+    assert "Underlying expectations" not in {item.label for item in analysis.expander}
     assert not any(str(gap_id) in text for gap_id in DEMO_CAREER_SYNTHESIS.source_gap_ids)
 
 
@@ -645,6 +642,19 @@ def test_valid_plan_displays_approval_action() -> None:
 
     assert not app.exception
     assert "Approve Plan" in {button.label for button in app.button}
+
+
+def test_plan_has_one_action_sequence_and_one_session_persistence_notice() -> None:
+    app = _render_live_plan(CAREER_PLAN)
+    view = plan_view_model(CAREER_PLAN, ROLE_ASSESSMENT, DEMO_CAREER_SYNTHESIS)
+    headings = [item.value for item in app.subheader]
+    assert headings.count("Your roadmap") == 1
+    assert "Your prioritized action plan" not in headings
+    assert "Plan summary" not in headings
+    assert sum("session-only" in item.value for item in app.caption) == 1
+    for action in view.actions:
+        assert sum(item.value == f"**{action.action}**" for item in app.markdown) <= 1
+    assert [item.label for item in app.expander].count("Plan details") == 1
 
 
 def test_insufficient_plan_never_displays_approval_action() -> None:
@@ -682,7 +692,8 @@ def test_valid_untimed_plan_is_approval_ready_and_never_renders_zero_months() ->
 
     assert eligibility.can_approve
     assert not app.exception
-    assert "Untimed roadmap" in rendered_text
+    assert "Your roadmap" in rendered_text
+    assert "Ordered steps, not duration estimates." in rendered_text
     assert "Months 0–0" not in rendered_text
     assert "Approve Plan" in {button.label for button in app.button}
 

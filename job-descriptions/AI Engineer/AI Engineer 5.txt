@@ -1,0 +1,93 @@
+Sr. AI Engineer 
+
+About the job
+Why You’ll Love Softchoice
+
+At Softchoice, a World Wide Technology (WWT) company, we work together to make a new world happen. As an IT solutions provider serving U.S. commercial and SMB organizations, as well as the entire Canadian market, we help organizations turn ambition into real‑world outcomes. We do this through the delivery of secure cloud, AI, software and digital workplace solutions that enable agility, innovation and growth.
+
+With a highly engaged, high-performing team, we are certified as a Great Place to Work® in both Canada and the United States, and have been recognized as a Best Workplace in Canada for more than 20 years. We stand proudly for our people and their success through career development and advancement, and continuously strive to do what’s good for our people and communities.
+
+As part of WWT, we connect customers to the global scale, advanced innovation, world-class partnerships, and deep expertise of a leader in AI and digital transformation. This includes access to WWT’s Advanced Technology Center (ATC), a collaborative ecosystem featuring state-of-the-art hardware and software that enables customers and partners to conceptualize, test, and validate innovative solutions before deploying them at scale.
+
+What You’ll Do
+
+Delivering excellence: Developing, testing and managing cloud-native and 3rd party tooling and AI-on-cloud technologies for internal use — delivered through code, templates and scripts to ensure top-quality experiences for Softchoice employees, with consistency and efficiency.
+Design and architect world-class technical solutions for internal employee and business group use cases, leveraging state-of-the-art cloud technologies and development tools.
+Set and uphold high standards for technical architectures, systems design and operational excellence across our internal AI platform.
+Create innovative solutions utilizing AI and LLM technologies to solve complex internal business problems — from automating manual workflows to surfacing insights for decision-makers across the company.
+Develop reusable solution components, internal services, and comprehensive documentation that other Softchoice teams can adopt and extend.
+Leading by collaboration:Working with software developers, application architects, QA engineers, and operations teams to deliver on — and exceed — the expectations of our internal business partners. You will also team up with SMEs, practice leads and vendors to fine tune our internal AI strategy and overcome obstacles to adoption at every step.
+Evangelizing the New:You aren’t just deeply familiar with cutting-edge concepts and technologies. You know how to tailor your insights to your internal audience, working directly with business teams across Softchoice to explore their needs and provide a compelling vision forward.
+As a team member, you are a core participant in implementations for our internal business groups and in the R&D of Softchoice’s internal AI IP and platform capabilities.
+You will engage with business stakeholders and leaders across the company to identify, shape and prioritize internal AI initiatives that drive employee productivity and business outcomes.
+
+
+What You’ll Bring To The Table
+
+A comprehensive understanding and experience with Agile methodologies applied to AI and Software Engineering.
+Strong proficiency in Python, with experience developing backend services, APIs, AI/ML applications
+Experience with Azure OpenAI Service and working with open-source LLMs.
+Experience building Gen AI applications.
+Develop and integrate RESTful APIs, focusing on Azure API management.
+Experience with CI/CD pipelines 
+Knowledge of containerization/orchestration (Docker, Kubernetes) in Azure.
+Experience with Microsoft PromptFlow or RAGs evaluation matrix.
+Expertise in writing and tuning prompts for LLMs.
+Experience with indexing/chunking strategies for RAG applications.
+Work with search solutions (Azure AI Search).
+Experience with CI/CD solutions in the context of MLOps and LLMOps including automation with IaC (e.g., using Terraform).
+Comfort partnering directly with non-technical business stakeholders to translate internal needs into technical solutions.
+6+ years of experience in a technical capacity.
+Cloud certifications are an asset, particularly across Azure, AWS, and/or Google Cloud Platform.
+AI or machine learning certifications (e.g., AI-900, AWS Certified Machine Learning Engineer, Google Professional Machine Learning Engineer, or equivalent) are considered an asset.
+
+
+Compensation
+
+A reasonable estimate of the current base pay range for this position Canada is $91,200 to $114,000, annually + 12% as target incentives.
+
+Actual salary will be based on a variety of factors, including location, experience, skill set, education, and related certification. The range for this position in other geographic locations may differ.
+
+Softchoice offers a comprehensive and competitive benefit plan to all full-time employees, which includes:
+
+Health and Wellbeing: Medical and Dental Care, Employee & Family Assistance Program 
+Financial Benefits: RRSP/DPSP Retirement Savings Plan with Company Matching, Life and Disability Insurance 
+Paid Time Off: Vacation and Sick Leave, Holidays, Parental Leave, Volunteer Days, Bereavement Leave 
+Additional Perks: Employee Discount Program 
+
+
+Not sure if you qualify? Think about applying anyway:
+
+We understand that not everyone brings 100% of the skills and experience for the role.
+
+At Softchoice, we offer opportunities to a diverse group including those with a variety of workplace experiences and backgrounds. Whether you are new to corporate tech, returning to work after a gap in employment, or looking to transition and take the next step in your career, we are excited to learn more about you and encourage you to apply.
+
+Why You’ll Love Working Here
+
+The People: You’ll thrive in our collaborative environment, surrounded by incredible colleagues who foster support and innovation, driving our collective success 
+High-Performing Culture: At Softchoice, we are dedicated to achieving our goals and committed to success for our customers and each other 
+Flexibility: Plan your workdays in a way that suits you best 
+Award-Winning Workplace: Proudly recognized as a Great Place to Work for 21 consecutive years 
+Inclusive Culture: We are committed to a company culture where every team member can be their authentic self 
+Competitive Benefits: Benefit from competitive perks that start on day one 
+
+
+Inclusion & Equal Opportunity Employment
+
+We are an equal opportunity employer committed to diversity, inclusion & belonging. People seeking employment at Softchoice are considered without regard to any protected category including but not limited to, race, color, religion, national origin, age, sex, marital status, ancestry, disability, veteran status, gender identity, or sexual orientation.
+
+Require accommodation? We are ready to help:
+
+We are proud to provide interview & employment accommodation during the recruitment and hiring process. If you require any accommodation to apply or interview for a position, please reach out directly to asktalentacquisition@softchoice.com . We are committed to working with you to best meet your needs.
+
+Our Commitment To Your Experience
+
+We are committed to the safety of all applicants and team members. With that in mind, we have implemented digital interviewing for everyone. We understand that you may need to interview with distractions around you (such as children or furry friends) and we will be doing the same.
+
+Before you start with us, we will conduct a criminal record check, verify your education, and check your references.
+
+When you join Softchoice, we will onboard you remotely. Don't worry. It's quick, simple and you'll be connected with your new team in no time.
+
+Job Requisition ID: 7556
+
+EoE/M/F/Vet/Disability

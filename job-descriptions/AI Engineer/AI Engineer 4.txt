@@ -1,0 +1,76 @@
+Specialist, AI Engineering 
+
+About the job
+Job Description
+
+The Opportunity 
+
+We are seeking a forward-thinking AI Engineer to join our innovative team and drive the future of Property & Casualty (P&C) insurance. This role is pivotal in bridging the gap between emerging AI technologies and real-world insurance applications. The ideal candidate will be responsible for designing, developing, and deploying cutting-edge AI solutions that will transform our core processes, including claims, underwriting, and customer engagement. You will be at the forefront of technological innovation, leveraging your expertise in data, AI models, and responsible AI to create impactful and scalable applications.
+
+What To Expect
+
+ AI Application Development: An AI Engineer is focused on the practical application of artificial intelligence and machine learning to create intelligent systems and solve real-world problems. Design and build end-to-end AI-powered applications to enhance key insurance functions. This includes developing solutions for automated claims processing, underwriting decision support, fraud detection, and personalized customer service. Develop and integrate AI services such as LLM-powered APIs, retrieval-augmented generation (RAG) pipelines, and agent orchestration logic into secure, production-grade environments. 
+ System & Data Integration: Architect and implement robust integrations between AI services and our core insurance platforms using API-first and microservices-based approaches. Design and optimize data models, Data Transformations, and storage patterns to ensure performance, reliability, and governance across AI workloads. 
+ Responsible AI & Governance: Champion and implement Responsible AI principles to ensure that all solutions and applications are fair, transparent, explainable, and compliant with industry regulations. Write production-quality code, conduct code reviews, troubleshoot performance issues, and continuously improve system reliability, scalability, and observability 
+ Cloud Platform Utilization: Leverage cloud platforms, such as Google Cloud for Insurance to build, tune and deploy scalable and secure AI solutions. 
+ Proof-of-Concept to Production: Lead in conjunction with internal and external stakeholders the full lifecycle of AI projects, from initial ideation and rapid prototyping (Proof-of-Concept) to full-scale deployment . 
+ Cross-Functional Collaboration: Work closely with data scientists, ML Engineering, data engineering, underwriters, claim adjusters, and product managers to identify high-impact opportunities and ensure AI solutions deliver measurable business value. 
+ Problem-Solving & Technical Guidance: Anticipate and resolve complex technical problems, providing direction and hands-on support to teams. Possess strong diagnostic and troubleshooting abilities across data platforms, pipelines, and integrations. 
+ Market Research & Model Evaluation: Participate with Data Scientists in assessing benchmark third-party and open-source AI models (including LLMs, RNN GAN, and predictive analytics) for their potential application to P&C insurance use cases. 
+
+What You Bring
+
+Technical Skills
+
+ Strong Programming Skills: Proficiency in Python and experience with relevant AI/ML frameworks. Proficiency in writing clean, maintainable code (i.e. Python, Java, SQL, Spark). 
+ AI & Machine Learning: Understanding various AI and ML techniques, including NLP, computer vision, and predictive modeling. Experience developing and integrating AI-powered systems such as LLM applications, RAG pipelines, or agent-based workflows. 
+ Data Expertise: A strong understanding of data structures, data modeling, and pipelines. Experience with both structured (e.g., policy and claims data) and unstructured data (e.g., documents, images, audio). 
+ Cloud Computing: Hands-on experience with a major cloud platform (Google Cloud, or AWS). Specific experience with Google Cloud, Gemini is a significant asset. 
+ AI Integration: Experience designing and working with A2A, MCP, Agentic RAG, and including conventional microservices, and event-drive architecture. 
+ Broad AI Skill: Experience with MLOps practices and tools, including containerization with Docker and Kubernetes. Experience with AI-Observability metrics, and Agentic Red-Teaming practices. 
+ Responsible AI: Knowledge of the principles and best practices for building ethical, fair, and transparent AI systems. 
+ Problem-Solving: Ability to analyze complex business problems in the insurance domain and translate them into effective AI-driven solutions. 
+ Communication: Strong communication and collaboration skills, with the ability to explain complex technical concepts to non-technical stakeholders. 
+ Innovation Mindset: A passion for staying current with the latest advancements in AI and identifying opportunities for innovation. 
+
+Soft Skills
+
+ Problem-Solving: Ability to analyze complex business problems in the insurance domain and translate them into effective AI-driven solutions. 
+ Communication: Strong communication and collaboration skills, with the ability to explain complex technical concepts to non-technical stakeholders. 
+ Innovation Mindset: A passion for staying current with the latest advancements in AI and identifying opportunities for innovation. 
+
+Experience
+
+ Bachelor’s or master’s degree in computer science, Data Science, Artificial Intelligence, or a related field. 
+ 5+ years of experience in a technological role, with proven hands-on experience in building and deploying production-grade systems. 
+ P&C Insurance Domain Knowledge: Familiarity with core insurance processes such as underwriting, claims management, and pricing is a desired skill. 
+
+Salary Range: $92,000 - $142,000
+
+About Us
+
+Actual salary for the role may vary depending on work location of the successful candidate and other factors including but not limited to, skills, education, experience, working conditions and the local labour market.
+
+This position is being posted to fill an existing vacancy.
+
+Interested in this role, but don’t meet every requirement? We encourage you to apply! We know from experience that a candidate doesn’t need 100% of the qualifications listed to bring incredible value to our team. We’re actively seeking diverse backgrounds and perspectives to help us make insurance better. At Definity, inclusion, diversity, and equity aren’t just “nice to have” — they’re essential to our success.
+
+What’s in it for you?
+
+Hybrid work schedule for most roles
+Company share ownership program
+Incentive Program - Eligible employees may participate in various incentive plans which are paid out at the discretion of the company and subject to individual and company performance.
+Pension and savings programs, with company-matched RRSP contributions
+Paid volunteer days and company matching on charitable donations
+Educational resources, tuition assistance, and paid time off to study for exams
+Focus on inclusion with employee groups, support for gender affirmation surgery, access to BIPOC counsellors, access to programs for working parents 
+Wellness and recognition programs 
+Discounts on products and services
+
+Go ahead and expect a lot — you deserve it.
+
+It’s better here — but don’t take our word for it. Definity was named by Great Place to Work ® as one of the Best Workplaces™ in Canada for women, for youth, and for inclusion.
+
+Our inclusive work environment welcomes diversity and supports accessibility. If you require accommodation at any time during the recruitment process, please let us know by contacting accessibility@economical.com.
+
+As part of Definity’s commitment to reconciliation, we acknowledge that our work, meetings, and travel take place on the lands now known as Canada, and recognize the enduring presence, wisdom, and stewardship of the First Nations, Métis, and Inuit peoples who have long cared for these lands.

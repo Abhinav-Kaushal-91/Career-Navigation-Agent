@@ -28,6 +28,12 @@ from ai_career_navigator.domain import (
 from ai_career_navigator.market import MarketRequirementAnalysis
 
 from .comparison import normalize_capability
+from .evidence_coverage import (
+    comparison_is_resolved,
+    is_hiring_expectation,
+    readiness_coverage_issue,
+    readiness_coverage_notes,
+)
 from .gap_policy import (
     AccessibilityInputs,
     classify_accessibility,
@@ -195,9 +201,7 @@ def _assessment_confidence(
     # The broad retrieval sample cannot establish greater certainty than the
     # actual canonical target baseline. This limits confidence, not candidate fit.
     if target_profile_confidence is not None:
-        confidence = min(
-            confidence, target_profile_confidence, key=_CONFIDENCE_RANK.__getitem__
-        )
+        confidence = min(confidence, target_profile_confidence, key=_CONFIDENCE_RANK.__getitem__)
     return confidence
 
 
@@ -218,6 +222,8 @@ def assess_candidate_accessibility(
     usable = [item for item in comparisons if item.requirement_id in requirements]
     for comparison in usable:
         requirement = requirements[comparison.requirement_id]
+        if not is_hiring_expectation(requirement):
+            continue  # Preferences and duties may align; they never create hiring gaps.
         key = (
             requirement.category.value,
             normalize_capability(requirement.normalized_capability or requirement.requirement_text),
@@ -326,7 +332,14 @@ def assess_candidate_accessibility(
         for item in usable
         if item.comparison_scope in PRIMARY_TARGET_SCOPES
         and not requirements[item.requirement_id].employer_specific
+        and is_hiring_expectation(requirements[item.requirement_id])
     ]
+    coverage_issue = readiness_coverage_issue(market_analysis, usable)
+    coverage_notes = readiness_coverage_notes(market_analysis, usable)
+    # Unanswered questions are not negative votes. Preserve the original comparisons
+    # on the assessment; score resolved evidence only after the coverage gate passes.
+    if market_analysis.canonical_profile is not None and not coverage_issue:
+        exact_comparisons = [item for item in exact_comparisons if comparison_is_resolved(item)]
     accessibility = classify_accessibility(
         AccessibilityInputs(
             exact_comparison_count=len(exact_comparisons),
@@ -368,10 +381,13 @@ def assess_candidate_accessibility(
         item
         for item in usable
         if requirements[item.requirement_id].employer_specific
+        and is_hiring_expectation(requirements[item.requirement_id])
         and item.match_type not in {MatchType.DIRECT_MATCH, MatchType.TRANSFERABLE_MATCH}
     ]
-    if accessibility is CandidateAccessibility.APPLY_NOW and employer_checks:
+    if accessibility is CandidateAccessibility.APPLY_NOW and (employer_checks or coverage_notes):
         accessibility = CandidateAccessibility.APPLY_SELECTIVELY
+    if coverage_issue:
+        accessibility = CandidateAccessibility.INSUFFICIENT_CANDIDATE_EVIDENCE
     confidence = (
         _assessment_confidence(
             snapshot,
@@ -386,6 +402,8 @@ def assess_candidate_accessibility(
         if exact_comparisons
         else ConfidenceLevel.INSUFFICIENT
     )
+    if coverage_notes and confidence is ConfidenceLevel.HIGH:
+        confidence = ConfidenceLevel.MODERATE
     material = sum(item.severity in {GapSeverity.HIGH, GapSeverity.BLOCKING} for item in gaps)
     supported = sum(
         item.match_type in {MatchType.DIRECT_MATCH, MatchType.TRANSFERABLE_MATCH}
@@ -398,7 +416,12 @@ def assess_candidate_accessibility(
         else "Exact-target comparison evidence is insufficient for a responsible "
         "accessibility assessment."
     )
-    limitations = []
+    limitations = list(coverage_notes)
+    if coverage_notes:
+        explanation += " " + " ".join(coverage_notes)
+    if coverage_issue:
+        explanation = coverage_issue
+        limitations.append(coverage_issue)
     if accessibility is CandidateAccessibility.INSUFFICIENT_CANDIDATE_EVIDENCE:
         limitations.append("Candidate or exact-target comparison evidence is insufficient.")
     role = RoleAssessment(

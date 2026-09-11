@@ -1,6 +1,7 @@
 """Shared source recognition; a known host alone never proves an individual job."""
 
-from urllib.parse import urlsplit
+import re
+from urllib.parse import parse_qs, urlsplit
 
 ATS_DOMAINS = frozenset(
     {
@@ -45,6 +46,8 @@ def is_ats_domain(domain: str | None) -> bool:
 
 
 def looks_like_individual_job_url(url: str) -> bool:
+    if is_individual_job_board_url(url):
+        return True
     parts = urlsplit(url)
     segments = [part for part in parts.path.split("/") if part]
     if not segments:
@@ -62,3 +65,23 @@ def looks_like_individual_job_url(url: str) -> bool:
         part.casefold() in JOB_PATH_MARKERS and index + 1 < len(segments)
         for index, part in enumerate(segments)
     )
+
+
+def is_individual_job_board_url(url: str) -> bool:
+    """Recognize vacancy identifiers, not search/category/salary-guide pages."""
+    parts = urlsplit(url)
+    host = (parts.hostname or "").casefold()
+    query = parse_qs(parts.query)
+
+    def on(domain: str) -> bool:
+        return host == domain or host.endswith("." + domain)
+
+    if on("linkedin.com"):
+        return bool(re.search(r"/jobs/view/[^/]*\d+/?$", parts.path))
+    if on("indeed.com"):
+        return parts.path.rstrip("/") == "/viewjob" and bool(query.get("jk"))
+    if on("glassdoor.com") or on("glassdoor.ca"):
+        return "/job-listing/" in parts.path.casefold() and bool(query.get("jl"))
+    if on("ziprecruiter.com"):
+        return "/job/" in parts.path.casefold() and bool(query.get("jid"))
+    return False
