@@ -48,7 +48,7 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.10,<3" },
     { name = "pydantic-settings", specifier = ">=2.7,<3" },
     { name = "python-dotenv", specifier = ">=1.0,<2" },
-    { name = "streamlit", specifier = ">=1.41,<2" },
+    { name = "streamlit", specifier = ">=1.63,<2" },
 ]
 
 [package.metadata.requires-dev]

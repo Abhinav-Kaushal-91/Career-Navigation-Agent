@@ -1,10 +1,18 @@
 """Review copy summarizes expectations while preserving the original audit."""
 
+import json
 from types import SimpleNamespace
 
 from streamlit.testing.v1 import AppTest
 
 from ai_career_navigator.ui.pages.same_role import review_text
+
+
+def story_steps(app):
+    return next(
+        json.loads(item.proto.json)["steps"] for item in app.get("bidi_component")
+        if json.loads(item.proto.json)["mode"] == "actions"
+    )
 
 
 def assessment():
@@ -131,8 +139,8 @@ render_same_role_plan({"transition_assessment": leadership_assessment(),
     assert not app.exception
     assert app.title[0].value == "Your leadership plan"
     assert "A credible leadership direction" in [s.value for s in app.subheader]
-    assert any("otherwise defer and reassess" in e.value for e in app.markdown)
-    assert any("apply-or-defer decision" in e.value for e in app.caption)
+    assert "otherwise defer and reassess" in story_steps(app)[0]["action"]
+    assert "apply-or-defer decision" in story_steps(app)[0]["done"]
     assert any("Approval applies to this exact plan version" in e.value for e in app.caption)
     assert any("No fixed timeline" in e.value for e in app.caption)
 
@@ -258,8 +266,7 @@ render_same_role_plan({"transition_assessment": assessment(), "career_plan": pla
     assert not app.exception
     assert [e.label for e in app.expander] == ["Plan details"]
     audit = [e.value for e in app.expander[0].markdown]
-    public = [e.value for e in app.markdown if e.value not in audit]
-    assert "Confirm Python experience before choosing training." in public
+    assert story_steps(app)[0]["action"] == "Confirm Python experience before choosing training."
     assert any("P1L23" in e for e in audit)
     assert any("No fixed timeline" in e.value for e in app.caption)
     assert any("Approval applies to this exact plan version" in e.value for e in app.caption)

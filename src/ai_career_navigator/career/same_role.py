@@ -30,7 +30,7 @@ from ai_career_navigator.market.requirements import _assessment_from_evidence
 from ai_career_navigator.market.search_plan import leadership_domain_priority
 from ai_career_navigator.models import ModelRole
 
-RULE_VERSION = "same-role-assessment-v2-concise-v3-fit-scope"
+RULE_VERSION = "same-role-assessment-v2-concise-v4-display-dimensions"
 SYSTEM_PROMPT = (
     """Assess a SAME-ROLE job move using the supplied candidate
 and up to five descriptions.
@@ -106,6 +106,14 @@ class Record(BaseModel):
 
 class Competency(Record):
     name: str = Field(min_length=1, max_length=100)
+    display_dimension: Literal[
+        "TECHNICAL", "DESIGN", "DELIVERY", "COLLABORATION", "LEADERSHIP", "DOMAIN"
+    ] | None = Field(
+        default=None,
+        description=(
+            "One primary role-expectation group for display only; null if unclear or eligibility."
+        ),
+    )
     context: Literal["COMMON", "SPECIALIST", "OPTIONAL"] = Field(
         description=(
             "COMMON: central role work; SPECIALIST: narrower direction; OPTIONAL: advantage. "

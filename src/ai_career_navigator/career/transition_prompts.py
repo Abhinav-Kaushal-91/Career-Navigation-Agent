@@ -2,7 +2,7 @@
 
 from .presentation_prompts import CONCISE_REVIEW_CHECK, CONCISE_REVIEW_STYLE
 
-RULE_VERSION = "career-transition-assessment-v5-concise-v3-fit-scope-all-directions"
+RULE_VERSION = "career-transition-assessment-v5-concise-v4-display-dimensions"
 
 SYSTEM_PROMPT = (
     """You are a practical career assessor evaluating a career transition, target-role plan

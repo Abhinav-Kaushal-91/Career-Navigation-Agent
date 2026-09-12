@@ -60,7 +60,9 @@ render_assessment({
     assert any("60 extracted statements" in element.value for element in app.caption)
     assert any("not established" in element.value for element in app.warning)
     headings = [item.value for item in app.subheader]
-    assert headings == ["What this role involves", "How you compare", "Next step"]
+    assert headings == [
+        "Your competency snapshot", "What this role involves", "How you compare", "Next step",
+    ]
 
 
 def test_bounded_assessment_shows_processing_check_without_erasing_strengths():
@@ -93,6 +95,7 @@ render_assessment({
     assert any("Processing incomplete" in item.value for item in app.expander[0].text)
     assert [item.value for item in app.subheader] == [
         "Apply selectively",
+        "Your competency snapshot",
         "Strengths you bring",
         "How you compare",
         "Questions before deciding",

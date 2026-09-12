@@ -1,5 +1,45 @@
 # Decisions
 
+## September 12 — fix visual parity and unknown-zero coverage
+
+The user explicitly authorized treating unconfirmed competencies as zero for radar coverage.
+This supersedes the earlier unknown-only-group suppression rule, not the evidence or accessibility
+policy. Apply the change to read-only summaries of existing results, without another model call.
+
+The first visual implementation did not reproduce the approved mockup. Replace generic category
+boxes with a role-to-target journey and a connected numbered action list. Select detail views from
+existing milestones; do not add a prerequisite, bridge, decision action or duration. Reuse full
+conditional action text and completion criteria. Styles live only in an isolated native Streamlit
+v2 component; this is not an architecture/provider change or a portal-wide CSS override.
+
+Verification must include actual saved-result replay, desktop and phone screenshots, action-detail
+clicks, regression tests and a restart that verifies modules in the serving process.
+
+## September 12 — post-checkpoint goal consolidation and read-only visuals
+
+New journeys offer five direction choices: transition and destination planning share
+TARGET_CAREER_PATH. Preserve ROLE_TRANSITION and its field policy for historical goals;
+do not migrate approved records or change their versions.
+
+Analysis counts use the same final public comparison rows as the table. Remove exact
+duplicate rows only; do not combine semantically different qualifications. The radar
+is demonstrated coverage, not readiness: directly demonstrated rows / all grouped rows.
+An all-unconfirmed group is undefined, not zero. At least three meaningful groups and
+no undefined group are needed; unresolved processing suppresses the polygon. Prerequisites
+remain visible in the comparison, outside the radar. Confirmed development needs are
+separate from unconfirmed evidence. No weighted match, probability or accessibility policy changes.
+
+Consolidated responses gain one optional display_dimension enum in their existing call.
+Group from target expectations, never candidate strengths; no extra model call or forced
+six-axis list. Old results remain valid without grouping. Legacy responses reuse validated
+EmployerOverview groups. Prompt versions distinguish this additive presentation contract.
+
+Plan overview nodes correspond one-for-one to the selected plan's milestones, in their
+existing order. Milestone types provide short labels; actual conditions and completion
+checks remain immediately below. Do not invent durations, bridge roles or guaranteed outcomes.
+V2 completion tracking, durable progress storage and readiness reassessment remain deferred.
+No new provider, dependency, scoring policy or persistence architecture is introduced.
+
 ## September 12 — common writing style, separate career judgments
 
 All goal categories share public-copy guidance and compact rendering, not a common positive

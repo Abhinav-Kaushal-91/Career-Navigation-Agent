@@ -8,7 +8,7 @@ from ai_career_navigator.ui.pages.goal import (
 )
 
 
-def test_goal_selection_exposes_all_six_domain_intents() -> None:
+def test_configuration_preserves_all_six_domain_intents_for_saved_goals() -> None:
     assert tuple(GOAL_INTENT_CONFIGS) == (
         GoalType.CURRENT_MARKET_ANALYSIS,
         GoalType.ROLE_TRANSITION,

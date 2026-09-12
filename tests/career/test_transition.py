@@ -448,7 +448,7 @@ def test_leadership_contract_keeps_target_and_scope_without_promoting_mentoring(
 def test_transition_v3_contract_separates_readiness_from_direction_and_safe_practice(inputs):
     gateway = Gateway()
     result = assess_career_transition(*inputs, gateway)
-    assert result.rule_version == "career-transition-assessment-v5-concise-v3-fit-scope-all-directions"
+    assert result.rule_version == "career-transition-assessment-v5-concise-v4-display-dimensions"
     for request in gateway.requests:
         for phrase in [
             "TWO DISTINCT CONCLUSIONS",

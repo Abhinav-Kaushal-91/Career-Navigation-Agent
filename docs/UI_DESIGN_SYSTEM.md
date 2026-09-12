@@ -1,5 +1,46 @@
 # UI Design System
 
+## September 12 — corrected reference implementation (supersedes the first visual pass)
+
+- Unconfirmed competencies contribute zero **demonstrated coverage** to the radar, per the
+  user's explicit instruction. They remain Unconfirmed in the table and do not become skill
+  gaps or change accessibility. Three or more supplied groups can render, including zero groups.
+  Missing group membership and processing failure remain distinct from unconfirmed evidence.
+- Center all dimension labels, split them at the slash and leave mobile-safe margins. No 0% tick
+  or per-dimension numeric prose. Keep left radar and right 2×2 counts from identical public rows.
+- The role-ordered competency list uses row numbers, horizontal rules and semantic status colours;
+  no evidence paragraphs, employer charts or new numerical importance score.
+- Replace the discarded category-box map with Starting point → Next milestone → Decision point
+  (only when backed by an actual later application/reassessment step) → Target direction.
+  View-step controls reveal actual saved conditions; they do not confirm completion.
+- Below it, render a connected vertical 1–2–3 action storyline with topic headings from the
+  milestone basis and full unmodified action/completion text. No fake three-step limit.
+- A project-owned Streamlit v2 component isolates styles in a shadow root, with no portal-wide
+  stylesheet or generated-class overrides. Dynamic content uses textContent, never innerHTML.
+  Native controls, approval and theme remain unchanged. Minimum Streamlit is now 1.63 (already
+  installed); no additional package was introduced. Phone layout stacks the journey vertically.
+
+## September 12 — competency snapshot and adaptive path overview
+
+Place Your competency snapshot below the verdict. Use native bordered columns: Coverage
+by dimension on the left, Your competency matches on the right, with a wide separating gap.
+The right side has two-by-two Demonstrated / Transferable / Partial / Unconfirmed metrics.
+Show confirmed development needs separately when present. Native panels provide separation
+without injecting a custom stylesheet. Preserve native narrow-screen stacking.
+
+Radar labels are centered at their corresponding vertices; adapt to 3–6 meaningful role
+groups, not six invented groups. Hide the 0% label. Do not add per-axis count lists or
+evidence prose underneath. A short coverage—not readiness—caption is sufficient; the
+existing comparison table carries the details. Missing grouping or failed processing shows
+an unavailable chart message, not a reassuring filled shape. Counts still describe available rows.
+
+Plan: Your path at a glance precedes numbered actions, one numbered node per real milestone.
+Use short milestone-type labels and up to three nodes per row. The map is an ordered overview,
+not a duration or completion scale; preserve existing justified timeline details separately.
+Short plans stay short. Actual conditions, prerequisites, action wording and Done when checks
+remain below. No clickable completion controls in V1. Synthetic visual QA lives in
+scripts/visual_components_preview.py and uses demo_data, never live workflow state.
+
 ## September 12 — shared plain-language copy across all six directions
 
 Extend the concise leadership presentation language to all assessment/plan routes, not its

@@ -8,7 +8,7 @@ from streamlit.testing.v1 import AppTest
 from ai_career_navigator.domain import GoalType
 from ai_career_navigator.ui.direction_copy import DIRECTION_COPY, direction_caption
 from ai_career_navigator.ui.pages.same_role import comparison_rows
-from tests.ui.test_review_presentation import assessment
+from tests.ui.test_review_presentation import assessment, story_steps
 
 
 @pytest.mark.parametrize("goal_type", list(GoalType))
@@ -50,7 +50,7 @@ render_same_role_plan({{"same_role_assessment": assessment(), "career_plan": pla
 ''').run()
     assert not app.exception
     assert DIRECTION_COPY[goal_type] in [c.value for c in app.caption]
-    assert any("Check the specific prerequisite before deciding." == m.value for m in app.markdown)
+    assert story_steps(app)[0]["action"] == "Check the specific prerequisite before deciding."
     assert any("Approval applies to this exact plan version" in c.value for c in app.caption)
     assert any("No fixed timeline" in c.value for c in app.caption)
 

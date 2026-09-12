@@ -18,6 +18,13 @@ Keep each public field concise and complete; internal IDs belong only in referen
 
 CONCISE_REVIEW_STYLE = """
 PUBLIC REVIEW STYLE
+For each competency, assign display_dimension from the target expectation, not the candidate's
+strengths: TECHNICAL=technical or trade practice; DESIGN=problem solving and solution design;
+DELIVERY=delivery and operations; COLLABORATION=communication and collaboration;
+LEADERSHIP=leadership and ownership; DOMAIN=business or domain knowledge.
+Use one primary group only. Use null for prerequisites or unclear grouping. Do not create
+competencies to fill groups, force six dimensions, or change a match to improve the chart.
+This is presentation metadata, not a readiness score or a new assessment criterion.
 Write for the person making a career decision, not an evidence auditor. Use plain language.
 Synthesize the descriptions into a combined picture of the work and expectations. Separate shared
 expectations from specialist or optional asks; do not turn a small sample into a universal claim.

@@ -1,8 +1,26 @@
 # Tasks
 
+- [x] Render unconfirmed-only radar groups as zero demonstrated coverage without changing assessments.
+- [x] Replace generic roadmap boxes with the approved journey and connected numbered action story.
+- [x] Style the role-ordered competency comparison with numbers and semantic status colours.
+- [x] Replay the actual saved result with no new provider calls; inspect desktop/phone rendering.
+- [x] Pass 945 regression tests; fix mobile radar clipping; verify selected plan details and restart
+  the main app with loaded story-version and unknown-zero assertions.
+
+- [x] Restart the stale port 8533 process and verify prompt versions and snapshot module
+  inside the actual serving process, not only a separate import/test or health request.
+
 - [x] Prepare the current code checkpoint for GitHub before goal-choice changes;
   retain all six existing choices and exclude local credentials/generated outputs.
-- [ ] Merge career-transition and target-role choices after the checkpoint, when resumed.
+- [x] Merge career-transition and target-role choices after the checkpoint; preserve legacy goals.
+- [x] Add shared Analysis radar and 2×2 status cards using final comparison rows; preserve
+  unknown/shortfall separation and safe missing-data behavior.
+- [x] Add one optional target-derived display dimension to existing consolidated responses;
+  no new model call, hard-coded role axes or readiness policy.
+- [x] Add Plan overview from actual selected milestones; preserve untimed and conditional steps.
+- [x] Add deterministic and Streamlit regressions plus an isolated synthetic visual preview.
+- [ ] Manually verify phone/tablet pixel layout and a fresh live assessment's dimension grouping.
+- [ ] V2 only: user-confirmed milestone completion, durable progress and evidence reassessment.
 
 - [x] Verify the full local app on port 8533 is healthy and return its manual-run
   link; preserve existing sessions and distinguish the port 8534 preview.

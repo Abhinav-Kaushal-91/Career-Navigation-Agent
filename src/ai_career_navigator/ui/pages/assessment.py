@@ -4,6 +4,11 @@ import streamlit as st
 
 from ai_career_navigator.domain import ConfidenceLevel, MatchType
 from ai_career_navigator.market.overview import overview_requirements, source_overview
+from ai_career_navigator.ui.components.career_story import render_competency_list
+from ai_career_navigator.ui.components.career_visuals import (
+    render_competency_snapshot,
+    unique_comparison_rows,
+)
 from ai_career_navigator.ui.components.navigation import go_to
 from ai_career_navigator.ui.direction_copy import direction_caption, position_label
 from ai_career_navigator.ui.view_models import analysis_view_model, product_label
@@ -123,7 +128,7 @@ def assessment_next_step(synthesis, rows):
 
 def public_competency_rows(rows):
     """Compact display without changing the underlying comparisons or optionality."""
-    return [
+    return unique_comparison_rows([
         {
             "Competency": row["Competency"] + (
                 f" ({row['Context'].lower()})"
@@ -132,7 +137,26 @@ def public_competency_rows(rows):
             "Your position": position_label(row["You"]),
         }
         for row in rows if row["Context"] not in {"Related role", "Role duty"}
-    ]
+    ])
+
+
+def overview_dimensions(requirements, comparisons, overview):
+    """Reuse validated role grouping; do not guess dimensions from candidate evidence."""
+    mapping = {
+        "Technical and functional": "TECHNICAL", "Business and domain": "DOMAIN",
+        "Interpersonal and communication": "COLLABORATION",
+        "Leadership and ownership": "LEADERSHIP", "People management": "LEADERSHIP",
+        "Delivery and execution": "DELIVERY",
+    }
+    result = {}
+    for group in getattr(overview, "groups", ()):
+        for identifier in group.requirement_ids:
+            item = requirements.get(identifier)
+            if item is None or item.requirement_kind.value == "PREREQUISITE":
+                continue
+            for row in public_competency_rows(competency_rows({identifier: item}, comparisons)):
+                result[row["Competency"]] = mapping.get(group.dimension)
+    return result
 
 
 def render_assessment(state_override=None, *, evidence_label=None) -> None:
@@ -219,6 +243,13 @@ def render_assessment(state_override=None, *, evidence_label=None) -> None:
             )
 
     rows = competency_rows(requirements, comparisons)
+    render_competency_snapshot(
+        public_competency_rows(rows), overview_dimensions(requirements, comparisons, overview),
+        processing_issue=processing_issue or any(
+            getattr(item, "evidence_status", None) == "OPERATION_FAILED"
+            for item in comparisons.values()
+        ),
+    )
     duties = list(
         dict.fromkeys(item.display_name for item in getattr(canonical, "responsibilities", ()))
     )
@@ -236,7 +267,7 @@ def render_assessment(state_override=None, *, evidence_label=None) -> None:
         st.subheader("How you compare")
         st.caption("Unconfirmed means we need more information—not that you lack the experience.")
         if rows:
-            st.table(public_competency_rows(rows), border="horizontal", hide_index=True)
+            render_competency_list(public_competency_rows(rows))
         else:
             st.info("No usable employer requirements yet.")
             strengths = list(

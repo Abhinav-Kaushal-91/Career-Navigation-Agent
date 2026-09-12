@@ -36,7 +36,7 @@ GOAL_INTENT_CONFIGS = {
     ),
     GoalType.TARGET_CAREER_PATH: GoalIntentConfig(
         label="Plan toward a target role",
-        description="Capture a specific destination and the path preferences you want assessed.",
+        description="Explore a career transition or progression, and plan toward your chosen role.",
         requires_target=True,
         target_label="Target role",
         show_timeline=True,
@@ -65,6 +65,11 @@ GOAL_INTENT_CONFIGS = {
         show_search_expansion=True,
     ),
 }
+
+# Keep historical confirmed intents readable; new journeys use one destination choice.
+VISIBLE_GOAL_TYPES = tuple(
+    intent for intent in GOAL_INTENT_CONFIGS if intent is not GoalType.ROLE_TRANSITION
+)
 
 
 def goal_intent_config(goal_type: GoalType) -> GoalIntentConfig:

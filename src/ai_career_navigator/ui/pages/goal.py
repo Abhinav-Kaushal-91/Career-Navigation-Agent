@@ -10,7 +10,6 @@ from pydantic import ValidationError
 
 from ai_career_navigator.domain import CandidateProfile, CareerGoal, GeographyScope, GoalType
 from ai_career_navigator.goal import (
-    GOAL_INTENT_CONFIGS,
     GoalDraft,
     GoalValidationError,
     confirm_career_goal,
@@ -18,6 +17,7 @@ from ai_career_navigator.goal import (
     goal_intent_config,
     validate_goal_draft,
 )
+from ai_career_navigator.goal.configuration import VISIBLE_GOAL_TYPES
 from ai_career_navigator.orchestration.failure_diagnostics import (
     record_live_failure,
     safe_failure_code,
@@ -135,10 +135,11 @@ def _render_goal_selection(*, demo: bool) -> None:
     )
     if demo:
         render_status_badge(DEMO_LABEL)
-    goal_types = tuple(GOAL_INTENT_CONFIGS)
+    goal_types = VISIBLE_GOAL_TYPES
     for start in range(0, len(goal_types), 3):
         columns = st.columns(3)
-        for column, goal_type in zip(columns, goal_types[start : start + 3], strict=True):
+        row = goal_types[start : start + 3]
+        for column, goal_type in zip(columns[:len(row)], row, strict=True):
             config = goal_intent_config(goal_type)
             with column:
                 with st.container(border=True, key=f"goal_direction_{goal_type.value.lower()}"):

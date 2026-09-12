@@ -1,5 +1,6 @@
 """Central synthetic scenario for the Activity 3C product shell."""
 
+
 from datetime import UTC, date, datetime
 from uuid import NAMESPACE_URL, UUID, uuid5
 
@@ -579,3 +580,25 @@ CAREER_PLAN = generate_career_plan(
     synthesis=DEMO_CAREER_SYNTHESIS,
 ).plan.model_copy(update={"plan_id": demo_id("career-plan"), "created_at": DEMO_DATETIME})
 PLAN_MILESTONES = tuple(CAREER_PLAN.milestones)
+
+
+def visual_snapshot_example():
+    """Illustrative UI QA only; never supplied to the live assessment workflow."""
+    examples = [
+        ("Technical practice", "TECHNICAL", "Demonstrated"),
+        ("Advanced technical practice", "TECHNICAL", "Partially demonstrated"),
+        ("Solution design", "DESIGN", "Transferable"),
+        ("Trade-off assessment", "DESIGN", "Demonstrated"),
+        ("Delivery", "DELIVERY", "Demonstrated"),
+        ("Operational ownership", "DELIVERY", "Unconfirmed"),
+        ("Collaboration", "COLLABORATION", "Demonstrated"),
+        ("Communication", "COLLABORATION", "Demonstrated"),
+        ("Coaching", "LEADERSHIP", "Transferable"),
+        ("Team ownership", "LEADERSHIP", "Partially demonstrated"),
+        ("Domain knowledge", "DOMAIN", "Demonstrated"),
+        ("Business context", "DOMAIN", "Unconfirmed"),
+    ]
+    return (
+        [{"Competency": name, "Your position": status} for name, _, status in examples],
+        {name: dimension for name, dimension, _ in examples},
+    )

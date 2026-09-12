@@ -1,5 +1,53 @@
 # Current State
 
+## September 12 — reference-aligned radar and career story correction
+
+The saved live result 3fd42529-0fa4-4374-8ce0-517c843b01e9 is replayed through production
+renderers on local port 8536 without retrieval or LLM calls. Its five dimension groups now
+render, including two unconfirmed-only groups at zero coverage; candidate statuses and plan
+content are unchanged. Analysis has a numbered, colour-coded comparison list. Plan has the
+approved journey structure with selectable actual-step detail and connected numbered actions.
+The old generic Plotly box map has been removed. V2 progress tracking is not implemented.
+
+Streamlit's installed native v2 component API provides isolated styling and responsive sizing.
+Minimum dependency and lockfile now specify Streamlit >=1.63, matching the tested environment.
+Verification: 945 regression tests passed (existing mock-enum warning only); changed-file lint
+passed. Headless Edge screenshots were inspected at 1440px and 390px: the real five-axis radar
+renders, phone labels no longer overlap, the four-stage journey stacks vertically, and all five
+numbered actions remain present. View step 5 displays its original apply-or-defer conditions;
+no document-level mobile overflow was detected. Comparison styling was also inspected.
+Main port 8533 was restarted with startup assertions for career-story-v2-unknown-zero and
+zero coverage for unconfirmed groups; the saved audit remains intact. No new provider run.
+
+## September 12 — actual app restart and loaded-version verification
+
+Restarted port 8533 after confirming that the prior process still generated v2
+transition output. The new serving process (PID 34120 at restart) explicitly loaded
+transition v4-display-dimensions, same-role v4-display-dimensions, leadership
+v5-display-dimensions, the production snapshot renderer and five visible goal choices.
+Its startup verification PID matches the port owner; health returned 200. File watching
+uses polling for this local run. Restart cleared session memory; the completed run audit
+6e316ecf-b452-4619-ace5-e5219d8fb2f7 remains saved. No provider request was made.
+
+## September 12 — post-0b87c5e goal and visual implementation (local, not pushed)
+
+- Five new-goal choices merge transition with target-role planning; historical transition
+  goals remain readable/editable without changing approved data.
+- Production consolidated and legacy Analysis use a shared radar/status snapshot and the
+  same table rows. Optional dimension metadata in existing consolidated calls enables new
+  radar results; older ungrouped results show counts with a chart-unavailable explanation.
+- Production Plan uses selected immutable milestones for a numbered path map. No added
+  timelines, bridges, probability scores, automatic readiness upgrades or V2 tracking.
+- Final regression coverage: 942 tests passed across UI, goal, career, orchestration,
+  market and configuration suites. Existing mock-enum warning persists; changed-file lint passes.
+- In-app browser rendered the synthetic preview's labels, cards, table and five-step map
+  without page errors. Pixel-level phone/tablet screenshot QA and a fresh live provider run
+  were not performed; these are not claimed as completed validation.
+- Main app health returned 200 at http://127.0.0.1:8533/. Isolated synthetic visual QA runs on
+  port 8535; it is not a real market result and makes no provider calls.
+
+Earlier entries below are chronological checkpoints, not the current five-choice behavior.
+
 ## September 12 — GitHub checkpoint before goal-choice consolidation
 
 This checkpoint contains the leadership route and shared concise assessment/plan

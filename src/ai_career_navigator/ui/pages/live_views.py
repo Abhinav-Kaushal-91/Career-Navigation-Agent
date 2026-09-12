@@ -647,6 +647,10 @@ def render_live_plan(
                         st.rerun()
 
     milestones = selected_plan_milestones(plan, selected_id)
+    from ai_career_navigator.ui.components.career_story import render_action_story
+    from ai_career_navigator.ui.components.career_visuals import render_path_map
+
+    render_path_map(plan, milestones)
     selected_ids = {item.milestone_id for item in milestones}
     selected_actions = tuple(item for item in view.actions if item.milestone_id in selected_ids)
     journey, context = st.columns([1.8, 1], gap="medium")
@@ -662,12 +666,7 @@ def render_live_plan(
             with st.container(border=True):
                 _plot(build_roadmap_figure(phases))
         if selected_actions:
-            for index, action in enumerate(selected_actions, 1):
-                with st.container(border=True):
-                    st.caption(f"STEP {index:02d} · {action.career_gap}")
-                    st.markdown(f"**{action.action}**")
-                    if action.completion_condition:
-                        st.caption(f"Done when: {action.completion_condition}")
+            render_action_story(milestones)
         else:
             st.info("No additional build action was recorded for this path.")
     with context:

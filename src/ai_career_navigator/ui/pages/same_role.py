@@ -7,6 +7,15 @@ import streamlit as st
 
 from ai_career_navigator.domain import PlanStatus
 from ai_career_navigator.ui.components.approval import render_plan_review_actions
+from ai_career_navigator.ui.components.career_story import (
+    render_action_story,
+    render_competency_list,
+)
+from ai_career_navigator.ui.components.career_visuals import (
+    render_competency_snapshot,
+    render_path_map,
+    unique_comparison_rows,
+)
 from ai_career_navigator.ui.components.navigation import go_to, surface_graph_workflow_state
 from ai_career_navigator.ui.direction_copy import direction_caption
 
@@ -31,7 +40,7 @@ def assessment_heading(assessment):
 
 def leadership_rows(assessment):
     """Present existing evidence states; keep non-target records intact in Run details."""
-    return [
+    return unique_comparison_rows([
         {
             "Competency": review_text(c.name, assessment),
             "Your position": (
@@ -42,7 +51,7 @@ def leadership_rows(assessment):
         }
         for c in assessment.competencies
         if c.applicability == "TARGET"
-    ]
+    ])
 
 
 def main_competencies(assessment):
@@ -60,12 +69,12 @@ def main_competencies(assessment):
 def comparison_rows(assessment):
     if is_leadership(assessment):
         return leadership_rows(assessment)
-    return [
+    return unique_comparison_rows([
         {"Competency": review_text(c.name, assessment), "Your position": (
             "Unconfirmed" if c.status == "NOT_ESTABLISHED" else label(c.status)
         )}
         for c in main_competencies(assessment)
-    ]
+    ])
 
 
 def review_text(value, assessment):
@@ -149,6 +158,13 @@ def render_same_role_analysis(state):
         else:
             st.write(review_text(conclusion, assessment))
             st.caption(f"Assessment confidence: {label(assessment.confidence)}")
+    rows = comparison_rows(assessment)
+    dimensions = {
+        review_text(c.name, assessment): getattr(c, "display_dimension", None)
+        for c in main_competencies(assessment)
+        if getattr(c, "expectation", None) != "PREREQUISITE"
+    }
+    render_competency_snapshot(rows, dimensions, processing_issue=needs_review)
     render_role_overview(assessment)
     strengths = getattr(assessment, "demonstrated_strengths", [])
     if strengths:
@@ -163,9 +179,8 @@ def render_same_role_analysis(state):
                 st.write(f"- {review_text(c.name, assessment)}")
     st.subheader("How you compare")
     st.caption("Unconfirmed means we need more information—not that you lack the experience.")
-    rows = comparison_rows(assessment)
     if rows:
-        st.table(rows)
+        render_competency_list(rows)
     else:
         st.info("No core competency comparisons are available yet.")
     if len(main_competencies(assessment)) < len(assessment.competencies):
@@ -228,11 +243,10 @@ def render_same_role_plan(state, *, read_only=False, evidence_label=None):
     st.subheader(assessment_heading(assessment))
     st.caption(f"Plan confidence: {label(assessment.confidence)}")
     st.caption(review_text(plan.timing_basis, assessment))
-    for milestone in plan.milestones:
-        with st.container(border=True):
-            st.caption(milestone.phase)
-            st.write(review_text(milestone.action, assessment))
-            st.caption(f"Done when: {review_text(milestone.measurable_outcome, assessment)}")
+    render_path_map(plan, processing_issue=bool(assessment.processing_issues)
+                    or assessment.accessibility is None,
+                    clean=lambda value: review_text(value, assessment))
+    render_action_story(plan.milestones, clean=lambda value: review_text(value, assessment))
     with st.expander("Plan details"):
         st.write(assessment.rationale)
         for milestone in plan.milestones:
