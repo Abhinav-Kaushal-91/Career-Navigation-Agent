@@ -600,7 +600,7 @@ def test_empty_market_does_not_claim_opportunities_were_found_or_zero_percent_co
     app.run()
     text = _rendered_text(app)
     assert not app.exception
-    assert "no postings passed validation" in text.lower()
+    assert "no retained postings" in text.lower()
     assert "opportunities were found" not in text
     assert "0 retained postings" in text
     assert "(0% coverage)" not in text

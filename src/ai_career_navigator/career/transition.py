@@ -85,6 +85,16 @@ def is_career_transition(profile, goal):
     )
 
 
+def uses_consolidated_target_assessment(profile, goal):
+    """Share assessment mechanics without rewriting the user's chosen direction."""
+    return bool(
+        profile
+        and goal
+        and goal.target_role
+        and goal.goal_type in {GoalType.ROLE_TRANSITION, GoalType.TARGET_CAREER_PATH}
+    )
+
+
 def transition_reference_issues(reply, sources, lines, evidence):
     issues = reference_issues(reply, sources, lines, evidence)
     for n, strength in enumerate(reply.demonstrated_strengths):
@@ -103,6 +113,7 @@ def build_transition_inputs(profile, goal, evidence):
     payload["goal_context"] = goal.model_dump(
         mode="json",
         include={
+            "goal_type",
             "target_seniority",
             "target_industries",
             "geography_scopes",

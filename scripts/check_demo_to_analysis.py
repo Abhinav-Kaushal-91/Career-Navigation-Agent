@@ -23,18 +23,19 @@ from ai_career_navigator.ui.live_workflow import build_live_workflow_runtime, lo
 
 
 class BoundedRecorder:
-    def __init__(self, delegate, output, sanitizer):
+    def __init__(self, delegate, output, sanitizer, *, max_calls=40):
         self.delegate = delegate
         self.provider_name = delegate.provider_name
         self.output = output
         self.sanitizer = sanitizer
         self.calls = 0
+        self.max_calls = max_calls
         self.lock = Lock()
         self.deadline = time.monotonic() + 1800
 
     def generate_structured(self, **kwargs):
         with self.lock:
-            if self.calls >= 40 or time.monotonic() >= self.deadline:
+            if self.calls >= self.max_calls or time.monotonic() >= self.deadline:
                 raise ModelGatewayError("Diagnostic call/time budget exhausted")
             self.calls += 1
             index = self.calls

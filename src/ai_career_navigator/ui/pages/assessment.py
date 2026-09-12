@@ -188,7 +188,14 @@ def render_assessment(state_override=None, *, evidence_label=None) -> None:
             elif getattr(canonical, "profile_status", None) in {"PROVISIONAL", "INSUFFICIENT"}:
                 st.caption("Limited role sample")
         if not snapshot.validated_posting_count:
-            st.caption("No postings passed validation.")
+            provider = state.get("market_provider_summary")
+            st.caption(
+                "The search provider returned no postings for this request."
+                if provider is not None and provider.raw_source_count == 0
+                else "Returned postings were excluded or could not be normalized. See Run details."
+                if provider is not None
+                else "No retained postings. Retrieval details are unavailable for this saved run."
+            )
         if processing_issue:
             st.info(
                 "Some model output could not be validated. Valid expectations are retained; "
@@ -250,6 +257,29 @@ def render_assessment(state_override=None, *, evidence_label=None) -> None:
     # One optional diagnostic area. No evidence paragraphs or repeated summaries
     # in the decision surface; original audit objects stay intact.
     with st.expander("Run details"):
+        provider = state.get("market_provider_summary")
+        if provider is not None:
+            st.caption(
+                f"Search returned {provider.raw_source_count} records; "
+                f"{snapshot.validated_posting_count} retained."
+            )
+            for issue in provider.normalization_issues:
+                st.text(issue)
+            for query in provider.search_queries:
+                st.text(query)
+        retrieval_audits = state.get("market_posting_audits", ())
+        if retrieval_audits:
+            st.table(
+                [
+                    {
+                        "Posting": item.title,
+                        "Location": item.location or "Unconfirmed",
+                        "Outcome": item.routing_decision or "Not recorded",
+                        "Reason": item.rejection_reason or "Retained",
+                    }
+                    for item in retrieval_audits
+                ]
+            )
         if view:
             st.write(view.assessment_reason)
         summary = state.get("requirement_summary")

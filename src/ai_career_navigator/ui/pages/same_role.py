@@ -70,23 +70,28 @@ def render_same_role_analysis(state):
     assessment = state.get("transition_assessment") or state["same_role_assessment"]
     goal = state["confirmed_goal"]
     st.caption(f"{goal.target_role} · {goal.target_location}")
+    sample_size = len(assessment.posting_sources)
     st.caption(
-        f"Based on {len(assessment.posting_sources)} reviewed job descriptions; "
+        f"Based on {sample_size} reviewed job description{'s' if sample_size != 1 else ''}; "
         "not a complete market survey."
     )
+    if sample_size == 1:
+        st.caption("Limited role sample: this comparison applies to the reviewed role only.")
     with st.container(border=True):
-        st.subheader(label(assessment.accessibility))
+        needs_review = bool(assessment.processing_issues) or assessment.accessibility is None
+        st.subheader("Assessment needs review" if needs_review else label(assessment.accessibility))
         # Keep the readiness conclusion up front; the full explanation stays in the audit.
         conclusion = assessment.rationale
         if "-concise-" not in assessment.rule_version:
             conclusion = re.split(r"(?<=[.!?])\s+", conclusion, maxsplit=1)[0]
-        st.write(review_text(conclusion, assessment))
-        st.caption(f"Assessment confidence: {label(assessment.confidence)}")
-    if assessment.processing_issues:
-        st.warning(
-            "Some output could not be verified. "
-            "This is a processing issue, not a candidate skill gap."
-        )
+        if needs_review:
+            st.write(
+                "Output validation needs review; this is not a candidate skill gap. "
+                "Available comparisons are shown below. See Run details for the failed checks."
+            )
+        else:
+            st.write(review_text(conclusion, assessment))
+            st.caption(f"Assessment confidence: {label(assessment.confidence)}")
     render_role_overview(assessment)
     strengths = getattr(assessment, "demonstrated_strengths", [])
     if strengths:
@@ -101,7 +106,9 @@ def render_same_role_analysis(state):
         [
             {
                 "Competency": review_text(c.name, assessment),
-                "Context": label(c.context),
+                "Context": "Core role work"
+                if c.context == "COMMON" and "fit-scope" in assessment.rule_version
+                else label(c.context),
                 "You": label(c.status),
                 **({"Next need": label(c.remaining_need)} if hasattr(c, "remaining_need") else {}),
             }

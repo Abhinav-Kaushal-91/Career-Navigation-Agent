@@ -498,6 +498,11 @@ async def market_retrieval(
                 you_context_result_count=result.you_context_result_count,
                 you_rejected_result_count=result.you_rejected_result_count,
                 you_fallback_triggered=result.you_fallback_triggered,
+                raw_source_count=result.raw_source_count,
+                normalization_issues=result.normalization_issues,
+                continuation_available=result.continuation_available,
+                provider_request_id=result.provider_request_id,
+                search_queries=result.exact_search_queries,
             ),
             "market_source_ids": source_ids,
             "market_posting_audits": result.posting_audits,
@@ -547,22 +552,63 @@ def market_processing(
     assert goal is not None and goal.target_role is not None
     processing_inputs = runtime.context.content_store.get_processing_inputs(state["run_id"])
     from ai_career_navigator.career.same_role import (
+        NoUsableRoleDescriptions,
         assess_same_role,
         assessment_plan,
         is_same_role,
     )
-    from ai_career_navigator.career.transition import assess_career_transition, is_career_transition
+    from ai_career_navigator.career.transition import (
+        assess_career_transition,
+        is_career_transition,
+        uses_consolidated_target_assessment,
+    )
 
-    transition = is_career_transition(state.get("confirmed_profile"), goal)
+    transition = uses_consolidated_target_assessment(state.get("confirmed_profile"), goal)
+    if runtime.context.legacy_target_plan_pipeline:
+        transition = is_career_transition(state.get("confirmed_profile"), goal)
     if transition or is_same_role(state.get("confirmed_profile"), goal):
         assessment_key = "transition_assessment" if transition else "same_role_assessment"
         assess = assess_career_transition if transition else assess_same_role
         profile = state["confirmed_profile"]
+        from .audit import persist_retrieval_audit
+
+        audit_path = None
         try:
-            assessment = assess(
-                profile, goal, processing_inputs, runtime.context.model_gateway
+            audit_path = str(
+                persist_retrieval_audit(
+                    state, directory=runtime.context.settings.run_audit_directory
+                )
             )
+        except OSError:
+            runtime.context.logger.warning(
+                "retrieval_audit_persistence_failed run_id=%s", state["run_id"]
+            )
+        try:
+            if state.get("market_source_ids") and not processing_inputs:
+                raise RuntimeError("Transient market content unavailable")
+            assessment = assess(profile, goal, processing_inputs, runtime.context.model_gateway)
             plan = assessment_plan(assessment, profile, goal)
+        except NoUsableRoleDescriptions:
+            return {
+                "same_role_assessment": None,
+                "transition_assessment": None,
+                "career_plan": None,
+                "candidate_accessibility": None,
+                "audit_artifact_path": audit_path,
+                "market_processing_status": MarketProcessingWorkflowStatus.LIMITED,
+                "workflow_status": WorkflowStatus.INSUFFICIENT_EVIDENCE,
+                "current_stage": WorkflowStage.MARKET_PROCESSING,
+                "last_error": None,
+                "limitations": _unique(
+                    state.get("limitations", []),
+                    [
+                        "No eligible job descriptions reached assessment. "
+                        "Model analysis was not started; "
+                        "this is a market-input limitation, not a candidate skill gap."
+                    ],
+                ),
+                "updated_at": runtime.context.clock(),
+            }
         except Exception as error:
             runtime.context.logger.warning(
                 "%s_failed run_id=%s category=%s",
@@ -574,14 +620,18 @@ def market_processing(
                 "same_role_assessment": None,
                 "transition_assessment": None,
                 "career_plan": None,
+                "audit_artifact_path": audit_path,
                 "market_processing_status": MarketProcessingWorkflowStatus.FAILED,
                 "workflow_status": WorkflowStatus.FAILED,
                 "current_stage": WorkflowStage.MARKET_PROCESSING,
                 "last_error": f"{assessment_key.upper()}_PROCESSING_FAILED",
-                "limitations": [
-                    "Model assessment did not complete. Saved inputs are unchanged; "
-                    "this is not a candidate skill gap."
-                ],
+                "limitations": _unique(
+                    state.get("limitations", []),
+                    [
+                        "Model assessment did not complete. Saved inputs are unchanged; "
+                        "this is not a candidate skill gap."
+                    ],
+                ),
                 "updated_at": runtime.context.clock(),
             }
         _log_node(

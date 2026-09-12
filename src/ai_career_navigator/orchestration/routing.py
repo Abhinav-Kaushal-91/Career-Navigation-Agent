@@ -42,6 +42,8 @@ def route_after_market_retrieval(state: CareerGraphState) -> Literal["processing
 
 
 def route_after_market_processing(state: CareerGraphState) -> Literal["ready", "review", "end"]:
+    if state.get("workflow_status") is WorkflowStatus.INSUFFICIENT_EVIDENCE:
+        return "end"
     if (
         state.get("same_role_assessment") is not None
         or state.get("transition_assessment") is not None

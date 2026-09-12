@@ -1,5 +1,30 @@
 # UI Design System
 
+## September 11 — distinguish empty discovery from excluded results
+
+When no postings are retained, distinguish a provider returning zero from returned records
+excluded during normalization/validation. If historical retrieval details are absent, say so.
+Run details contains the saved query, returned/retained counts and a single posting/outcome/reason
+table. No extra API call is triggered by opening details. Empty role input never means the
+candidate lacks skills or that the model failed; keep profile strengths and plan guards intact.
+
+## September 11 — readable failure diagnostics
+
+Live-analysis recovery shows a specific, concise reason and an allowlisted error code. One
+optional Failure details expander contains sanitized stage/timing/ID information and whether
+a local record was saved. Keep this available on the confirmed-goal page after rerender too.
+Never show raw exception text, traces or provider responses. Preserve confirmed inputs and
+existing explicit retry/back actions; diagnostics do not start another API request.
+
+## September 11 — limited sample versus assessment processing status
+
+For concise-v2-fit-scope results, COMMON is displayed as Core role work, not market frequency.
+One reviewed description receives a short role-specific scope note without blocking a supported
+fit verdict. When processing_issues exist (including historical results) or no verdict is present,
+show Assessment needs review once, preserve comparisons, and keep exact failed checks in Run
+details. Do not present a processing failure as Insufficient candidate evidence. Valid substantive
+insufficient-evidence assessments retain that verdict. No automatic positive fit or plan approval.
+
 ## September 11 — public-copy contract across assessment and Plan
 
 Future concise-v1 same-role/transition results use one or two complete sentences for readiness

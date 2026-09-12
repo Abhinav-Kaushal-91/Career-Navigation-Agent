@@ -1,9 +1,12 @@
 # AI Career Strategy & Market Navigator
 
-Current-market retrieval runs Adzuna structured discovery and You.com MCP web discovery in
-parallel. Each lane is validated independently before conservative cross-source deduplication;
-Adzuna fields remain authoritative when both sources identify the same posting. Provider choice
-remains behind the Market Intelligence Service.
+Current-market retrieval uses **JSearch through RapidAPI**, replacing the active Adzuna and
+You.com routes. One bounded search supplies job descriptions; up to five detail requests fill
+missing or visibly truncated descriptions. No legacy-provider fallback. See
+[JSearch setup](docs/JSEARCH_SETUP.md) for subscription, local key configuration and a one-call
+connection check. Live retrieval and the target-role assessment/plan path have been verified;
+see [current validation status](docs/CURRENT_STATE.md) for scope and remaining limitations.
+Historical adapters remain for old recordings.
 
 **Status: Architecture frozen; V1 implementation is in progress. Activity 7B is complete.**
 
@@ -20,7 +23,7 @@ It supports:
 The repository contains the approved V1 scope, frozen architecture, Python development foundation,
 V1 domain schemas, a production-oriented Streamlit shell, structured manual profile onboarding,
 provider-independent AI capability inference, deterministic career-goal confirmation,
-current-market retrieval through an allowlisted You.com MCP adapter, posting-level requirement
+current-market retrieval through the JSearch adapter, posting-level requirement
 extraction, evidence-grounded candidate comparison, gap/accessibility analysis, observed-market
 bridge/timeline assessment, draft career-plan generation, and checkpoint-scoped final human review.
 The LangGraph workflow pauses on the exact draft plan ID/version, then supports approval, draft,
@@ -74,7 +77,10 @@ python scripts\smoke_test_capability_inference.py
 
 This command is also opt-in and is never invoked by the application test suite.
 
-## You.com MCP market configuration
+## Historical You.com MCP configuration (inactive on the JSearch route)
+
+For the current app use [JSearch setup](docs/JSEARCH_SETUP.md). The section below describes
+the retained legacy integration, not a required account or fallback.
 
 Activity 5A uses the official Python MCP SDK with the hosted Streamable HTTP endpoint. The
 adapter exposes only `you-search` and `you-contents` and reads its credential through `Settings`:

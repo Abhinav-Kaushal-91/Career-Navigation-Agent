@@ -28,7 +28,7 @@ from ai_career_navigator.market.requirement_schemas import PostingTitleMatch
 from ai_career_navigator.market.requirements import _assessment_from_evidence
 from ai_career_navigator.models import ModelRole
 
-RULE_VERSION = "same-role-assessment-v2-concise-v1"
+RULE_VERSION = "same-role-assessment-v2-concise-v2-fit-scope"
 SYSTEM_PROMPT = (
     """Assess a SAME-ROLE job move using the supplied candidate
 and up to five descriptions.
@@ -38,9 +38,11 @@ may create candidate facts or employer requirements. Produce a useful, concise c
 1. Read the actual work and qualifications together. Titles are clues, not equivalence or fit proof.
 Separate relevant role directions from specialist or different-stack jobs. A small searched sample
 cannot establish overall market strength, current vacancies, hiring probability or salary trends.
-2. Consolidate into professional capabilities, not a long keyword union. COMMON means a broadly
-shared expectation supported by independent employers; SPECIALIST means a narrower employer/role
-need; OPTIONAL means an optional advantage. Explain the central job function in role_picture.
+2. Consolidate into professional capabilities, not a long keyword union. COMMON means central
+work of the assessed role, supported by the supplied description(s), not proven market prevalence.
+SPECIALIST means a narrower platform, domain or role-direction need; OPTIONAL means an optional
+advantage. Employer count does not determine specialization. One posting can support a core-work
+comparison, but not a claim that all employers require it. Explain the central job function.
 Recognize ordinary wording such as mandatory, must-have, qualifications and required. Duties
 describe work alignment; they do not automatically prove employers require prior experience.
 Do not universalize one employer's technology, years, credential or scope requirement.
@@ -57,6 +59,10 @@ credible but important experience needs building. ASPIRATIONAL: multiple major c
 barriers or a fundamental blocker. POOR_FIT: a clearly conflicting direction. Use
 INSUFFICIENT_CANDIDATE_EVIDENCE only if the available inputs cannot support an assessment.
 Do not favor a positive answer just because titles match. Missing facts are not proven inability.
+Judge fit from demonstrated relevant work, not the COMMON label or number of employers. A single
+substantive relevant posting may support a limited, posting-specific assessment; disclose that
+scope and unresolved conditions. Thin descriptions can leave fit unknown, but sample size alone
+must not become a candidate evidence gap. Confidence concerns the comparison, not market demand.
 5. Make practical ordered actions from assessed competencies: suitable applications, interview
 examples, clarification and targeted development. Every action names its basis_competencies
 exactly as in competencies. Specialist development must be conditional on choosing that direction.
@@ -98,7 +104,12 @@ class Record(BaseModel):
 
 class Competency(Record):
     name: str = Field(min_length=1, max_length=100)
-    context: Literal["COMMON", "SPECIALIST", "OPTIONAL"]
+    context: Literal["COMMON", "SPECIALIST", "OPTIONAL"] = Field(
+        description=(
+            "COMMON: central role work; SPECIALIST: narrower direction; OPTIONAL: advantage. "
+            "Not a frequency or employer-count label."
+        )
+    )
     expectation: Literal["QUALIFICATION", "WORK_ALIGNMENT", "PREREQUISITE", "PREFERENCE"] = Field(
         description=(
             "Prior required skill=QUALIFICATION; duty=WORK_ALIGNMENT; "
@@ -144,6 +155,8 @@ class AssessmentReply(Record):
 
 
 class SameRoleAssessment(AssessmentReply):
+    # A processing failure withholds a verdict; it does not diagnose candidate evidence.
+    accessibility: CandidateAccessibility | None = None
     assessment_id: UUID = Field(default_factory=uuid4)
     rule_version: str = RULE_VERSION
     profile_id: UUID
@@ -187,6 +200,12 @@ def build_inputs(profile, goal, evidence):
     candidates = []
     for item in evidence:
         assessed = _assessment_from_evidence(item, target_role=goal.target_role)
+        if (
+            assessed
+            and assessed.title_match == PostingTitleMatch.RELATED_TITLE
+            and not goal.search_expansion_permission
+        ):
+            continue
         if assessed and assessed.title_match in {
             PostingTitleMatch.EXACT_TARGET,
             PostingTitleMatch.TARGET_VARIANT,
@@ -294,10 +313,8 @@ def reference_issues(reply, sources, lines, evidence):
         CandidateAccessibility.APPLY_NOW,
         CandidateAccessibility.APPLY_SELECTIVELY,
     }:
-        if not any(
-            c.status == "DEMONSTRATED" and c.context == "COMMON" for c in reply.competencies
-        ):
-            issues.append("accessibility: positive verdict has no demonstrated common capability")
+        if not any(c.status == "DEMONSTRATED" for c in reply.competencies):
+            issues.append("accessibility: positive verdict has no demonstrated capability")
     return issues
 
 
@@ -323,6 +340,10 @@ All references must still use the original supplied aliases. Corrections are not
 )
 
 
+class NoUsableRoleDescriptions(ValueError):
+    """Retrieval supplied no eligible description; no model request was made."""
+
+
 def assess_consolidated(
     profile,
     goal,
@@ -341,7 +362,7 @@ def assess_consolidated(
 ):
     payload, sources, lines, candidates = input_builder(profile, goal, evidence)
     if not sources:
-        raise ValueError("No relevant job descriptions available")
+        raise NoUsableRoleDescriptions("No relevant job descriptions available")
     reply, issues = None, []
     for attempt in range(2):
         request = (
@@ -407,11 +428,12 @@ def assess_consolidated(
             update={
                 "competencies": valid,
                 "actions": [],
-                "accessibility": CandidateAccessibility.INSUFFICIENT_CANDIDATE_EVIDENCE,
+                "accessibility": None,
                 "confidence": ConfidenceLevel.INSUFFICIENT,
                 "rationale": (
-                    "Some output references could not be verified after repair. "
-                    "This is a processing issue, not a candidate skill gap."
+                    "Assessment needs review: output validation did not pass. "
+                    "This is a processing issue, not a candidate skill gap. "
+                    "See Run details for the specific checks."
                 ),
             }
         )
@@ -435,6 +457,7 @@ def assess_consolidated(
 def assessment_plan(assessment, profile, goal):
     if (
         assessment.processing_issues
+        or assessment.accessibility is None
         or assessment.accessibility == CandidateAccessibility.INSUFFICIENT_CANDIDATE_EVIDENCE
     ):
         return None

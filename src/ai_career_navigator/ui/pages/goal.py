@@ -1,8 +1,8 @@
 """Deterministic career-goal selection, review, confirmation, and live launch."""
 
 import asyncio
-import logging
 from collections.abc import Callable
+from time import perf_counter
 from uuid import uuid4
 
 import streamlit as st
@@ -17,6 +17,10 @@ from ai_career_navigator.goal import (
     format_goal_review,
     goal_intent_config,
     validate_goal_draft,
+)
+from ai_career_navigator.orchestration.failure_diagnostics import (
+    record_live_failure,
+    safe_failure_code,
 )
 from ai_career_navigator.ui.components.badges import render_status_badge
 from ai_career_navigator.ui.components.cards import render_card
@@ -36,8 +40,6 @@ from ai_career_navigator.ui.live_workflow import (
     build_live_workflow_runtime,
     load_live_settings,
 )
-
-logger = logging.getLogger(__name__)
 
 TIMELINE_OPTIONS = (
     "No fixed timeline",
@@ -342,6 +344,24 @@ def _change_goal_direction() -> None:
 
 def _safe_live_failure_message(category: str | None) -> str:
     messages = {
+        "MARKET_TIMEOUT": (
+            "The job-search request timed out. Your profile and goal are unchanged. "
+            "Wait briefly, then retry. Model-based analysis has not started."
+        ),
+        "MARKET_RATE_LIMIT": (
+            "The job-search provider returned a rate or quota limit. Check your RapidAPI "
+            "usage before retrying. Model-based analysis has not started."
+        ),
+        "MARKET_RESPONSE_INVALID": (
+            "The job-search response could not be read in the expected format. "
+            "Your profile and goal are unchanged; no replacement data was used."
+        ),
+        "SCHEMA_VALIDATION_ERROR": (
+            "The application could not validate data at this step. "
+            "This is a processing issue, not a candidate skill gap."
+        ),
+        "MODEL_TIMEOUT": "The model request timed out. Review the run details before retrying.",
+        "MODEL_PROVIDER_ERROR": "The model provider could not complete the request.",
         "ROLE_DISCOVERY_REQUIRED": (
             "Choose a named target role before running the current V1 market analysis."
         ),
@@ -350,7 +370,7 @@ def _safe_live_failure_message(category: str | None) -> str:
         ),
         "CONFIGURATION_ERROR": (
             "The live market provider is not configured correctly. Your profile and goal remain "
-            "available."
+            "available. For JSearch, add RAPIDAPI_KEY to your local environment file."
         ),
         "MARKET_PROCESSING_ERROR": (
             "The retrieved postings could not be processed safely. No synthetic result was used."
@@ -372,7 +392,7 @@ def _safe_live_failure_message(category: str | None) -> str:
         ),
     }
     return messages.get(
-        category,
+        safe_failure_code(category),
         "The live analysis stopped safely before producing a market result. Retry when ready.",
     )
 
@@ -414,17 +434,32 @@ def _confirmed_goal() -> CareerGoal:
 
 
 def _start_live_workflow(goal: CareerGoal, *, on_progress: Callable[[str], None]) -> bool:
+    started = perf_counter()
+    st.session_state.live_failure_diagnostic = None
+
+    def record_failure(category, state=None, *, stage=None):
+        state = state or {}
+        st.session_state.live_failure_diagnostic = record_live_failure(
+            category,
+            stage=stage or state.get("current_stage", "WORKFLOW_EXECUTION"),
+            elapsed_seconds=perf_counter() - started,
+            run_id=state.get("run_id"),
+            market_result_preserved=_market_result_available(state),
+            last_checkpoint_stage=state.get("current_stage"),
+        )
+
     if not goal.target_role:
         st.session_state.live_workflow_error = "ROLE_DISCOVERY_REQUIRED"
         return False
-    profile = CandidateProfile.model_validate(st.session_state.confirmed_profile)
     # Each explicit run/retry gets fresh provider configuration and a new graph
     # checkpoint. Profile and goal state remain intact, while stale failed-run
     # state cannot leak into the next attempt.
     try:
+        profile = CandidateProfile.model_validate(st.session_state.confirmed_profile)
         runtime = build_live_workflow_runtime(load_live_settings())
     except Exception as error:
         st.session_state.live_workflow_error = type(error).__name__
+        record_failure(type(error).__name__, stage="INITIALIZATION")
         return False
     st.session_state.live_workflow_runtime = runtime
     thread_id = f"live-{uuid4()}"
@@ -458,6 +493,7 @@ def _start_live_workflow(goal: CareerGoal, *, on_progress: Callable[[str], None]
             if not complete:
                 category = result.state.get("last_error") or "MARKET_PROCESSING_FAILED"
                 st.session_state.live_workflow_error = str(category)
+                record_failure(category, result.state)
             st.session_state.live_analysis_requested = False
             go_to("Market")
         else:
@@ -466,6 +502,7 @@ def _start_live_workflow(goal: CareerGoal, *, on_progress: Callable[[str], None]
                 status = result.state.get("workflow_status")
                 category = getattr(status, "value", status)
             st.session_state.live_workflow_error = str(category or "LIVE_ANALYSIS_FAILED")
+            record_failure(category, result.state)
             return False
     except Exception as error:  # UI boundary presents only a safe category
         st.session_state.live_workflow_error = type(error).__name__
@@ -479,13 +516,10 @@ def _start_live_workflow(goal: CareerGoal, *, on_progress: Callable[[str], None]
             surface_graph_workflow_state(recovered.state)
         except Exception:
             recovered = None
-        recovered_stage = recovered.state.get("current_stage") if recovered is not None else None
-        recovered_status = recovered.state.get("workflow_status") if recovered is not None else None
-        logger.exception(
-            "ui_live_workflow_failed category=%s recovered_stage=%s recovered_status=%s",
+        record_failure(
             type(error).__name__,
-            getattr(recovered_stage, "value", recovered_stage),
-            getattr(recovered_status, "value", recovered_status),
+            recovered.state if recovered is not None else None,
+            stage="WORKFLOW_EXECUTION",
         )
         if recovered is not None and _market_result_available(recovered.state):
             st.session_state.live_analysis_requested = False
@@ -496,9 +530,22 @@ def _start_live_workflow(goal: CareerGoal, *, on_progress: Callable[[str], None]
 
 def _request_live_analysis() -> None:
     st.session_state.live_workflow_error = None
+    st.session_state.live_failure_diagnostic = None
     st.session_state.live_analysis_completed_stages = 0
     st.session_state.live_analysis_requested = True
     st.rerun()
+
+
+def _render_failure_details() -> None:
+    st.caption(f"Error code: {safe_failure_code(st.session_state.live_workflow_error)}")
+    diagnostic = st.session_state.get("live_failure_diagnostic")
+    if diagnostic:
+        with st.expander("Failure details"):
+            st.json(diagnostic)
+            if diagnostic["record_saved"]:
+                st.caption("Sanitized diagnostic saved locally in outputs/failed-runs.")
+            else:
+                st.caption("Local diagnostic could not be saved; the error code remains available.")
 
 
 def _render_live_analysis_transition(goal: CareerGoal) -> None:
@@ -532,6 +579,7 @@ def _render_live_analysis_transition(goal: CareerGoal) -> None:
             _safe_live_failure_message(st.session_state.live_workflow_error),
             tone="warning",
         )
+        _render_failure_details()
         retry, back, _ = st.columns([1.2, 1.4, 2.4])
         with retry:
             if st.button("Retry analysis", type="primary", use_container_width=True):
@@ -614,6 +662,7 @@ def _render_confirmed_goal(*, demo: bool) -> None:
             tone="warning",
         )
         st.caption(_safe_live_failure_message(st.session_state.live_workflow_error))
+        _render_failure_details()
     back, edit, change, forward = st.columns([1.2, 1.3, 1.3, 1.7])
     with back:
         if st.button("Back to Profile", use_container_width=True):

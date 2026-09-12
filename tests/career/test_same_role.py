@@ -197,6 +197,72 @@ def test_positive_verdict_without_demonstration_is_rejected(inputs):
     )
 
 
+def test_one_employer_specialist_match_can_support_limited_fit_and_plan(inputs):
+    proposal = reply().model_copy(
+        update={
+            "competencies": [reply().competencies[0].model_copy(update={"context": "SPECIALIST"})],
+            "limitations": ["One reviewed role only; not a market-wide conclusion."],
+        }
+    )
+    gateway = Gateway([proposal])
+    result = assess_same_role(*inputs, gateway)
+    assert len(result.posting_sources) == 1
+    assert not result.processing_issues
+    assert result.accessibility == "APPLY_SELECTIVELY"
+    assert assessment_plan(result, *inputs[:2]) is not None
+    assert len(gateway.requests) == 2
+
+
+def test_reviewer_reclassifying_core_as_specialist_does_not_invalidate_fit(inputs):
+    class ReviewerGateway(Gateway):
+        def generate_structured(self, **request):
+            response = super().generate_structured(**request)
+            if request["metadata"]["task_type"] == "same_role_quality_review":
+                response.structured_output["assessment"]["competencies"][0]["context"] = (
+                    "SPECIALIST"
+                )
+            return response
+
+    result = assess_same_role(*inputs, ReviewerGateway([reply()]))
+    assert result.accessibility == "APPLY_SELECTIVELY"
+    assert not result.processing_issues
+    assert assessment_plan(result, *inputs[:2]) is not None
+
+
+def test_processing_failure_withholds_verdict_instead_of_diagnosing_candidate(inputs):
+    broken = reply().model_copy(
+        update={
+            "competencies": [
+                reply().competencies[0].model_copy(update={"candidate_refs": ["E999"]})
+            ]
+        }
+    )
+    result = assess_same_role(*inputs, Gateway([broken, broken]))
+    assert result.accessibility is None
+    assert result.processing_issues == ["competencies[0]: unknown candidate reference"]
+    assert assessment_plan(result, *inputs[:2]) is None
+    assert "Assessment needs review" in result.rationale
+
+
+def test_small_sample_does_not_automatically_upgrade_a_negative_verdict(inputs):
+    from ai_career_navigator.domain import CandidateAccessibility
+
+    cautious = reply().model_copy(update={"accessibility": CandidateAccessibility.ASPIRATIONAL})
+    result = assess_same_role(*inputs, Gateway([cautious]))
+    assert not result.processing_issues
+    assert result.accessibility == "ASPIRATIONAL"
+
+
+def test_fit_scope_prompt_keeps_factual_safeguards(inputs):
+    from ai_career_navigator.career.same_role import SYSTEM_PROMPT
+
+    assert "Employer count does not determine specialization" in SYSTEM_PROMPT
+    assert "sample size alone" in SYSTEM_PROMPT
+    assert "Projects are not production" in SYSTEM_PROMPT
+    assert "Missing facts are not proven inability" in SYSTEM_PROMPT
+    assert "No fixed timeline is a valid preference" in SYSTEM_PROMPT
+
+
 def test_source_ids_are_not_plan_completion_checks(inputs):
     raw = reply().model_copy(
         update={"actions": [reply().actions[0].model_copy(update={"completion_check": "P1L2, E1"})]}

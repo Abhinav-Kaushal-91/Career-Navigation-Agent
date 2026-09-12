@@ -42,9 +42,10 @@ Refer to these documents instead of duplicating their complete requirements:
 
 ## Development Rules
 
-- Adzuna structured search and You.com ATS-focused discovery are first-class V1 job-evidence
-  sources. Provider clients stay behind the Market Intelligence Service; normalization,
-  deduplication, graph state, and downstream career logic remain provider-neutral.
+- JSearch through RapidAPI is the active V1 market provider (September 11 user-approved
+  replacement). No Adzuna or You.com calls/fallback on the JSearch route. Legacy adapters
+  remain for historical tests only. Provider clients stay behind the Market Intelligence
+  Service; normalization, deduplication and downstream career logic remain provider-neutral.
 
 - During V1 implementation, `docs/MVP_IMPLEMENTATION_SCOPE.md` determines which frozen-architecture capabilities are active. Do not implement deferred V2/V3 capabilities without explicit approval.
 - Access environment configuration through `Settings`; business code must not read provider credentials directly.
@@ -74,8 +75,8 @@ Refer to these documents instead of duplicating their complete requirements:
 - Detailed domain-model rules live in `docs/DATA_MODEL.md`.
 - Use MCP only for justified external or independently deployable capabilities;
 	keep internal helpers and persistence behind normal service/repository interfaces.
-- You.com MCP is the MVP external MCP boundary; no custom Career Data MCP is in
-	the MVP. Domain services use the Model Gateway, not provider SDKs.
+- You.com MCP is a historical integration, not part of the active JSearch retrieval route.
+  No custom Career Data MCP is in the MVP. Domain services use the Model Gateway, not provider SDKs.
 - Provider choice is configuration-driven and workflow-facing model output
 	requires schema validation. Retrieved external content is untrusted data.
 - Provider SDK types must not escape provider adapters.

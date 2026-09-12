@@ -99,6 +99,44 @@ def test_standalone_references_do_not_leave_broken_sentences():
     )
 
 
+def test_failed_processing_is_review_status_not_candidate_insufficiency():
+    app = AppTest.from_string("""
+from types import SimpleNamespace
+from tests.ui.test_review_presentation import assessment
+from ai_career_navigator.ui.pages.same_role import render_same_role_analysis
+result = assessment()
+result.accessibility = "INSUFFICIENT_CANDIDATE_EVIDENCE"  # historical saved result
+result.rationale = "Some output references could not be verified after repair."
+result.processing_issues = ["accessibility: positive verdict has no demonstrated common capability"]
+render_same_role_analysis({"same_role_assessment": result,
+    "confirmed_goal": SimpleNamespace(target_role="Developer", target_location="Toronto")})
+""").run()
+    assert not app.exception
+    assert "Assessment needs review" in [e.value for e in app.subheader]
+    assert "Insufficient candidate evidence" not in [e.value for e in app.subheader]
+    assert not app.warning
+    assert any("positive verdict" in e.value for e in app.expander[0].markdown)
+
+
+def test_single_role_fit_is_scoped_and_core_work_not_market_frequency():
+    app = AppTest.from_string("""
+from types import SimpleNamespace
+from tests.ui.test_review_presentation import assessment
+from ai_career_navigator.ui.pages.same_role import render_same_role_analysis
+result = assessment()
+result.posting_sources = {"P1": result.posting_sources["P1"]}
+result.rule_version = "same-role-assessment-v2-concise-v2-fit-scope"
+result.accessibility = "APPLY_SELECTIVELY"
+render_same_role_analysis({"same_role_assessment": result,
+    "confirmed_goal": SimpleNamespace(target_role="Developer", target_location="Toronto")})
+""").run()
+    assert not app.exception
+    assert "Apply selectively" in [e.value for e in app.subheader]
+    assert any("1 reviewed job description;" in e.value for e in app.caption)
+    assert any("Limited role sample" in e.value for e in app.caption)
+    assert app.table[0].value["Context"].iloc[0] == "Core role work"
+
+
 def test_new_concise_copy_keeps_its_material_second_sentence():
     app = AppTest.from_string("""
 from types import SimpleNamespace

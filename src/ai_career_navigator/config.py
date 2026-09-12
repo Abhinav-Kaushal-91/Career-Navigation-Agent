@@ -30,8 +30,13 @@ class Settings(BaseSettings):
     adzuna_app_id: SecretStr | None = None
     adzuna_app_key: SecretStr | None = None
     adzuna_base_url: str = "https://api.adzuna.com/v1/api"
-    market_primary_provider: str = "adzuna"
-    market_enrichment_provider: str = "you"
+    market_primary_provider: str = "jsearch"
+    market_enrichment_provider: str = "none"
+    rapidapi_key: SecretStr | None = None
+    jsearch_search_path: Literal["/search", "/search-v2"] = "/search-v2"
+    jsearch_country: str = Field(default="ca", pattern=r"^[a-z]{2}$")
+    jsearch_max_details: int = Field(default=5, ge=0, le=10)
+    jsearch_search_timeout_seconds: int = Field(default=90, ge=30, le=180)
     market_timeout_seconds: int = Field(default=30, gt=0, le=300)
     market_max_search_queries: int = Field(default=3, ge=1, le=10)
     market_max_expansion_queries: int = Field(default=3, ge=0, le=10)

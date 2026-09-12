@@ -112,7 +112,9 @@ def _structured_candidate(result: StructuredJobResult) -> PostingCandidate:
         employer=result.company,
         location=result.location,
         location_evidence_text=evidence,
-        posting_text=result.description[:20_000],
+        # Metadata can identify a discovered posting without fabricating a JD.
+        # primary_content below still retains the genuinely empty description.
+        posting_text=result.description[:20_000] or result.title,
         extraction_confidence=ConfidenceLevel.HIGH,
     )
 
@@ -142,7 +144,7 @@ def _primary_evidence(
         return None
     source = SourceRecord(
         source_id=candidate.source_id,
-        source_type=MarketSourceProvider.ADZUNA.value,
+        source_type=result.provider.value,
         title=normalize_title(result.title),
         url=url,
         employer=normalize_employer(result.company),
@@ -200,7 +202,7 @@ def _primary_evidence(
             if _needs_enrichment(result, thin_description_characters=thin_description_characters)
             else EnrichmentStatus.NOT_NEEDED
         ),
-        provider_sources=[MarketSourceProvider.ADZUNA],
+        provider_sources=[result.provider],
         source_type=PostingSourceType.STRUCTURED_JOB,
         retrieval_quality=(
             RetrievalQuality.HIGH
@@ -209,7 +211,7 @@ def _primary_evidence(
         ),
         title_classification=assessment.title_match.value,
         seniority_classification=classify_seniority(result.title),
-        selected_content_source=MarketSourceProvider.ADZUNA,
+        selected_content_source=result.provider,
         content_quality=_content_quality(page, thin_description_characters),
         limitations=[
             "Posting was observed in provider search; "

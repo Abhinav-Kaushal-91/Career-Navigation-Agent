@@ -148,6 +148,9 @@ def make_controller(
             (lambda: structured_market_client) if structured_market_client else None
         ),
         content_store=content_store,
+        # These fixtures replay per-posting extraction/comparison contracts. The production
+        # consolidated target-plan route is covered by tests/career/test_transition.py.
+        legacy_target_plan_pipeline=True,
         clock=lambda: NOW,
     )
     return CareerWorkflowController(build_career_graph(), context), content_store

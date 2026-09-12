@@ -1,5 +1,204 @@
 # Current State
 
+## September 12 — GitHub publication checks
+
+Prepared the JSearch integration, timeout/diagnostic fixes, target-plan routing and regression
+tests for publication. Fresh combined career/orchestration/UI/market/scripts/config suite:
+895 passed, one failed (test_goal_case_matrix_covers_two_sets_for_all_six_goal_types).
+The same matrix test also fails on the previously published fd332b5 in an isolated worktree:
+its mock provider supplies obsolete schemas. Baseline reports 6 waiting cases versus expected 9;
+current reports 4, because target planning now joins the consolidated assessment route and
+the mock lacks that response contract too. Do not describe this check as all green or silently
+change expected counts. Updating this historical matrix remains follow-up work.
+Ruff passed for every pending Python file. Local environment credentials and runtime outputs
+remain ignored; pending files were checked against configured secret values before staging.
+
+## September 12 — actual website target-plan routing failure fixed
+
+Inspected the user's existing 8533 browser session, not the earlier backend replay. Its goal
+was TARGET_CAREER_PATH (Plan toward a target role), AI engineer, Toronto, Canada, Strict City,
+related expansion allowed, no fixed timeline, 29 confirmed synthetic-profile evidence items.
+Run details showed 10 returned / 8 retained, all RELATED_TITLE; the legacy batch selector
+admitted only exact/variant and selected zero. The earlier successful backend test used
+ROLE_TRANSITION, so it did not reproduce this route. This was a verified routing/selection
+mismatch, not lack of retrieved descriptions or a model-output validation rejection.
+
+TARGET_CAREER_PATH now shares the consolidated up-to-five assessment/review/plan flow with
+ROLE_TRANSITION. The confirmed goal is never rewritten; goal_type is supplied to the model and
+retained in the audit. Related scope labels remain unchanged, and related input is skipped if
+expansion is disallowed. Other goal routes remain unchanged. The older target-plan extraction
+path is available only via explicit legacy_target_plan_pipeline runtime injection for historical
+replays (default false, no UI/env flag, no automatic failure fallback).
+
+One live retry was executed by clicking Run Live Analysis in the user's actual existing tab,
+without restarting the server or injecting backend results. Run 4d47528c-8699-4c65-b8f1-52b6a1070f50:
+10 returned, 7 retained, 5 reviewed, 14 competencies, 6 actions, NEAR_TERM_TARGET / MODERATE,
+processing_issues empty, plan DRAFT. Production Analysis displayed the result; Continue to Plan
+opened the six actions and exact-version approval controls. Returned to Analysis without approval.
+Files: outputs/run-audits/<run-id>.json and outputs/run-audits/retrieval/<run-id>.json.
+
+Regression coverage includes both explicit transition and target-plan directions, all-related
+inputs, eight-to-five selection, disallowed expansion, goal preservation, and plan-version
+approval/invalidation. 867 broad tests passed plus the new eight-to-five regression separately;
+Ruff passed. This proves this route executes, not that all model interpretations are perfect:
+mixed seniority/co-op context and unknown-versus-learning wording still merit quality review.
+
+## September 11 — empty transition input and live AI Engineer reproduction
+
+The portal's failed run d32e364a-d38f-4c8d-bbcc-9911c94542cb preserved a zero-posting
+snapshot and logged a transition ValueError. Its provider payload/routes were not persisted,
+so whether that particular response was empty or entirely excluded remains unverified.
+Do not infer the old run's cause from fresh responses.
+
+Same-role/transition empty eligible input now stops without a model call or candidate verdict,
+instead of reporting generic model failure. Existing retrieval limitations are preserved on
+technical errors. A separate retrieval audit is written before assessment (including empty
+runs), with provider counts, query and per-posting routes; no profile, full JDs or reasoning.
+Missing transient content remains a technical failure, not an empty market result. Run details
+shows retrieved versus retained counts and exclusions; an absent historical summary is explicit.
+
+Actual live backend demo Java-to-AI Engineer run: outputs/live-failure-check/20260912T031746Z.
+9 raw, 7 retained, 5 reviewed, 2 DeepSeek calls, assessment and unapproved plan generated,
+no processing issues. Retrieval 72.13s; author 53.76s; reviewer 52.42s; total 178.48s.
+Verdict NEAR_TERM_TARGET / MODERATE; 17 competencies and 6 actions. AI strength inference
+was not rerun; this uses the approved synthetic demo profile, not an export of the user's
+28-item browser profile. A separate earlier search returned 10 raw/7 retained in 5.38s.
+These demonstrate variable search results/latency and successful execution, not provider SLA.
+
+Remaining quality issue: reviewed cohort includes a co-op and lead role, and broad AI titles
+remain classified as related. No relevance or seniority policy relaxation was made here.
+Both production assessment/plan renderers accepted the actual saved result with zero UI
+exceptions. 661 offline tests passed, Ruff and diff checks passed. No server restart, commit
+or push. Current browser profile/goal remain session-only; no successful result was injected.
+
+## September 11 — confirmed JSearch timeout mitigation
+
+Two real failed-run records confirm MARKET_TIMEOUT at MARKET_RETRIEVAL, after 30.259s and
+30.425s (failure IDs cd9a2be3-5002-4074-96c2-c73b9e064f39 and
+217690bf-7bfc-42cf-a1d3-6bcdd59ba724). Neither preserved a market snapshot or reached the model.
+Introduced JSEARCH_SEARCH_TIMEOUT_SECONDS=90 independently of the existing 30-second detail
+timeout; connect/write/pool bounded to 10s, total search deadline 100s. No automatic retries,
+pagination, extra model calls, or relevance-rule relaxation. Logs now identify timeout phase.
+
+One fresh live search with the changed client returned 4 jobs, 0 malformed, in 8.84s including
+process startup. This did not reproduce a >30s provider response: the mitigation is verified by
+explicit transport/deadline tests, not a claim of guaranteed provider availability. No new model
+run was needed for this HTTP-only change; the earlier 135.81s successful workflow remains separate.
+Validation: 618 market/orchestration/UI/config tests passed; lint/diff checks passed. Restarted
+the exact main-app processes on port 8533 after warning about session-only state reset. Active
+configuration verified at 90s search/30s details and restarted health endpoint returned ok.
+
+## September 11 — actual live reproduction completed successfully
+
+Executed the production confirmed-demo-to-plan graph with live JSearch and the configured
+Fireworks model (no AI-inference autoapproval, no model/provider substitution). Artifact:
+outputs/live-failure-check/20260912T000433Z/results.json. This run discovered 3 postings,
+retained Iris, and excluded 2 full-stack roles via existing relevance rules. Market retrieval
+took 3.77s; author model 52.34s; reviewer 79.62s; total 135.81s. Assessment APPLY_SELECTIVELY,
+MODERATE confidence, 5 competencies (4 demonstrated, CMS integration not established),
+4 plan actions, no processing issues. Workflow WAITING_FOR_HUMAN is expected plan approval,
+not a technical stop; no plan approval was performed. Market and Plan production routes
+rendered the saved typed state with zero AppTest exceptions.
+
+The previous generic-banner failure was NOT reproduced and its exact cause remains unknown;
+do not claim a root-cause fix from this passing run. Earlier live probes returned 4 jobs for
+Toronto/Canada and 5 for Toronto; those are different calls, not this run's denominator.
+Added an explicit --live reproduction script with a 4-model-call/15-minute ceiling.
+Fresh main app started on 127.0.0.1:8533 (health ok); old 8532 process/session left intact.
+This is a fresh deployment of the successfully tested current code, not proof of why the old run failed.
+
+## September 11 — safe failed-run diagnostics
+
+Implemented specific timeout, rate/quota and malformed-response messages plus visible safe
+error codes. New failed live attempts (initialization, handled workflow failure or unexpected
+execution exception) save sanitized IDs/stage/elapsed-time records to outputs/failed-runs and
+emit warning-level logs. Removed raw UI-boundary traceback logging. Code/details remain available
+on return to the confirmed-goal page; retries and goal invalidation clear stale displayed records.
+No live API/model call was made; this does not establish the cause of the earlier unrecorded run.
+Current browser session was not restarted. Test attempts use isolated temporary record directories.
+Validation: 613 market/orchestration/UI/config tests passed, including Streamlit AppTest failure
+detail rendering; changed-file lint and diff checks passed. Local port 8532 health check returned ok.
+No manual browser-level visual QA or live provider retry was performed in this pass.
+
+## September 11 — JSearch response-contract routing
+
+Added Search V2/list-envelope normalization, safe alternative apply-link selection, limited
+Responsibilities/Qualifications highlights fallback, and bounded full-job-ID details enrichment.
+Useful provider metadata stays separate from job-content text. Routing reasons, normalization
+issues, raw counts, continuation flag and request ID survive into workflow/audit records; cursor
+values are not stored or followed. Empty optional metadata does not invalidate job content.
+
+Offline replay of the user's saved four-job JSON: 4 normalized, all descriptions present,
+1 retained (Iris), 3 role-relevance exclusions (PeoplePilot, Resonaite, Kovasys). The two full-stack
+exclusions still need semantic relevance review. No new live API/LLM request was made and no
+end-to-end success is claimed. Location conflicts in prose are not automatically resolved.
+Validation: 598 market/orchestration/UI/config tests passed; changed-file Ruff and git diff
+checks passed. No app restart was performed in this pass, preserving the user's current session.
+
+## September 11 — candidate fit and sample coverage separated
+
+Removed the requirement for a demonstrated COMMON capability before accepting a positive
+same-role/transition verdict. Demonstrated evidence and source/ID checks remain mandatory.
+Prompts/schema describe COMMON as central role work rather than multiple-employer prevalence;
+SPECIALIST describes narrow work, never sample size. Version suffix: concise-v2-fit-scope.
+Single-posting assessments are visibly limited to that role. No verdict is forced positive.
+
+Failed output validation now stores accessibility=null and no plan, with actual diagnostic
+issues retained. UI shows Assessment needs review, avoids the duplicate warning, and does not
+describe processing failures as missing candidate evidence. Old saved results remain unchanged.
+This implementation has not been rerun through a live LLM; it requires a fresh manual analysis.
+The separate retrieval relevance issue and JSearch timeout remain outside this change.
+Validation: 383 career/UI/orchestration tests passed (one existing test-fixture serialization
+warning); changed-file lint passed. Manual app restarted on 127.0.0.1:8532.
+
+## September 11 — JSearch mixed-cohort snapshot failure corrected
+
+JSearch had retained IRRELEVANT jobs in the validated total while snapshot title buckets
+excluded them, raising the count-invariant ValidationError before any model call. Unrelated
+results now remain in posting audits with explicit exclusion reasons, but do not enter target
+postings, source content, employer counts or analysis inputs. JSearch passes its validated
+classifications to the snapshot; result counters use that same snapshot. Legacy snapshot
+callers retain their existing behavior. No relevance, geography or model rules were weakened.
+
+587 market/orchestration/UI/config tests passed; changed-file lint passed. Saved user response
+replay: four discovered, one eligible (Iris), three audited exclusions, no count exception.
+The existing classifier still labels PeoplePilot and Resonaite irrelevant; that separate
+relevance-policy issue is not fixed by this accounting change. The one fresh live test timed
+out at JSearch search, before any LLM call. No live end-to-end success is claimed.
+Manual app restarted on 127.0.0.1:8532; integration changes remain unpushed.
+
+## September 11 — manual retest query alignment
+
+Aligned JSearch search requests with the successful four-record backend probe: lowercase
+location phrase, Canadian search country value `canada`, date_posted `all`, num_pages 1,
+and no cursor. Internal country codes and Job Details remain unchanged. Posting age,
+location validation, title classification, and LLM rules remain unchanged; this is not
+a claim of end-to-end analysis success. Restarted the manual instance on port 8532.
+
+
+## September 11 — JSearch live connection verified
+
+Removed a trailing empty RAPIDAPI_KEY entry from the ignored local environment file
+that was overriding the user's populated entry. One live search for Senior Java Developer
+in Toronto, Canada (country ca, date_posted month) returned two normalized jobs, zero invalid
+records: Iris Software (65 description words) and Resonaite (478 words). No Job Details or
+LLM calls were made; this verifies search connectivity, not full workflow quality or sufficient
+target-role coverage. 23 focused JSearch/config tests passed (one cache-write warning).
+A fresh manual Streamlit instance was started on 127.0.0.1:8532, leaving the previous session
+untouched. Credentials remain ignored and these integration changes are not yet pushed.
+
+## September 11 — JSearch-only market setup
+
+User selected RapidAPI JSearch to replace both active Adzuna and You.com retrieval.
+Added fixed-host/header-key adapter, v1/v2 response normalization, one-search/five-detail
+bounded service, ID-checked details, conservative dedup, currentness/geography checks,
+and graph routing that never constructs legacy clients in JSearch mode. Existing model
+settings, top-five analysis selection and assessment rules remain unchanged. Defaults and
+the ignored local package environment select JSearch; RAPIDAPI_KEY is intentionally blank.
+583 focused market/workflow/UI/config tests passed. No live provider call, subscription,
+purchase, Git push or claim of live description completeness. User must add their own key
+and verify subscription, then run the one-call probe. See JSEARCH_SETUP.md.
+
 ## September 11 — GitHub snapshot validation
 
 Preparing the accumulated V1 code, tests, documentation and supplied job-description test inputs

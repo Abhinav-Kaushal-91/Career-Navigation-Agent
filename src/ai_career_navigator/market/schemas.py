@@ -21,6 +21,7 @@ class SearchScope(StrEnum):
 
 
 class MarketSourceProvider(StrEnum):
+    JSEARCH = "JSEARCH"
     ADZUNA = "ADZUNA"
     YOU = "YOU"
 
@@ -238,6 +239,12 @@ class StructuredJobResult(BaseModel):
     requisition_id: str | None = None
     closing_date: date | None = None
     active_status: str | None = None
+    provider_stable_id: str | None = None
+    publisher: str | None = None
+    reported_location: str | None = None
+    is_remote: bool | None = None
+    application_is_direct: bool | None = None
+    description_origin: str = "SOURCE_DESCRIPTION"
 
 
 class StructuredJobSearchPage(BaseModel):
@@ -250,6 +257,11 @@ class StructuredJobSearchPage(BaseModel):
     total_available: int | None = Field(default=None, ge=0)
     results: list[StructuredJobResult] = Field(default_factory=list)
     malformed_result_count: int = Field(default=0, ge=0)
+    input_result_count: int | None = Field(default=None, ge=0)
+    deferred_result_count: int = Field(default=0, ge=0)
+    continuation_available: bool = False
+    response_request_id: str | None = None
+    normalization_issues: list[str] = Field(default_factory=list)
 
 
 class PostingContentQuality(StrEnum):
@@ -349,6 +361,8 @@ class PostingRetrievalAudit(BaseModel):
     enrichment_failure_category: str | None = None
     enrichment_reason: str | None = None
     enrichment_deferred_reason: str | None = None
+    routing_decision: str | None = None
+    routing_notes: list[str] = Field(default_factory=list)
 
 
 class MarketRetrievalResult(BaseModel):
@@ -412,6 +426,9 @@ class MarketRetrievalResult(BaseModel):
     unique_url_count: int = Field(default=0, ge=0)
     budget_deferred_result_count: int = Field(default=0, ge=0)
     effective_budgets: dict[str, int] = Field(default_factory=dict)
+    normalization_issues: list[str] = Field(default_factory=list)
+    continuation_available: bool = False
+    provider_request_id: str | None = None
 
     @property
     def requires_role_discovery(self) -> bool:
@@ -442,6 +459,11 @@ class MarketProviderSummary(BaseModel):
     you_context_result_count: int = Field(default=0, ge=0)
     you_rejected_result_count: int = Field(default=0, ge=0)
     you_fallback_triggered: bool = False
+    raw_source_count: int = Field(default=0, ge=0)
+    normalization_issues: list[str] = Field(default_factory=list)
+    continuation_available: bool = False
+    provider_request_id: str | None = None
+    search_queries: list[str] = Field(default_factory=list)
 
 
 class ValidatedUrl(BaseModel):

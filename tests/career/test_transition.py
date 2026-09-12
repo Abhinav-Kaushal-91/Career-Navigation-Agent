@@ -18,6 +18,7 @@ from ai_career_navigator.career.transition import (
     assess_career_transition,
     is_career_transition,
     transition_reference_issues,
+    uses_consolidated_target_assessment,
 )
 from ai_career_navigator.domain import GoalType
 from ai_career_navigator.orchestration.approval import PlanReviewAction
@@ -123,6 +124,12 @@ def test_transition_routing_is_generic_and_explicit(inputs, target):
     assert not is_career_transition(
         profile, goal.model_copy(update={"goal_type": "TARGET_CAREER_PATH"})
     )
+    assert uses_consolidated_target_assessment(
+        profile, goal.model_copy(update={"goal_type": "TARGET_CAREER_PATH", "target_role": target})
+    )
+    assert not uses_consolidated_target_assessment(
+        profile, goal.model_copy(update={"goal_type": "CAREER_EXPLORATION", "target_role": None})
+    )
 
 
 def test_shared_batch_preserves_transfer_and_strengths_and_plan_type(inputs):
@@ -149,6 +156,39 @@ def test_shared_batch_preserves_transfer_and_strengths_and_plan_type(inputs):
     assert plan.source_assessment_id == result.assessment_id
     assert "No fixed timeline" in plan.timing_basis
     assert plan.plan_status == "DRAFT"
+
+
+def test_target_plan_selects_five_from_eight_related_descriptions_without_relabeling(inputs):
+    profile, goal, evidence = inputs
+    goal = goal.model_copy(
+        update={
+            "goal_type": GoalType.TARGET_CAREER_PATH,
+            "search_expansion_permission": True,
+        }
+    )
+    sources = [
+        evidence[0].model_copy(
+            update={
+                "posting": evidence[0].posting.model_copy(
+                    update={
+                        "posting_id": uuid4(),
+                        "employer": f"Employer {index}",
+                    }
+                ),
+                "title_classification": "RELATED_TITLE",
+            }
+        )
+        for index in range(8)
+    ]
+    _, selected, _, _ = build_inputs(profile, goal, sources)
+    assert len(selected) == 5
+    assert {item["scope"] for item in selected.values()} == {"RELATED_TITLE"}
+    assert len({item["employer"] for item in selected.values()}) == 5
+    # Explicitly disabling related-role expansion remains effective.
+    _, excluded, _, _ = build_inputs(
+        profile, goal.model_copy(update={"search_expansion_permission": False}), sources
+    )
+    assert not excluded
 
 
 @pytest.mark.parametrize(
@@ -213,7 +253,9 @@ def test_transition_prompt_distinguishes_unknowns_from_deficits():
         assert phrase in SYSTEM_PROMPT
 
 
-def test_transition_graph_plan_review_and_invalidation(inputs, tmp_path):
+@pytest.mark.parametrize("goal_type", [GoalType.ROLE_TRANSITION, GoalType.TARGET_CAREER_PATH])
+@pytest.mark.parametrize("title_scope", ["EXACT_TARGET", "RELATED_TITLE"])
+def test_transition_graph_plan_review_and_invalidation(inputs, tmp_path, goal_type, title_scope):
     from ai_career_navigator.config import Settings
     from ai_career_navigator.models.providers import FakeModelProvider
     from ai_career_navigator.ui.live_workflow import build_live_workflow_runtime
@@ -223,9 +265,12 @@ def test_transition_graph_plan_review_and_invalidation(inputs, tmp_path):
         provider_override=FakeModelProvider(),
     )
     gateway = Gateway()
+    profile, goal, evidence = inputs
+    goal = goal.model_copy(update={"goal_type": goal_type, "search_expansion_permission": True})
+    evidence = [item.model_copy(update={"title_classification": title_scope}) for item in evidence]
 
     async def retrieve(goal, _client, **kwargs):
-        return local_retrieval(goal, inputs[2])
+        return local_retrieval(goal, evidence)
 
     def forbidden(*args, **kwargs):
         raise AssertionError("Transition must not run legacy comparison/scoring")
@@ -245,8 +290,8 @@ def test_transition_graph_plan_review_and_invalidation(inputs, tmp_path):
     result = asyncio.run(
         runtime.controller.start(
             thread_id=thread,
-            confirmed_profile=inputs[0],
-            confirmed_goal=inputs[1],
+            confirmed_profile=profile,
+            confirmed_goal=goal,
             capability_inference_requested=False,
         )
     )
@@ -255,8 +300,12 @@ def test_transition_graph_plan_review_and_invalidation(inputs, tmp_path):
     assert result.state["same_role_assessment"] is None
     assert result.state["canonical_target_role_profile"] is None
     assert len(gateway.requests) == 2
+    assert result.state["confirmed_goal"].goal_type == goal_type
+    payload = json.loads(gateway.requests[0]["user_prompt"])
+    assert payload["goal_context"]["goal_type"] == goal_type
     audit = json.loads(next(tmp_path.glob("*.json")).read_text())
     assert audit["mode"] == "CAREER_TRANSITION"
+    assert audit["goal_type"] == goal_type
     plan = result.state["career_plan"]
     with pytest.raises(ValueError):
         asyncio.run(
@@ -328,7 +377,7 @@ def test_transition_review_uses_specific_checks_without_old_bundle_fallback(inpu
 def test_transition_v3_contract_separates_readiness_from_direction_and_safe_practice(inputs):
     gateway = Gateway()
     result = assess_career_transition(*inputs, gateway)
-    assert result.rule_version == "career-transition-assessment-v3-concise-v1"
+    assert result.rule_version == "career-transition-assessment-v4-concise-v2-fit-scope-target-plan"
     for request in gateway.requests:
         for phrase in [
             "TWO DISTINCT CONCLUSIONS",

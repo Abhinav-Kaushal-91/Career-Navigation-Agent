@@ -3,6 +3,27 @@
 from streamlit.testing.v1 import AppTest
 
 
+def test_empty_provider_result_is_distinct_from_validation_exclusions():
+    for count, expected in [
+        (0, "provider returned no postings"),
+        (5, "excluded or could not be normalized"),
+    ]:
+        app = AppTest.from_string(f"""
+from ai_career_navigator.ui.pages.assessment import render_assessment
+from ai_career_navigator.ui.demo_data import MARKET_SNAPSHOT
+from ai_career_navigator.market.schemas import MarketProviderSummary
+render_assessment({{
+    "market_snapshot": MARKET_SNAPSHOT.model_copy(update={{"validated_posting_count": 0}}),
+    "market_provider_summary": MarketProviderSummary(
+        raw_source_count={count}, search_queries=["AI engineer in toronto, canada"]),
+}})
+""").run()
+        assert not app.exception
+        assert any(expected in item.value for item in app.caption)
+        assert any(f"Search returned {count} records" in item.value for item in app.caption)
+        assert "AI engineer in toronto, canada" in [item.value for item in app.text]
+
+
 def test_saved_evidence_tracks_and_audit_render_without_exceptions():
     app = AppTest.from_string("""
 from tests.market.test_evidence_tracks import replay_saved_audit

@@ -297,7 +297,13 @@ def render_live_market(
             st.write(", ".join(view.related_titles) or "No related titles observed.")
 
     with st.expander("Sources and limitations"):
-        if provider:
+        if provider and provider.primary_provider == "JSEARCH":
+            st.write("Job discovery and description details: JSearch")
+            st.caption(
+                f"{provider.primary_search_count} search requests · "
+                f"{provider.enrichment_attempt_count} detail requests"
+            )
+        elif provider:
             st.write(
                 f"Structured discovery: {product_label(provider.primary_provider)} · "
                 f"Parallel web discovery: {product_label(provider.enrichment_provider)}"

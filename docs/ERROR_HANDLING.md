@@ -1,5 +1,20 @@
 # Error Handling
 
+## September 11 — live failure codes and sanitized records
+
+The live launch boundary now distinguishes MARKET_TIMEOUT, MARKET_RATE_LIMIT,
+MARKET_RESPONSE_INVALID, transport/auth/configuration errors and internal validation failures.
+Codes are allowlisted; unknown categories map to INTERNAL_ERROR. The safe code remains visible
+on the recovery and confirmed-goal pages. Details include the last checkpoint stage when available;
+an unexpected exception uses WORKFLOW_EXECUTION rather than asserting an unverified failed stage.
+
+New failed attempts write a small JSON record to ignored outputs/failed-runs and emit a warning
+even when normal INFO logs are disabled. Records contain IDs, UTC timestamp, safe code/stage,
+total attempt elapsed seconds and whether a market snapshot was preserved. No raw exception text,
+stack traces, API headers/keys, profile/goal content, job descriptions or model output are stored.
+Persistence failure is reported without masking the original failure. Retrying clears the current
+displayed diagnostic but does not delete earlier files. No automatic API retry was added.
+
 ## Structured model extraction
 
 An invalid structured response may receive one controlled schema-repair attempt. Repeated invalid

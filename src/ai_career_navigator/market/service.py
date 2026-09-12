@@ -6,6 +6,7 @@ from collections import Counter
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 from time import perf_counter
+from uuid import UUID
 
 from ai_career_navigator.config import Settings
 from ai_career_navigator.domain import (
@@ -612,27 +613,32 @@ def _snapshot(
     sources: list[SourceRecord],
     metrics: _RunMetrics,
     search_date: date,
+    title_classifications: dict[UUID, PostingTitleMatch] | None = None,
 ) -> CurrentMarketSnapshot:
     unique_postings, posting_duplicates = deduplicate_postings(postings)
     metrics.duplicate_count += posting_duplicates
     postings[:] = unique_postings
     employer_counts = _employer_counts(postings)
     location_counts = _location_counts(postings)
-    title_matches = {
-        posting.posting_id: PostingTitleMatch.TARGET_VARIANT
-        if posting.title_match_kind
-        in {
-            "LEXICAL_EQUIVALENCE",
-            "DESCRIPTIVE_SUFFIX_GROUNDED",
-            "TARGET_VARIANT",
-            "DESCRIPTION_SUPPORTED_SPECIALTY",
+    title_matches = (
+        {posting.posting_id: title_classifications[posting.posting_id] for posting in postings}
+        if title_classifications is not None
+        else {
+            posting.posting_id: PostingTitleMatch.TARGET_VARIANT
+            if posting.title_match_kind
+            in {
+                "LEXICAL_EQUIVALENCE",
+                "DESCRIPTIVE_SUFFIX_GROUNDED",
+                "TARGET_VARIANT",
+                "DESCRIPTION_SUPPORTED_SPECIALTY",
+            }
+            else assess_title(
+                posting.original_title,
+                plan.search_title or "",
+            )
+            for posting in postings
         }
-        else assess_title(
-            posting.original_title,
-            plan.search_title or "",
-        )
-        for posting in postings
-    }
+    )
     exact = [
         posting
         for posting in postings

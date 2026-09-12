@@ -134,6 +134,8 @@ class WorkflowRuntimeContext:
     capability_inference_service: CapabilityInferenceService = infer_capabilities
     market_retrieval_service: MarketRetrievalService = retrieve_current_market
     market_processing_service: MarketProcessingService = analyze_market_requirements
+    # Explicit historical replay only; production never falls back on assessment failure.
+    legacy_target_plan_pipeline: bool = False
     candidate_comparison_service: CandidateComparisonService = compare_candidate_to_requirements
     gap_analysis_service: GapAnalysisService = assess_candidate_accessibility
     career_synthesis_service: CareerSynthesisService = synthesize_career_assessment
@@ -152,9 +154,14 @@ class WorkflowRuntimeContext:
         """Select providers inside the service boundary, never inside graph nodes."""
 
         if self.structured_market_client_factory is not None:
+            client = self.structured_market_client_factory()
+            if getattr(client, "provider", None) == "JSEARCH":
+                from ai_career_navigator.market.jsearch_service import retrieve_jsearch_market
+
+                return await retrieve_jsearch_market(goal, client, limits=limits, now=now)
             return await retrieve_combined_market(
                 goal,
-                self.structured_market_client_factory(),
+                client,
                 enrichment_client=self.market_client_factory(),
                 limits=limits,
                 now=now,

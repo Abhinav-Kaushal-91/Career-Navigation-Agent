@@ -1,5 +1,74 @@
 # Decisions
 
+## September 12 — target-role planning uses the consolidated assessment route
+
+The actual portal target-plan case retained eight related postings but the legacy selector admitted
+none. The successful transition test did not cover that goal route. Use the existing consolidated
+assessment for TARGET_CAREER_PATH as well as ROLE_TRANSITION, retaining the user's goal enum and
+preferences in model input and audit. Do not relabel related postings as exact to bypass selection.
+Related inputs require the user's expansion permission. Goal-less exploration and other directions
+retain their existing routes. Historical per-posting target-plan replays require an explicit
+runtime-only legacy_target_plan_pipeline injection, default false; no silent live fallback.
+
+## September 11 — separate JSearch response latency from detail latency
+
+Observed real market-retrieval timeouts at 30.259s/30.425s. Give search a configurable 90s
+read allowance while bounding connection setup and total time. Do not apply this increase to
+every detail/model request or add billable automatic retries. This addresses premature search
+timeout risk without weakening evidence checks; persistent provider failures still stop safely.
+
+## September 11 — diagnostic visibility without relaxed analysis rules
+
+User approved exposing the safe error code and recording failed attempts. Add a small
+allowlisted local diagnostic artifact instead of logging exception payloads or full traces.
+Keep failures distinguishable from candidate gaps; preserve profiles and available market
+snapshots. Diagnostic writes are best-effort and must not replace the original failure.
+This does not alter retrieval/assessment thresholds, credentials or retry quotas.
+
+## September 11 — use the JSearch response contract at the retrieval boundary
+
+Normalize the supplied structured fields directly instead of treating JSearch as a generic
+web-page scraper. Use full descriptions when present; bounded exact-ID details for missing,
+truncated or highlights-only content; labelled job highlights as limited fallback. Do not turn
+salary/benefits/provider metadata into skills. Optional nulls are not rejection conditions.
+Keep all application options as one job, preserve raw/failed/deferred counts, and record routes
+without following cursor pagination. This is an adapter/routing change, not a relaxation of
+source grounding or a new career-fit policy. Existing full-stack relevance remains a separate issue.
+
+## September 11 — separate bounded candidate fit from market prevalence
+
+User approved removal of the multiple-employer COMMON-label prerequisite for a positive
+fit assessment. COMMON remains wire-compatible but now means central work in supplied roles;
+SPECIALIST means narrow platform/domain/direction, not low employer count. Same-role and
+transition prompts align on this definition. One substantive role can support limited fit,
+not market-wide demand or universal requirements. Model interpretation still evaluates core
+work, ownership, scope and unresolved barriers; demonstrated evidence is still required for
+positive verdicts. No profession-specific rules or automatic verdict upgrades were added.
+
+Processing failures now withhold accessibility (null) in saved assessments rather than assigning
+INSUFFICIENT_CANDIDATE_EVIDENCE. Explicit model judgments about genuinely insufficient inputs
+remain available. Plans remain blocked on validation issues or absent verdicts. The model reply
+schema still requires a verdict; nullable storage represents validation failure only. Historical
+records are not rewritten; UI presents any processing issue as Assessment needs review.
+
+## September 11 — discovery audit versus eligible target-market cohort
+
+Preserve every normalized JSearch discovery in retrieval audits, including exclusions.
+Only EXACT_TARGET, TARGET_VARIANT and RELATED_TITLE classifications enter target-market
+postings and model-bound content. Do not relabel unrelated jobs to satisfy snapshot counts or
+weaken the count invariant. Build JSearch summary buckets from the same validated classification
+used for selection, without a second title-only classification. This fixes accounting; it does
+not settle whether particular Java/full-stack descriptions are semantically relevant.
+
+## September 11 — user-directed JSearch replacement
+
+Replace both active market providers with RapidAPI JSearch. Old adapters/schemas remain readable
+for historical artifacts but are never fallback calls on the JSearch route. Use fixed RapidAPI
+host with header authentication, one bounded search, details only for absent/visibly truncated
+descriptions, at most five details, no automatic retries. Keep provider-returned descriptions
+without pretending length establishes completeness. Preserve candidate/model rules and top-five
+selection. Setup is not a paid-plan authorization or live success claim. Credentials stay local.
+
 ## September 11 — separate public review wording from internal evidence
 
 User approved the cleaner combined Analysis presentation and requested code/prompt alignment

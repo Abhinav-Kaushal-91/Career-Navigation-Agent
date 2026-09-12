@@ -16,6 +16,30 @@ from ai_career_navigator.market.requirement_prompts import PROMPT_VERSION as EXT
 from .state import CareerGraphState
 
 
+def _retrieval_summary(state):
+    summary = state.get("market_provider_summary")
+    return summary.model_dump(mode="json") if summary else None
+
+
+def persist_retrieval_audit(state, *, directory: Path) -> Path:
+    """Preserve retrieval decisions before assessment, including empty/failed model runs."""
+    directory = directory / "retrieval"
+    directory.mkdir(parents=True, exist_ok=True)
+    destination = directory / f"{UUID(str(state['run_id']))}.json"
+    payload = {
+        "run_id": str(state["run_id"]),
+        "stage": "BEFORE_ASSESSMENT",
+        "retrieval_summary": _retrieval_summary(state),
+        "retrieval_postings": [
+            item.model_dump(mode="json") for item in state.get("market_posting_audits", [])
+        ],
+    }
+    temporary = destination.with_suffix(".tmp")
+    temporary.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    temporary.replace(destination)
+    return destination
+
+
 def persist_same_role_audit(state, assessment, plan, *, directory: Path) -> Path:
     """Keep cited excerpts and final interpretation, never full JDs or reasoning traces."""
     directory.mkdir(parents=True, exist_ok=True)
@@ -26,8 +50,13 @@ def persist_same_role_audit(state, assessment, plan, *, directory: Path) -> Path
         "mode": "CAREER_TRANSITION"
         if assessment.rule_version.startswith("career-transition-")
         else "SAME_ROLE",
+        "goal_type": getattr(state.get("confirmed_goal"), "goal_type", None),
         "assessment": assessment.model_dump(mode="json"),
         "plan": plan.model_dump(mode="json") if plan else None,
+        "retrieval_summary": _retrieval_summary(state),
+        "retrieval_postings": [
+            item.model_dump(mode="json") for item in state.get("market_posting_audits", [])
+        ],
     }
     temporary.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     temporary.replace(destination)
@@ -128,6 +157,10 @@ def persist_run_audit(
             ),
             "selected_for_primary_evidence": audit.selected_for_primary_evidence,
             "rejection_reason": audit.rejection_reason,
+            "routing_decision": audit.routing_decision,
+            "routing_notes": audit.routing_notes,
+            "enrichment_status": audit.enrichment_status,
+            "enrichment_observation": audit.enrichment_observation,
         }
         for audit in state.get("market_posting_audits", [])
     ]
@@ -180,6 +213,7 @@ def persist_run_audit(
         "target_role": getattr(canonical_profile, "target_role", None),
         "postings": postings,
         "retrieval_postings": retrieval_postings,
+        "retrieval_summary": _retrieval_summary(state),
         "canonical_requirements": [
             {
                 "canonical_requirement_id": str(item.canonical_requirement_id),

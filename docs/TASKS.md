@@ -1,5 +1,67 @@
 # Tasks
 
+- [x] Run publication checks: 895 tests passed; isolate the one case-matrix failure on the
+  previous published commit as well, and document the obsolete mock response contracts.
+- [ ] Update run_goal_case_matrix mock responses for consolidated assessment and current
+  comparison/synthesis schemas; preserve meaningful per-case assertions rather than lowering counts.
+
+- [x] Diagnose the actual 8533 TARGET_CAREER_PATH session: 8 retained RELATED_TITLE postings
+  were discarded by the old exact/variant-only batch selector; backend had tested a different goal.
+- [x] Wire target-role planning to consolidated assessment with original goal and scope preserved.
+- [x] Verify one live website retry using the existing 29-item profile: five reviewed descriptions,
+  14 competencies, six draft actions; manually traverse Analysis → Plan → Analysis without approval.
+- [x] Add route, all-related selection, expansion-permission and exact-version approval regressions;
+  isolate explicit historical per-posting replay tests from the production route.
+
+- [x] Separate empty eligible descriptions from model failure for same-role/transition flows;
+  preserve retrieval limitations and audit before assessment; show returned/retained counts.
+- [x] Run live synthetic Java-to-AI Engineer backend workflow: 7 retained, 5 reviewed,
+  assessment + plan, 178.48s, no processing issues; replay both production page renderers.
+- [x] Verify 661 regression tests, including empty/filtered inputs and missing transient content.
+- [ ] Identify original zero-result provider response if repeated; its old routes were not saved.
+- [ ] Review AI role cohort seniority/title alignment (co-op and lead context); successful model
+  execution alone is not evidence of perfectly calibrated recommendations.
+
+- [x] Confirm two real 30-second JSearch timeouts and separate search/read allowance (90s)
+  from detail requests (30s), with 10s connection and 100s total search deadlines, no retries.
+- [x] Verify live search connectivity after timeout change: 4 jobs, no malformed records.
+- [ ] Monitor real delayed responses; increasing the budget does not guarantee provider uptime.
+
+- [x] Execute actual live confirmed-demo-to-plan workflow and render its actual saved result
+  through the production Market and Plan routes: success, 135.81s, no processing/UI exceptions.
+- [ ] Identify the earlier unrecorded generic-banner failure if it recurs; fresh live run
+  did not reproduce it. Do not infer its cause from the successful result.
+
+- [x] Expose safe live failure codes and persist sanitized failed-run diagnostics, with tests
+  for timeout/quota/response errors, initialization/unexpected errors, safe persistence failure,
+  no exception-payload leakage and goal-page visibility.
+- [ ] Capture the next manually triggered live attempt's actual failure code, if it fails;
+  the earlier generic banner alone still does not establish its cause.
+
+- [x] Make JSearch normalization/routing follow supplied Search V2 JSON, preserve optional
+  metadata separately, add limited highlights fallback and full-ID details, and audit outcomes.
+- [x] Replay supplied four-posting response offline: all descriptions normalized; existing
+  relevance classifier still excludes both full-stack roles. No fresh live/model call in this pass.
+- [x] Validate schema-routing changes: 598 market/orchestration/UI/config tests passed;
+  changed-file lint and diff checks passed. Current manual session was not restarted.
+
+- [x] Separate candidate fit from employer-count/COMMON gating, align same-role and transition
+  prompts, and show processing failures as Assessment needs review with no accessibility verdict.
+- [ ] Validate concise-v2-fit-scope with a fresh live model run; do not relabel old saved outcomes.
+
+- [x] Fix mixed JSearch cohort count failure; preserve excluded discoveries in audits and
+  reuse validated classifications in snapshot counters. 587 focused tests and saved-response replay pass.
+- [ ] Review Java-adjacent full-stack relevance (PeoplePilot/Resonaite currently IRRELEVANT);
+  keep separate from the count-invariant fix. Latest live retrieval check timed out.
+
+- [x] Align app search parameters to the successful playground-equivalent backend probe;
+  add exact Toronto request regression and restart local manual instance on port 8532.
+
+- [x] Implement JSearch-only active retrieval with no Adzuna/You fallback; 583 focused tests pass.
+- [x] Save RapidAPI key locally and verify authenticated JSearch access; removed empty duplicate key entry.
+- [x] Run one real JSearch search/description check: two records, zero invalid, 65/478 description words.
+- [ ] Validate Job Details and the complete JSearch-to-analysis workflow; current live check covers search only.
+
 - [x] Run full offline validation before the requested GitHub snapshot: 1071 passed, 8 failed.
 - [ ] Repair/migrate older V1 replay and goal-case-matrix mocks/evaluation for the current
   assessment paths; seven replay failures and one matrix failure remain. Do not relax assertions.

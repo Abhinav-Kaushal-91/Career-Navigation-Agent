@@ -16,8 +16,9 @@ def test_settings_defaults() -> None:
     assert settings.adzuna_app_id is None
     assert settings.adzuna_app_key is None
     assert settings.adzuna_base_url == "https://api.adzuna.com/v1/api"
-    assert settings.market_primary_provider == "adzuna"
-    assert settings.market_enrichment_provider == "you"
+    assert settings.market_primary_provider == "jsearch"
+    assert settings.market_enrichment_provider == "none"
+    assert settings.rapidapi_key is None
     assert settings.market_timeout_seconds == 30
     assert settings.market_max_search_queries == 3
     assert settings.market_max_expansion_queries == 3
