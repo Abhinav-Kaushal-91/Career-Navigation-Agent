@@ -1,5 +1,65 @@
 # Decisions
 
+## September 12 — common writing style, separate career judgments
+
+All goal categories share public-copy guidance and compact rendering, not a common positive
+verdict or leadership roadmap. Preserve current routing and target requirements (including the
+existing V1 need for a specified target before live retrieval); do not invent a destination for
+exploration or a historical comparison for reassessment. Shared instructions attach to both the
+consolidated author/review contracts and the optional legacy synthesis/plan wording contracts.
+Model-owned conclusions and deterministic policy fields retain their existing authorities.
+Hide unrelated display context without deleting evidence, prerequisites, material conditions,
+source references or original statuses. New instructions apply on rerun, never by regenerating
+or silently rewriting an approved plan during presentation.
+
+## September 12 — career guidance copy and a positive application condition
+
+Leadership copy separates credible direction from current readiness. Keep non-target records in
+the audit and show concise core comparisons, strengths and grouped questions. No universal example
+verdict, management checklist or hard-coded role names. Model author remains at temperature 0.1.
+Resolving unknown experience can reveal a shortfall, so code attaches a favourable readiness and
+employer-requirements gate plus defer/reassess branch to APPLY actions before constructing the
+versioned plan. Completion records a role-by-role apply-or-defer decision rather than forcing an
+application. Structured after_clarifying links remain auditable; public conditional development
+copy no longer repeats the full competency list. Mentoring/workstream leadership must not imply
+formal management, and incident support must not become ownership in strengths or plan prose.
+
+## September 12 — explicit leadership decisions instead of more prose caveats
+
+Use a shorter dedicated leadership contract on the existing consolidated route. Establish posting
+benchmark scope before target competencies. Encode evidence state separately from partial or
+transferable match status, so an unknown remainder is not a confirmed shortfall. Check structured
+contradictions and action dependencies; retain source aliases internally. Exact candidate excerpts
+support claimed shortfalls but still require semantic review. No profession-specific verdicts.
+
+Generate public readiness from its validated field. Attach explicit development conditions in
+code to both plan fields, with storage bounds preserving full text. Optional repeated focus prose
+must not block valid typed clarification. Legacy routes retain their contracts. Invalid substantive
+output gets bounded repair and withholds a plan if unresolved. Assessment/plan authors use 0.1;
+repairs/reviewers use 0.0. Temperature changes variability, not factuality. Retrieval is unchanged.
+
+## September 12 — target-led leadership progression on the consolidated route
+
+LEADERSHIP_PROGRESSION with a specified target now shares the consolidated five-description
+assessment/review/plan mechanics, without changing the user's goal enum. The target defines
+discipline, requested level and roadmap destination; the current role supplies candidate evidence,
+not a replacement search title. No universal management checklist or forced bridge role.
+
+JSearch remains the only discovery provider. Search uses target title (plus explicitly requested
+seniority) and location, country=canada, language=en, date_posted=all, num_pages=1; no cursor,
+fields projection or invented seniority/work-mode API filters. Existing location/currentness,
+deduplication and bounded missing-description detail checks remain. Leadership batch selection
+prioritizes target/variant relevance, target-domain support and level alignment before text length;
+the independent-employer pass and five-description cap remain. Missing domain wording is a
+lower selection priority, not automatic exclusion; actual duties may establish relevance.
+Different disciplines and director-level scope must remain context, not target-baseline gaps.
+
+Leadership interpretation preserves technical delivery/mentoring strengths without inventing
+formal reports, hiring or performance authority. Unreported scope is CLARIFY, including partial
+matches; development after an unknown must be conditional on absence. Roadmap actions and
+completion checks should resolve uncertainty before building authorized leadership experience.
+No fixed timeline remains a valid preference; approvals still reference the exact plan version.
+
 ## September 12 — target-role planning uses the consolidated assessment route
 
 The actual portal target-plan case retained eight related postings but the legacy selector admitted

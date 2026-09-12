@@ -533,7 +533,7 @@ def test_live_market_and_analysis_render_real_state_metrics() -> None:
         for collection in (market.markdown, market.caption, market.subheader, market.info)
         for item in collection
     )
-    assert "Competency match" in market_text
+    assert "How you compare" in market_text
     assert "15 retained postings · 4 analyzed" in market_text
     assert "Related roles do not define the baseline" in market_text
     assert "Next step" in market_text

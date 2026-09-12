@@ -1,5 +1,40 @@
 # UI Design System
 
+## September 12 — shared plain-language copy across all six directions
+
+Extend the concise leadership presentation language to all assessment/plan routes, not its
+leadership verdict or competency list. Use goal-specific direction captions, short complete
+explanations, explained strengths, How you compare, What to develop/What needs attention, and
+Questions before deciding. Consolidated views use Competency / Your position; preserve partial,
+transferable and unconfirmed statuses. Omit unrelated context from the main table, but retain
+prerequisites and assessed development needs. Full original comparisons stay in Run details.
+Legacy canonical views keep optionality/eligibility in the competency label and their full context
+table in details. Never cut an assessment sentence to conceal a condition. Clarification fallback
+must remain visible when an older result has CLARIFY findings but no questions array.
+
+Same style is not identical advice: current-market, transition, target-plan, leadership, exploration
+and reassessment retain their goal type and existing routing. No hard-coded number of strengths,
+gaps or actions. Do not turn exploration into a mandatory destination, or invent historical change
+for reassessment. No leadership heading for a non-leadership result. Preserved/saved plans retain
+their exact text/version; only new model runs receive new writing instructions.
+
+## September 12 — plain-language leadership assessment and plan
+
+For leadership, show "A credible leadership direction" only for a validated NEAR_TERM_TARGET
+with UNCONFIRMED readiness; keep processing-failure and other accessibility states distinct.
+This is a direction label, not a positive application decision or duration estimate.
+Use a short core-role overview, strength names with one concise explanation, and a two-column
+Competency / Your position table containing TARGET records only. UNKNOWN is "Unconfirmed";
+confirmed shortfalls are "Needs development". Preserve original statuses and non-target records
+in Run details, not in the primary comparison table. Do not repeat unknowns as gap paragraphs.
+Show confirmed development needs separately, followed by up to three grouped direct questions
+from new model runs. Never slice historical questions and silently discard important conditions.
+
+Plan uses "Your leadership plan", the same direction/readiness heading, one ordered action list,
+one observable completion per step, confidence and no-fixed-timeline semantics. Application gates
+are attached before plan creation, not substituted during rendering; approved/historical plans
+are never rewritten by UI refresh. Keep exact-version approval and session-only saving notice.
+
 ## September 11 — distinguish empty discovery from excluded results
 
 When no postings are retained, distinguish a provider returning zero from returned records

@@ -141,7 +141,7 @@ def test_fake_graph_interrupt_checkpoint_resume_reaches_market_ready(
     assert audit["pipeline_version"] == "grounded-evidence-tracks-v1"
     assert audit["prompt_versions"]["extraction"] == "market-requirements-v7"
     assert audit["prompt_versions"]["comparison"] == "candidate-comparison-v9"
-    assert audit["prompt_versions"]["synthesis"] == "career-assessment-synthesis-v6-concise-v1"
+    assert audit["prompt_versions"]["synthesis"] == "career-assessment-synthesis-v6-concise-v2"
 
 
 def test_graph_stops_before_analysis_and_plan_when_target_profile_is_insufficient(

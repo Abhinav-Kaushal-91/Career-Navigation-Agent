@@ -18,7 +18,7 @@ def test_public_style_is_attached_to_both_assessment_contracts():
     for contract in (same_role, transition_prompts):
         assert CONCISE_REVIEW_STYLE in contract.SYSTEM_PROMPT
         assert CONCISE_REVIEW_CHECK in contract.REVIEW_INSTRUCTIONS
-        assert "-concise-v2-fit-scope" in contract.RULE_VERSION
+        assert "-concise-v3-fit-scope" in contract.RULE_VERSION
     assert "never in public names or explanatory text" in synthesis_prompts.SYSTEM_PROMPT
     assert "Do not add inline source IDs" in plan_prompts.SYSTEM_PROMPT
 

@@ -1,5 +1,57 @@
 # Tasks
 
+- [x] Prepare the current code checkpoint for GitHub before goal-choice changes;
+  retain all six existing choices and exclude local credentials/generated outputs.
+- [ ] Merge career-transition and target-role choices after the checkpoint, when resumed.
+
+- [x] Verify the full local app on port 8533 is healthy and return its manual-run
+  link; preserve existing sessions and distinguish the port 8534 preview.
+
+- [x] Extend concise, role-neutral wording and review guidance to all assessment/plan contracts
+  used by the six goal categories, without changing goal routing or copying the leadership verdict.
+- [x] Align consolidated and legacy presentation: core comparison, concise explained strengths,
+  preserved partial/unknown statuses, one clarification block and retained audit context.
+- [x] Test all six direction captions and assessment/plan renderers; 912 career/UI/workflow/
+  market/config tests passed. New full live six-category semantic evaluation remains unperformed.
+
+- [x] Restart and run leadership through the actual website, including live strength review,
+  goal confirmation, JSearch/DeepSeek, assessment and plan: five descriptions, 11 competencies,
+  five actions, no processing issues; leave unapproved draft open for manual inspection.
+- [x] Tighten conditional APPLY semantics: answering management questions is not itself a
+  positive readiness finding; preserve reassess/defer when clarification confirms a shortfall.
+- [x] Review leadership output wording: supervised workstream/coaching does not prove formal
+  people management; move non-target context out of primary competency rows and reduce repetition.
+- [x] Implement plain-language leadership direction, core comparison table, explained strengths
+  and grouped questions; preserve real shortfalls, audit details and exact-version approval.
+- [x] Regress safe application/defer conditions in generated plans; 432 career/UI/workflow tests pass.
+- [x] Live-test final leadership copy and inspect production page renderers in a labelled preview:
+  144.70 seconds, two model calls, three questions, four actions; original app session preserved.
+- [ ] Resolve model over-credit of grouped cloud/microservices capability from generic REST/AWS
+  delivery evidence, and repeated conditional prose; preserve concise-v3-final as the regression.
+
+- [x] Implement structured benchmark, evidence-state, readiness and conditional-action checks
+  for leadership with a shorter dedicated prompt; preserve source and approval integrity.
+- [x] Set assessment/plan authors to 0.1; preserve 0.0 extraction, repair and final validation.
+- [x] Replay five saved descriptions through live DeepSeek/production graph: 131.86s, 2 calls,
+  9 comparisons, 4 actions, UNCONFIRMED readiness, no processing issues.
+- [x] Remove redundant prose-only failure; regress unknown/shortfall contradictions, context
+  leakage, action ordering and persistence of conditions into the plan.
+- [ ] Expand semantic evaluation beyond this case and recheck bridge-route wording; successful
+  structured validation does not prove every free-text interpretation correct.
+
+- [x] Test live LEADERSHIP_PROGRESSION with the Java demo profile: 6 returned, 5 retained,
+  0 selected, 0 model calls, no plan, 18.34 seconds. Save the failed-run result.
+- [x] Correct leadership routing while preserving leadership-specific ownership/scope semantics;
+  address Engineering Manager discipline ambiguity before treating all retained roles as suitable.
+- [x] Live-test Software Engineering Manager leadership target: 5 descriptions, 12 comparisons,
+  5 plan actions, 157 seconds; preserve the result and action-reference repair trace.
+- [x] Add generic destination-query, discipline/level selection and leadership graph regressions.
+- [x] Verify corrected unknown-management wording with saved retrieval and live DeepSeek review:
+  70.35s, 2 calls, 13 comparisons, 5 actions, no validation issues; first action verifies history.
+- [x] Leadership interpretation follow-up: unconfirmed experience still becomes "not yet ready"
+  and some partial/unknown scope produces unconditional development/completion checks. Preserve
+  raw replay as a semantic regression; addressed with typed readiness/conditional-action checks.
+
 - [x] Run publication checks: 895 tests passed; isolate the one case-matrix failure on the
   previous published commit as well, and document the obsolete mock response contracts.
 - [ ] Update run_goal_case_matrix mock responses for consolidated assessment and current

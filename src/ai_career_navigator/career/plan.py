@@ -230,8 +230,8 @@ def _path_milestones(
                     "your confirmed evidence; check each employer's remaining conditions."
                 ),
                 measurable_outcome=(
-                    "For each selected posting, required and preferred expectations are mapped "
-                    "to confirmed examples; unresolved employer conditions are listed explicitly."
+                    "For each selected posting, confirmed examples and unresolved employer "
+                    "conditions support an apply-or-defer decision."
                 ),
                 evidence_to_create=[
                     "Posting-specific requirement-to-evidence table with source links, "
@@ -492,7 +492,7 @@ def _apply_model_wording(
         validation_context={"plan_skeleton": json.loads(build_plan_prompt(plan))},
         system_prompt=SYSTEM_PROMPT,
         user_prompt=build_plan_prompt(plan),
-        temperature=0,
+        temperature=0.1,
         max_tokens=2400,
         metadata={"task_type": "career_plan_wording", "prompt_version": PROMPT_VERSION},
     )

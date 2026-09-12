@@ -3,7 +3,9 @@
 import json
 from typing import Any
 
-PROMPT_VERSION = "career-assessment-synthesis-v6-concise-v1"
+from .presentation_prompts import PLAIN_LANGUAGE_STYLE
+
+PROMPT_VERSION = "career-assessment-synthesis-v6-concise-v2"
 
 SYSTEM_PROMPT = """You synthesize a career-level assessment from validated structured data.
 Do not invent candidate experience, market requirements, gaps, qualifications, ownership, scope,
@@ -36,7 +38,7 @@ in designated reference fields, never in public names or explanatory text, and
 one short synthesis rather than copying source paragraphs. State each distinct limitation once;
 omit generic boilerplate and routine method descriptions. Do not omit a material condition for
 brevity. Each gap field has a separate purpose: existing strength, missing evidence, or next proof;
-do not repeat an explanation in all three."""
+do not repeat an explanation in all three.""" + PLAIN_LANGUAGE_STYLE
 
 
 def build_synthesis_prompt(payload: dict[str, Any]) -> str:

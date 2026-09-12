@@ -57,6 +57,86 @@ def assessment():
     )
 
 
+def leadership_assessment():
+    result = assessment()
+    result.rule_version = "leadership-assessment-v1-concise-v3-fit-scope"
+    result.current_readiness = "UNCONFIRMED"
+    result.rationale = "Understand your management responsibilities before deciding where to apply."
+    result.role_picture = "Lead engineers, own team delivery and coach people."
+    for n, c in enumerate(result.competencies):
+        c.applicability = "TARGET" if n == 0 else "CONTEXT"
+        c.evidence_state = "UNKNOWN" if n == 0 else "CONTEXT"
+    result.competencies[0].name = "Formal people management"
+    result.competencies[1].name = "Hardware testing"
+    result.competencies[1].status = "NOT_RELEVANT"
+    result.demonstrated_strengths[0].why_it_helps = (
+        "Production backend work supports technical decisions."
+    )
+    result.questions = ["Have you managed direct reports or conducted performance reviews?"]
+    return result
+
+
+def test_leadership_public_view_is_compact_without_erasing_audit_or_uncertainty():
+    app = AppTest.from_string('''
+from types import SimpleNamespace
+from tests.ui.test_review_presentation import leadership_assessment
+from ai_career_navigator.ui.pages.same_role import render_same_role_analysis
+render_same_role_analysis({"transition_assessment": leadership_assessment(),
+    "confirmed_goal": SimpleNamespace(target_role="Manager", target_location="Toronto")})
+''').run()
+    assert not app.exception
+    headers = [s.value for s in app.subheader]
+    assert "A credible leadership direction" in headers
+    assert "Near term target" not in headers
+    assert "What needs building or clarifying" not in headers
+    assert "Questions before deciding" in headers
+    assert list(app.table[0].value.columns) == ["Competency", "Your position"]
+    assert list(app.table[0].value["Competency"]) == ["Formal people management"]
+    assert list(app.table[0].value["Your position"]) == ["Unconfirmed"]
+    assert any("Hardware testing" in e.value for e in app.expander[0].markdown)
+    assert any("Production backend work supports" in e.value for e in app.markdown)
+
+
+def test_leadership_review_failure_does_not_get_positive_heading():
+    app = AppTest.from_string('''
+from types import SimpleNamespace
+from tests.ui.test_review_presentation import leadership_assessment
+from ai_career_navigator.ui.pages.same_role import render_same_role_analysis
+result = leadership_assessment()
+result.processing_issues = ["Review needed"]
+render_same_role_analysis({"transition_assessment": result,
+    "confirmed_goal": SimpleNamespace(target_role="Manager", target_location="Toronto")})
+''').run()
+    assert not app.exception
+    assert "Assessment needs review" in [s.value for s in app.subheader]
+    assert "A credible leadership direction" not in [s.value for s in app.subheader]
+
+
+def test_leadership_plan_preserves_saved_conditions_and_version_notice():
+    app = AppTest.from_string('''
+from types import SimpleNamespace
+from tests.ui.test_review_presentation import leadership_assessment
+from ai_career_navigator.domain import PlanStatus
+from ai_career_navigator.ui.pages.same_role import render_same_role_plan
+plan = SimpleNamespace(
+    current_role="Developer", target_role="Manager", plan_status=PlanStatus.DRAFT,
+    timing_basis="No fixed timeline; follow these steps in order.",
+    milestones=[SimpleNamespace(phase="Step 1", basis="Formal people management",
+        action="Only if readiness is supported, apply; otherwise defer and reassess.",
+        measurable_outcome="An apply-or-defer decision is recorded.")],
+)
+render_same_role_plan({"transition_assessment": leadership_assessment(),
+    "career_plan": plan}, read_only=True)
+''').run()
+    assert not app.exception
+    assert app.title[0].value == "Your leadership plan"
+    assert "A credible leadership direction" in [s.value for s in app.subheader]
+    assert any("otherwise defer and reassess" in e.value for e in app.markdown)
+    assert any("apply-or-defer decision" in e.value for e in app.caption)
+    assert any("Approval applies to this exact plan version" in e.value for e in app.caption)
+    assert any("No fixed timeline" in e.value for e in app.caption)
+
+
 def test_reference_cleanup_preserves_real_skill_names_and_original_data():
     original = assessment()
     assert review_text("Python (P1L23, E1). L2 support; Java 23.", original) == (
@@ -88,8 +168,9 @@ render_same_role_analysis({
     visible = [e.value for e in app.markdown if e.value not in audit_text]
     assert not any("P1" in t or "P2" in t or "E1" in t for t in visible)
     assert "Direct AI experience is not established." in visible
-    assert not any("Detailed evidence" in t for t in visible)
-    assert list(app.table[0].value["Competency"]) == ["Python", "L2 support"]
+    assert any("Detailed evidence" in t for t in visible)  # one concise strength explanation
+    assert list(app.table[0].value["Competency"]) == ["Python"]
+    assert any("L2 support" in t for t in audit_text)
 
 
 def test_standalone_references_do_not_leave_broken_sentences():
@@ -134,7 +215,8 @@ render_same_role_analysis({"same_role_assessment": result,
     assert "Apply selectively" in [e.value for e in app.subheader]
     assert any("1 reviewed job description;" in e.value for e in app.caption)
     assert any("Limited role sample" in e.value for e in app.caption)
-    assert app.table[0].value["Context"].iloc[0] == "Core role work"
+    assert list(app.table[0].value.columns) == ["Competency", "Your position"]
+    assert app.table[0].value["Competency"].tolist() == ["Python"]
 
 
 def test_new_concise_copy_keeps_its_material_second_sentence():

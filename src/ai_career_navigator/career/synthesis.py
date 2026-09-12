@@ -1141,7 +1141,7 @@ def synthesize_career_assessment(
                 output_schema=CareerSynthesisDraft,
                 system_prompt=SYSTEM_PROMPT,
                 user_prompt=build_synthesis_prompt(_payload(profile, role, analysis)),
-                temperature=0,
+                temperature=0.1,
                 max_tokens=3200,
                 metadata={
                     "task_type": "career_assessment_synthesis",

@@ -8,10 +8,64 @@ import streamlit as st
 from ai_career_navigator.domain import PlanStatus
 from ai_career_navigator.ui.components.approval import render_plan_review_actions
 from ai_career_navigator.ui.components.navigation import go_to, surface_graph_workflow_state
+from ai_career_navigator.ui.direction_copy import direction_caption
 
 
 def label(value):
     return str(value).replace("_", " ").capitalize()
+
+
+def is_leadership(assessment):
+    return assessment.rule_version.startswith("leadership-")
+
+
+def assessment_heading(assessment):
+    if (
+        is_leadership(assessment)
+        and getattr(assessment, "current_readiness", None) == "UNCONFIRMED"
+        and assessment.accessibility == "NEAR_TERM_TARGET"
+    ):
+        return "A credible leadership direction"
+    return label(assessment.accessibility)
+
+
+def leadership_rows(assessment):
+    """Present existing evidence states; keep non-target records intact in Run details."""
+    return [
+        {
+            "Competency": review_text(c.name, assessment),
+            "Your position": (
+                "Unconfirmed" if c.evidence_state == "UNKNOWN"
+                else "Needs development" if c.evidence_state == "CONFIRMED_SHORTFALL"
+                else label(c.status)
+            ),
+        }
+        for c in assessment.competencies
+        if c.applicability == "TARGET"
+    ]
+
+
+def main_competencies(assessment):
+    if is_leadership(assessment):
+        return [c for c in assessment.competencies if c.applicability == "TARGET"]
+    return [
+        c for c in assessment.competencies
+        if c.status != "NOT_RELEVANT" and (
+            c.context == "COMMON" or getattr(c, "expectation", None) == "PREREQUISITE"
+            or getattr(c, "remaining_need", None) in {"LEARN", "BUILD_EXPERIENCE"}
+        )
+    ]
+
+
+def comparison_rows(assessment):
+    if is_leadership(assessment):
+        return leadership_rows(assessment)
+    return [
+        {"Competency": review_text(c.name, assessment), "Your position": (
+            "Unconfirmed" if c.status == "NOT_ESTABLISHED" else label(c.status)
+        )}
+        for c in main_competencies(assessment)
+    ]
 
 
 def review_text(value, assessment):
@@ -68,8 +122,11 @@ def render_role_overview(assessment):
 
 def render_same_role_analysis(state):
     assessment = state.get("transition_assessment") or state["same_role_assessment"]
+    leadership = is_leadership(assessment)
     goal = state["confirmed_goal"]
     st.caption(f"{goal.target_role} · {goal.target_location}")
+    if direction_caption(goal):
+        st.caption(direction_caption(goal))
     sample_size = len(assessment.posting_sources)
     st.caption(
         f"Based on {sample_size} reviewed job description{'s' if sample_size != 1 else ''}; "
@@ -79,7 +136,7 @@ def render_same_role_analysis(state):
         st.caption("Limited role sample: this comparison applies to the reviewed role only.")
     with st.container(border=True):
         needs_review = bool(assessment.processing_issues) or assessment.accessibility is None
-        st.subheader("Assessment needs review" if needs_review else label(assessment.accessibility))
+        st.subheader("Assessment needs review" if needs_review else assessment_heading(assessment))
         # Keep the readiness conclusion up front; the full explanation stays in the audit.
         conclusion = assessment.rationale
         if "-concise-" not in assessment.rule_version:
@@ -95,35 +152,45 @@ def render_same_role_analysis(state):
     render_role_overview(assessment)
     strengths = getattr(assessment, "demonstrated_strengths", [])
     if strengths:
-        st.subheader("Strengths you bring to this transition")
+        st.subheader("Strengths you bring")
         for strength in strengths:
-            st.write(f"- {review_text(strength.name, assessment)}")
-    st.subheader("Competency match")
-    st.caption(
-        "Not established means unconfirmed—not inability. Specialist asks are not universal."
-    )
-    st.table(
-        [
-            {
-                "Competency": review_text(c.name, assessment),
-                "Context": "Core role work"
-                if c.context == "COMMON" and "fit-scope" in assessment.rule_version
-                else label(c.context),
-                "You": label(c.status),
-                **({"Next need": label(c.remaining_need)} if hasattr(c, "remaining_need") else {}),
-            }
-            for c in assessment.competencies
-        ]
-    )
-    development = [c for c in assessment.competencies if getattr(c, "development_focus", None)]
+            name = review_text(strength.name, assessment)
+            st.write(f"- **{name}:** {review_text(strength.why_it_helps, assessment)}")
+    elif any(c.status == "DEMONSTRATED" for c in main_competencies(assessment)):
+        st.subheader("Strengths you bring")
+        for c in main_competencies(assessment):
+            if c.status == "DEMONSTRATED":
+                st.write(f"- {review_text(c.name, assessment)}")
+    st.subheader("How you compare")
+    st.caption("Unconfirmed means we need more information—not that you lack the experience.")
+    rows = comparison_rows(assessment)
+    if rows:
+        st.table(rows)
+    else:
+        st.info("No core competency comparisons are available yet.")
+    if len(main_competencies(assessment)) < len(assessment.competencies):
+        st.caption("Additional and employer-specific expectations remain in Run details.")
+    development = [
+        c for c in assessment.competencies
+        if getattr(c, "development_focus", None)
+        and getattr(c, "remaining_need", None) != "CLARIFY"
+        and (not leadership or (
+            c.applicability == "TARGET" and c.evidence_state == "CONFIRMED_SHORTFALL"
+        ))
+    ]
     if development:
-        st.subheader("What needs building or clarifying")
+        st.subheader("What to develop")
         for item in development:
             st.write(review_text(f"**{item.name}** — {item.development_focus}", assessment))
-    if assessment.questions:
-        st.subheader("Questions to resolve")
-        for question in assessment.questions:
-            st.write(f"- {review_text(question, assessment)}")
+    questions = assessment.questions or [
+        getattr(c, "development_focus", None) or f"What experience can you confirm for {c.name}?"
+        for c in main_competencies(assessment)
+        if getattr(c, "remaining_need", None) == "CLARIFY"
+    ]
+    if questions:
+        st.subheader("Questions before deciding")
+        for n, question in enumerate(dict.fromkeys(questions), 1):
+            st.write(f"{n}. {review_text(question, assessment)}")
     with st.expander("Run details"):
         st.caption(f"Rules: {assessment.rule_version}")
         st.write(assessment.rationale)
@@ -149,14 +216,16 @@ def render_same_role_analysis(state):
 def render_same_role_plan(state, *, read_only=False, evidence_label=None):
     assessment = state.get("transition_assessment") or state["same_role_assessment"]
     plan = state.get("career_plan")
-    st.title("Your career strategy")
+    st.title("Your leadership plan" if is_leadership(assessment) else "Your career strategy")
     if evidence_label:
         st.badge(evidence_label, color="orange")
     if not plan:
         st.info("No plan was generated. Review the assessment and outstanding checks.")
         return
     st.caption(f"{plan.current_role} → {plan.target_role}")
-    st.subheader(label(assessment.accessibility))
+    if direction_caption(state.get("confirmed_goal")):
+        st.caption(direction_caption(state.get("confirmed_goal")))
+    st.subheader(assessment_heading(assessment))
     st.caption(f"Plan confidence: {label(assessment.confidence)}")
     st.caption(review_text(plan.timing_basis, assessment))
     for milestone in plan.milestones:

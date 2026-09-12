@@ -48,6 +48,8 @@ render_assessment({
     assert "Source and comparison details" not in labels
     assert labels == ["Run details"]
     table = app.table[0].value
+    assert list(table.columns) == ["Competency", "Your position"]
+    table = app.expander[0].table[0].value
     assert list(table.columns) == ["No.", "Competency", "Context", "You"]
     assert {"Employer-specific", "Role duty", "Preferred"} <= set(table["Context"])
     assert list(table["No."]) == list(range(1, len(table) + 1))
@@ -58,7 +60,7 @@ render_assessment({
     assert any("60 extracted statements" in element.value for element in app.caption)
     assert any("not established" in element.value for element in app.warning)
     headings = [item.value for item in app.subheader]
-    assert headings == ["What this role involves", "Competency match", "Next step"]
+    assert headings == ["What this role involves", "How you compare", "Next step"]
 
 
 def test_bounded_assessment_shows_processing_check_without_erasing_strengths():
@@ -83,14 +85,17 @@ render_assessment({
         "Processing incomplete; retry comparison: Capability 2" in item.value for item in app.text
     )
     assert any("Apply selectively" in item.value for item in app.markdown)
-    assert list(app.table[0].value["You"]) == ["Yes", "Yes", "Unknown"]
+    assert list(app.table[0].value["Your position"]) == [
+        "Demonstrated", "Demonstrated", "Unconfirmed",
+    ]
     assert [item.label for item in app.expander] == ["Run details"]
     assert not app.info
     assert any("Processing incomplete" in item.value for item in app.expander[0].text)
     assert [item.value for item in app.subheader] == [
         "Apply selectively",
-        "Competency match",
-        "Questions to resolve",
+        "Strengths you bring",
+        "How you compare",
+        "Questions before deciding",
         "Next step",
     ]
 
@@ -156,8 +161,10 @@ render_assessment(completed_batch_state())
 """).run(timeout=15)
     assert not app.exception
     assert app.title[0].value == "Your career assessment"
-    assert app.table[0].value["Competency"].tolist() == ["Java", "SQL", "Automated Testing", "AWS"]
-    assert list(app.table[0].value.columns) == ["No.", "Competency", "Context", "You"]
+    assert app.table[0].value["Competency"].tolist() == [
+        "Java", "SQL", "Automated Testing", "AWS (additional advantage)",
+    ]
+    assert list(app.table[0].value.columns) == ["Competency", "Your position"]
     assert [element.label for element in app.expander] == ["Run details"]
     assert not any(element.value == "Your evidence" for element in app.caption)
     assert any("Combined view of 5" in element.value for element in app.caption)
@@ -181,5 +188,5 @@ render_assessment(state)
     assert any("model output could not be validated" in item.value for item in app.info)
     assert not any(item.value == "Limited role sample" for item in app.caption)
     assert len(app.table[0].value) == 4
-    assert set(app.table[0].value["You"]) == {"Unknown"}
+    assert set(app.table[0].value["Your position"]) == {"Unconfirmed"}
     assert next(button for button in app.button if button.label == "Continue to Plan").disabled

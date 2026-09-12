@@ -4,7 +4,7 @@ import re
 
 from ai_career_navigator.domain import ApprovalStatus, CareerGoal, GeographyScope
 from ai_career_navigator.market.errors import MarketConfigurationError
-from ai_career_navigator.market.normalization import normalize_title
+from ai_career_navigator.market.normalization import normalize_title, normalized_comparison
 from ai_career_navigator.market.schemas import (
     GeographyQueryVariant,
     MarketSearchRequest,
@@ -17,7 +17,29 @@ from ai_career_navigator.market.source_registry import (
     AGGREGATOR_SEARCH_DOMAINS,
     ATS_JOB_SEARCH_DOMAINS,
 )
-from ai_career_navigator.market.validation import target_title_variants
+from ai_career_navigator.market.validation import body_supported_specialty, target_title_variants
+
+
+def leadership_domain_priority(target_role: str, title: str, body: str) -> int:
+    """Order leadership discovery, never infer equivalence or discard a missing keyword.
+
+    Shared words such as 'engineering manager' do not establish a discipline.
+    A generic heading may still establish the target discipline in its actual work.
+    Unconfirmed domains stay last for model scope review, not automatic gap creation.
+    """
+    generic = {
+        "engineer", "engineering", "manager", "management", "director", "head",
+        "lead", "leader", "leadership", "team", "senior", "junior", "staff",
+        "principal", "chief", "vp", "vice", "president", "of", "the", "and",
+    }
+    subjects = set(normalized_comparison(target_role).split()) - generic
+    if not subjects or subjects <= set(normalized_comparison(title).split()):
+        return 0
+    # Reuse substantive work/qualification grounding, not employer marketing.
+    # The synthetic shared head only checks domain text, not seniority equivalence.
+    if body_supported_specialty("Manager", " ".join(sorted(subjects)) + " Manager", body):
+        return 1
+    return 2
 
 
 def _clean(value: str | None) -> str | None:

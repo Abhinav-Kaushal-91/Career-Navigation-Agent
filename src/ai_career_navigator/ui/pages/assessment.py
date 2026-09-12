@@ -5,6 +5,7 @@ import streamlit as st
 from ai_career_navigator.domain import ConfidenceLevel, MatchType
 from ai_career_navigator.market.overview import overview_requirements, source_overview
 from ai_career_navigator.ui.components.navigation import go_to
+from ai_career_navigator.ui.direction_copy import direction_caption, position_label
 from ai_career_navigator.ui.view_models import analysis_view_model, product_label
 
 
@@ -120,6 +121,20 @@ def assessment_next_step(synthesis, rows):
     )
 
 
+def public_competency_rows(rows):
+    """Compact display without changing the underlying comparisons or optionality."""
+    return [
+        {
+            "Competency": row["Competency"] + (
+                f" ({row['Context'].lower()})"
+                if row["Context"] not in {"Core", "Baseline", "Supporting"} else ""
+            ),
+            "Your position": position_label(row["You"]),
+        }
+        for row in rows if row["Context"] not in {"Related role", "Role duty"}
+    ]
+
+
 def render_assessment(state_override=None, *, evidence_label=None) -> None:
     state = (
         state_override if state_override is not None else st.session_state.get("live_graph_state")
@@ -133,6 +148,8 @@ def render_assessment(state_override=None, *, evidence_label=None) -> None:
 
         render_same_role_analysis(state)
         return
+    if state and direction_caption(state.get("confirmed_goal")):
+        st.caption(direction_caption(state.get("confirmed_goal")))
     if not state or state.get("market_snapshot") is None:
         st.info(
             "Run a live analysis from your confirmed goal to see employer expectations "
@@ -177,10 +194,8 @@ def render_assessment(state_override=None, *, evidence_label=None) -> None:
             elif getattr(canonical, "profile_status", None) in {"PROVISIONAL", "INSUFFICIENT"}:
                 confidence += " · Limited role sample"
             status.caption(confidence)
-            # Keep the full rationale in diagnostics; never cut a sentence mid-word.
-            reason = view.assessment_reason.split(". ", 1)[0]
-            if len(reason) <= 360:
-                st.write(reason.rstrip(".") + ".")
+            # Preserve conditions; new synthesis prompts provide concise complete copy.
+            st.write(view.assessment_reason)
         else:
             st.warning("Overall fit not established yet.")
             if processing_issue:
@@ -212,11 +227,16 @@ def render_assessment(state_override=None, *, evidence_label=None) -> None:
             st.subheader("What this role involves")
             for duty in duties[:4]:
                 st.markdown(f"- {duty}")
+    advantages = getattr(synthesis, "strongest_advantages", ())
+    if advantages:
+        st.subheader("Strengths you bring")
+        for advantage in advantages:
+            st.write(f"- **{advantage.title}:** {advantage.explanation}")
     with st.container(border=True):
-        st.subheader("Competency match")
-        st.caption("Unknown = unconfirmed. Employer-specific asks are not universal.")
+        st.subheader("How you compare")
+        st.caption("Unconfirmed means we need more information—not that you lack the experience.")
         if rows:
-            st.table(rows, border="horizontal", hide_index=True)
+            st.table(public_competency_rows(rows), border="horizontal", hide_index=True)
         else:
             st.info("No usable employer requirements yet.")
             strengths = list(
@@ -233,7 +253,7 @@ def render_assessment(state_override=None, *, evidence_label=None) -> None:
     with gaps:
         if view and view.grouped_gaps:
             with st.container(border=True):
-                st.subheader("Key gaps")
+                st.subheader("What needs attention")
                 for index, gap in enumerate(view.grouped_gaps, 1):
                     st.markdown(f"**{index}. {gap.gap}**")
                     st.caption(gap.severity)
@@ -246,7 +266,7 @@ def render_assessment(state_override=None, *, evidence_label=None) -> None:
         ]
         if unknown:
             with st.container(border=True):
-                st.subheader("Questions to resolve")
+                st.subheader("Questions before deciding")
                 st.caption("Unconfirmed information—not a confirmed skill gap.")
                 for name in unknown:
                     st.markdown(f"- {name}")
@@ -257,6 +277,9 @@ def render_assessment(state_override=None, *, evidence_label=None) -> None:
     # One optional diagnostic area. No evidence paragraphs or repeated summaries
     # in the decision surface; original audit objects stay intact.
     with st.expander("Run details"):
+        if rows:
+            st.markdown("**Full comparison context**")
+            st.table(rows, hide_index=True)
         provider = state.get("market_provider_summary")
         if provider is not None:
             st.caption(

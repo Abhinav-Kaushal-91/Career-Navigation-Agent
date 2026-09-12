@@ -4,7 +4,9 @@ import json
 
 from ai_career_navigator.domain import CareerPlan
 
-PROMPT_VERSION = "plan-wording-v4-concise-v1"
+from .presentation_prompts import PLAIN_LANGUAGE_STYLE
+
+PROMPT_VERSION = "plan-wording-v4-concise-v2"
 SYSTEM_PROMPT = """You refine wording for a validated career-plan skeleton.
 Keep every milestone key, phase, type, gap ID, evidence artifact, dependency, target role,
 bridge role, risk, and assumption unchanged. Do not add skills, credentials, market claims,
@@ -26,7 +28,7 @@ Each editable wording field should be one concise sentence without repeating its
 preserve all material conditions even when shortening. Do not add inline source IDs, line
 references, UUIDs, repeated evidence stories or method descriptions to either wording field.
 Keep milestone_key in its designated field, never in the public action or completion check.
-Return only the requested structured object."""
+Return only the requested structured object.""" + PLAIN_LANGUAGE_STYLE
 
 
 def build_plan_prompt(plan: CareerPlan) -> str:

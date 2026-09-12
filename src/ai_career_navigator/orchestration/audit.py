@@ -48,7 +48,7 @@ def persist_same_role_audit(state, assessment, plan, *, directory: Path) -> Path
     payload = {
         "run_id": str(state["run_id"]),
         "mode": "CAREER_TRANSITION"
-        if assessment.rule_version.startswith("career-transition-")
+        if assessment.rule_version.startswith(("career-transition-", "leadership-"))
         else "SAME_ROLE",
         "goal_type": getattr(state.get("confirmed_goal"), "goal_type", None),
         "assessment": assessment.model_dump(mode="json"),

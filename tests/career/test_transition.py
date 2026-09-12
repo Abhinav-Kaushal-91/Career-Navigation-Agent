@@ -106,6 +106,13 @@ class Gateway:
 
     def generate_structured(self, **request):
         self.requests.append(request)
+        if request["output_schema"].__name__.startswith("Leadership"):
+            from tests.career.test_leadership import leadership_reply
+
+            raw = leadership_reply(self.reviewed or self.raw).model_dump()
+            return SimpleNamespace(structured_output={"corrections": [], "assessment": raw}
+                                   if request["output_schema"].__name__ == "LeadershipReview"
+                                   else raw)
         if request["metadata"]["task_type"] == "career_transition_quality_review":
             return SimpleNamespace(
                 structured_output={
@@ -126,6 +133,10 @@ def test_transition_routing_is_generic_and_explicit(inputs, target):
     )
     assert uses_consolidated_target_assessment(
         profile, goal.model_copy(update={"goal_type": "TARGET_CAREER_PATH", "target_role": target})
+    )
+    assert uses_consolidated_target_assessment(
+        profile,
+        goal.model_copy(update={"goal_type": "LEADERSHIP_PROGRESSION", "target_role": target}),
     )
     assert not uses_consolidated_target_assessment(
         profile, goal.model_copy(update={"goal_type": "CAREER_EXPLORATION", "target_role": None})
@@ -191,6 +202,41 @@ def test_target_plan_selects_five_from_eight_related_descriptions_without_relabe
     assert not excluded
 
 
+def test_leadership_cohort_prioritizes_target_discipline_and_level_before_length(inputs):
+    from ai_career_navigator.market.schemas import PostingSeniority
+
+    profile, goal, evidence = inputs
+    goal = goal.model_copy(update={
+        "goal_type": GoalType.LEADERSHIP_PROGRESSION,
+        "target_role": "Software Engineering Manager",
+        "search_expansion_permission": True,
+    })
+    items = []
+    cases = [
+        ("Manufacturing Engineering Manager", "Manage factory tooling. " * 150, "STANDARD"),
+        ("Senior Software Delivery Manager", "Lead delivery across teams. " * 100, "SENIOR"),
+        *[("Software Delivery Manager", "Lead delivery for a team.", "STANDARD")] * 5,
+    ]
+    for index, (title, body, level) in enumerate(cases):
+        original = evidence[0]
+        items.append(original.model_copy(update={
+            "posting": original.posting.model_copy(update={
+                "posting_id": uuid4(), "employer": f"Employer {index}", "original_title": title,
+            }),
+            "primary_content": original.primary_content.model_copy(
+                update={"title": title, "markdown": body}
+            ),
+            "title_classification": "RELATED_TITLE",
+            "seniority_classification": PostingSeniority(level),
+        }))
+    _, selected, _, _ = build_inputs(profile, goal, items)
+    assert len(selected) == 5
+    assert {item["title"] for item in selected.values()} == {"Software Delivery Manager"}
+    assert len({item["employer"] for item in selected.values()}) == 5
+    # Off-discipline/level results remain in discovery, not deleted to inflate fit.
+    assert len(items) == 7
+
+
 @pytest.mark.parametrize(
     "change,expected",
     [
@@ -253,7 +299,9 @@ def test_transition_prompt_distinguishes_unknowns_from_deficits():
         assert phrase in SYSTEM_PROMPT
 
 
-@pytest.mark.parametrize("goal_type", [GoalType.ROLE_TRANSITION, GoalType.TARGET_CAREER_PATH])
+@pytest.mark.parametrize("goal_type", [
+    GoalType.ROLE_TRANSITION, GoalType.TARGET_CAREER_PATH, GoalType.LEADERSHIP_PROGRESSION,
+])
 @pytest.mark.parametrize("title_scope", ["EXACT_TARGET", "RELATED_TITLE"])
 def test_transition_graph_plan_review_and_invalidation(inputs, tmp_path, goal_type, title_scope):
     from ai_career_navigator.config import Settings
@@ -355,7 +403,7 @@ def test_transition_analysis_and_plan_native_ui(inputs):
     app.run()
     assert not app.exception
     assert "Transferable" in str(app.table[0].value)
-    assert "Clarify" in str(app.table[0].value)
+    assert "Questions before deciding" in [item.value for item in app.subheader]
     assert any("Strengths you bring" in item.value for item in app.subheader)
     app.session_state.plan = True
     app.run()
@@ -374,10 +422,33 @@ def test_transition_review_uses_specific_checks_without_old_bundle_fallback(inpu
     assert "forced positive verdict" in prompt
 
 
+def test_leadership_contract_keeps_target_and_scope_without_promoting_mentoring(inputs):
+    from ai_career_navigator.career.leadership import SYSTEM_PROMPT as leadership_prompt
+
+    profile, goal, evidence = inputs
+    goal = goal.model_copy(update={
+        "goal_type": GoalType.LEADERSHIP_PROGRESSION,
+        "target_role": "Software Engineering Manager",
+    })
+    gateway = Gateway()
+    assess_career_transition(profile, goal, evidence, gateway)
+    payload = json.loads(gateway.requests[0]["user_prompt"])
+    assert payload["target_role"] == "Software Engineering Manager"
+    assert payload["goal_context"]["goal_type"] == "LEADERSHIP_PROGRESSION"
+    assert gateway.requests[0]["system_prompt"] == leadership_prompt
+    for phrase in [
+        "toward target_role", "Missing text never proves absence",
+        "Only CORE postings define", "Do not default to coding",
+        "No fixed timeline is", "Mentoring does not establish hiring",
+    ]:
+        assert phrase in gateway.requests[0]["system_prompt"]
+    assert "Review contradictions" in gateway.requests[1]["system_prompt"]
+
+
 def test_transition_v3_contract_separates_readiness_from_direction_and_safe_practice(inputs):
     gateway = Gateway()
     result = assess_career_transition(*inputs, gateway)
-    assert result.rule_version == "career-transition-assessment-v4-concise-v2-fit-scope-target-plan"
+    assert result.rule_version == "career-transition-assessment-v5-concise-v3-fit-scope-all-directions"
     for request in gateway.requests:
         for phrase in [
             "TWO DISTINCT CONCLUSIONS",

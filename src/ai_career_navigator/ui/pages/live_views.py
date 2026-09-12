@@ -21,6 +21,7 @@ from ai_career_navigator.ui.components.navigation import (
     surface_graph_workflow_state,
 )
 from ai_career_navigator.ui.components.states import render_state
+from ai_career_navigator.ui.direction_copy import direction_caption
 from ai_career_navigator.ui.view_models import (
     analysis_view_model,
     market_view_model,
@@ -543,6 +544,8 @@ def render_live_plan(
             state, read_only=state_override is not None, evidence_label=evidence_label
         )
         return
+    if state and direction_caption(state.get("confirmed_goal")):
+        st.caption(direction_caption(state.get("confirmed_goal")))
     if state is None or plan is None:
         profile = state.get("canonical_target_role_profile") if state else None
         if getattr(profile, "profile_status", None) == "INSUFFICIENT":

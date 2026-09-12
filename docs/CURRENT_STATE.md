@@ -1,5 +1,211 @@
 # Current State
 
+## September 12 — GitHub checkpoint before goal-choice consolidation
+
+This checkpoint contains the leadership route and shared concise assessment/plan
+wording for all six existing goal types. The proposed merge of career transition
+and target-role planning has not been implemented; goal selection is unchanged.
+Local credentials, generated run outputs and session data are excluded from the
+checkpoint. Publishing this code does not deploy or restart the local application.
+
+## September 12 — local application availability verified
+
+The full production entry point is listening at http://127.0.0.1:8533/ and its
+Streamlit health endpoint returns `ok`. The server was left running to preserve
+existing sessions. Port 8534 is the separate saved-result preview, not the full
+manual onboarding workflow. This check did not run another live analysis.
+
+## September 12 — plain-language guidance extended to all six categories
+
+Shared writing guidance now reaches same-role, transition/target planning, leadership, and legacy
+synthesis/plan wording contracts. It directs plain second-person wording, concise strength
+explanations, grouped questions, conditional application decisions, no fixed example result or
+four-step quota, and preservation of ownership/depth boundaries. Role-specific conclusions,
+reference checks, retrieval, eligibility and goal routing are unchanged. Consolidated input now
+always includes the actual goal_type; legacy synthesis still consumes validated comparisons and
+optional plan wording still operates on the immutable skeleton. This is not a new exploration engine.
+
+Both production rendering paths use concise comparisons and explained strengths with original
+details retained. Leadership keeps its typed TARGET filter; other consolidated findings retain
+core work, prerequisites and actual development needs while unrelated/narrow context stays in
+details. Legacy rows retain preferred/eligibility context without extra columns. Partial and
+transferable contributions remain distinct from demonstrated and unconfirmed. Clarification text
+is shown once, with an older-result fallback if no explicit questions exist. Goal orientation
+captions cover all six directions. Plan exact-version approval and session-only saving remain.
+Legacy direct-plan completion now records an evidence-supported apply-or-defer decision.
+
+Validation: 912 career/UI/orchestration/market/config tests passed; changed code passed Ruff and
+diff whitespace checks. Includes parameterized Streamlit rendering for all six goal categories,
+actual action/approval preservation, partial/transferable/unknown status checks and shared prompt
+attachment. Existing mocked-result serializer warning remains. No new paid/live six-case run or
+manual browser traversal was performed in this activity; automated rendering is not semantic LLM
+reliability proof. The known live cloud/microservices over-credit remains a semantic evaluation
+case; the shared prompt now explicitly states that boundary, but it has not been live-revalidated.
+Existing saved runs and sessions were not reset, rewritten or seeded; new model wording requires
+a fresh run. No GitHub push. The prior obsolete case-matrix fixture issue is still separate.
+
+## September 12 — concise leadership guidance implemented
+
+Production leadership prompts and pages now use a short core-role overview, concise explained
+strengths, TARGET-only Competency / Your position table and grouped questions. Unknowns remain
+Unconfirmed and are no longer repeated in gap paragraphs; confirmed shortfalls remain visible.
+Context/excluded records remain in Run details. NEAR_TERM_TARGET with UNCONFIRMED readiness is
+presented as "A credible leadership direction" on both pages, not as an application recommendation.
+Other verdicts and processing-review states retain their distinctions. No role-specific sample
+facts are hard-coded into the production page.
+
+Before creating a new plan, APPLY actions receive a favourable readiness/employer-requirements
+condition and an explicit defer/reassess branch; completion is an apply-or-defer decision. Conditional
+development retains its typed links with shorter public text. Prompts distinguish formal management
+from workstream/coaching experience and preserve ownership verbs across strengths and actions.
+Existing stored/approved plan text is not rewritten by rendering. Temperature remains 0.1/0.0
+for author/reviewer; retrieval unchanged. New guidance text requires a fresh analysis run.
+
+Validation: 432 career/UI/orchestration tests passed, Ruff passed. New tests cover compact leadership
+rendering, audit retention, unknown/failure labels, and application/defer conditions surviving into
+the generated plan and completion. Existing test serializer warning remains unrelated.
+
+First saved-five/live-DeepSeek replay: outputs/leadership-review-check/concise-v3/results.json,
+144.45s, three calls (author, repair, reviewer), no processing issues, five draft actions.
+Manual review found "supported production incidents" overstated as "incident ownership"; preserved
+the raw result and tightened author/reviewer ownership instructions before a final replay.
+
+Final saved-five/live-DeepSeek replay: outputs/leadership-review-check/concise-v3-final/results.json,
+144.70s, two calls (41.67s author, 102.93s reviewer), no repair, no processing issues, four actions,
+three strengths, three questions and nine comparisons (seven TARGET rows visible). Readiness remains
+UNCONFIRMED, direction NEAR_TERM_TARGET, confidence MODERATE. Incident-ownership overstatement is
+absent; the final action explicitly compares employer requirements before apply/defer. Manual
+browser traversal of the production Analysis and Plan renderers in a separately labelled read-only
+preview on 8534 confirmed headings, table, questions, conditional plan and disabled approval.
+Original app session on 8533 was preserved, not seeded or restarted. This preview uses the saved
+backend run, not a new end-to-end browser/live-search run. No GitHub push.
+
+Remaining semantic QA issue: the final model groups "Cloud and microservices delivery" as
+DEMONSTRATED although the supplied facts establish AWS/container/REST delivery, not microservices
+architecture. The reviewer also repeats a conditional lead-in in the development step. Preserve
+these outputs as regressions; the wording change is not universal semantic reliability proof.
+
+## September 12 — actual website leadership validation
+
+Restarted localhost:8533 with current code and traversed the real browser flow: Explore demo,
+Education -> live AI Strength Identification -> confirmed three grounded suggestions -> profile
+review -> LEADERSHIP_PROGRESSION -> confirmed Software Engineering Manager, Toronto/Metro Area,
+related titles allowed, no fixed timeline -> Run Live Analysis -> Career assessment -> Plan.
+No saved backend result was injected. The website profile contains 28 confirmed evidence items
+(including three new inferred strengths); it is not identical to the earlier nine-item backend
+payload. Used live configured JSearch and Fireworks DeepSeek. Final author temperature is 0.1;
+repair/review remain 0.0. This run verifies the latest leadership rule version in the UI.
+
+Run audit: outputs/run-audits/226f0862-02fe-4af4-a0ae-c3b215f305c3.json (plus matching retrieval
+audit). Five returned/retained/reviewed descriptions, 11 competency rows, five plan actions,
+NEAR_TERM_TARGET/MODERATE, UNCONFIRMED current readiness, no processing issues. Mastercard and
+Amazon are CORE; Stripe ML management and Fullscript director are CONTEXT; Kepler hardware is
+EXCLUDE. The live search cohort differs from the saved replay. Browser-observed total was roughly
+four minutes; retrieval audit completed 13:11:46 and assessment audit 13:14:49 local (183 seconds
+between artifacts, not measured provider latency). Exact per-call timings are not in this audit.
+
+Manually inspected both pages and screenshots. Technical strengths were retained; unreported
+management remains clarification, not a confirmed shortfall. Development action AND completion
+carry the condition that earlier clarification confirms missing experience. No invented duration
+or forced bridge role in the overview. Plan approval/version and session-only saving notice show.
+Left the draft Plan open in the browser; did not approve, save, or apply for any vacancy.
+
+Remaining semantic/UI findings (not changed during this test): final APPLY action says to apply
+once management questions are resolved, but resolution may confirm inadequate experience; it
+needs an explicit favourable readiness/per-posting eligibility condition and a reassessment branch.
+A supervised workstream/coaching assignment should not imply formal people-management experience.
+Excluded hardware and contextual specialist/director rows still occupy the main competency table;
+overview and repeated clarification text remain wordy. Schema success is not semantic perfection.
+
+## September 12 — structured leadership refinement and temperature 0.1
+
+Implemented in the production leadership route: shorter dedicated prompt; per-posting
+CORE/CONTEXT/EXCLUDE benchmark; target/context applicability; explicit evidence state and current
+readiness; typed action purposes and after-clarification conditions. Checks enforce source support,
+scope, unknown versus shortfall, readiness consistency, action linkage and clarification order.
+Code attaches the same condition to development actions and their completion checks, and derives
+public readiness from its validated field rather than conflicting free prose. Exact candidate
+shortfall excerpts still require semantic review; matching a quote does not prove interpretation.
+
+Assessment/combined-plan authors now use temperature 0.1; integrity repair and independent review
+stay 0.0. Legacy career synthesis and plan wording use 0.1. Extraction/retrieval are unchanged.
+Existing non-leadership schemas remain compatible; leadership retains its goal and plan approval.
+
+Saved-five-description/live-DeepSeek real-graph test: outputs/leadership-review-check/
+temperature-01-refined/results.json, 131.86s, 2 calls (59.36s author, 72.40s reviewer), no search
+calls, no repair, no processing issues, WAITING_FOR_HUMAN. Two core postings, two context,
+one excluded; 9 comparisons, 4 actions; NEAR_TERM_TARGET/MODERATE with UNCONFIRMED readiness.
+Management/delivery history stays UNKNOWN/CLARIFY; platform/budget stays context; development
+is conditional in both action and completion. This is not universal model reliability proof.
+
+Preserved failed first refinement at temperature-01/results.json: an old check demanded repeated
+development-focus prose despite explicit UNKNOWN/CLARIFY fields (121.29s, 2 calls, no plan).
+Removed that redundant requirement only for leadership; substantive validation remains.
+The successful replay's overview still suggested a bridge sequence too strongly. Final prompt
+reserves progression for conditional plan actions and role_picture for role work only; that final
+wording adjustment has contract coverage, not another live replay.
+
+Validation: 891 career/orchestration/UI/market/config tests passed before final wording/storage
+refinements; focused leadership/transition tests and saved-assessment round-trip also passed.
+New storage bounds accommodate code-added conditions without truncation. No browser run, app
+restart or GitHub push. Historical case-matrix fixture failure remains a separate follow-up.
+
+## September 12 — target-led leadership route implemented and live-tested
+
+LEADERSHIP_PROGRESSION with a specified target now uses consolidated five-description
+assessment and the validated assessment's plan actions; original goal enum and approval
+semantics remain. Search follows the destination, not the current role. Leadership selection
+prioritizes target domain/level before description length, preserving employer diversity and
+related-role provenance. The model distinguishes mentoring, formal management, team delivery
+and higher organizational scope instead of applying a generic management checklist.
+
+Bounded real JSearch + configured Fireworks DeepSeek test: Senior Java Developer demo ->
+Software Engineering Manager, Toronto/metro, expansion allowed, no fixed timeline.
+outputs/live-failure-check/20260912T160559Z/results.json: 5 returned/retained/reviewed;
+2 target variants, 3 related roles; 3 model calls (author, action-basis repair, reviewer).
+Retrieval 41.30s, assessment/review 115.60s, total 157.00s. WAITING_FOR_HUMAN, no processing
+issues; NEAR_TERM_TARGET/MODERATE, 12 comparisons, 5 plan actions. Hardware, platform and
+director opportunities were differentiated from the selected application-team manager target.
+
+Quality review found a remaining interpretation error: the draft prescribed building management
+history that was merely unreported. Strengthened author/reviewer instructions to use CLARIFY,
+verify first and make development conditional in actions and completion checks; readiness must
+remain unconfirmed when decisive prior scope is unknown.
+
+Saved-retrieval/live-DeepSeek real-graph replay: outputs/leadership-review-check/results.json,
+70.35s, two model calls, no additional JSearch requests, WAITING_FOR_HUMAN, no processing issues.
+13 comparisons, 5 actions, NEAR_TERM_TARGET/MODERATE. First action now verifies prior supervisory
+work and formal management is CLARIFY. Interpretation is not fully corrected: rationale still
+says "not yet ready" because experience is unconfirmed, some partial/unknown scope is prescribed
+as unconditional development, and conditionality is not consistently retained in completion checks.
+Do not confuse schema/reference validation success with semantic calibration success.
+
+Verification: 879 tests passed across career/orchestration/UI/market/config (one existing enum
+serialization fixture warning). Changed-file Ruff and git diff --check passed. Added real
+production-context leadership routing tests, goal preservation/approval/invalidation checks,
+generic API destination tests and discipline/level-before-length selection regression.
+
+No UI/browser verification or Git push performed for this activity. Existing per-posting case
+matrix fixture failure remains a separate documented follow-up; do not call it fixed here.
+
+## September 12 — original leadership progression live test (historical failure)
+
+User requested testing the leadership role. Ran the unchanged production backend with the
+approved synthetic Senior Java Developer profile, LEADERSHIP_PROGRESSION, Engineering Manager,
+Toronto/metro, related expansion allowed, no fixed timeline. Report:
+outputs/live-failure-check/20260912T155449Z/results.json.
+6 returned, 5 retained, all RELATED_TITLE, zero descriptions selected, zero model calls,
+INSUFFICIENT_EVIDENCE, no assessment or plan; total 18.34s (retrieval 18.20s).
+The four-call test cap was never reached and did not cause this outcome.
+
+Verified cause: leadership progression does not enter uses_consolidated_target_assessment;
+it still uses the legacy exact/variant-only batch selector. A second substantive issue is
+target ambiguity: Engineering Manager returned manufacturing, steel-building design and hardware
+management alongside platform engineering. Do not fix this by blindly accepting all related
+postings. Software domain needs to be explicit/confirmed or derived transparently from the goal
+and profile, and different disciplines must remain distinct. This turn tested only; no application
+code, prompts, model settings, browser session, or published Git state was changed.
+
 ## September 12 — GitHub publication checks
 
 Prepared the JSearch integration, timeout/diagnostic fixes, target-plan routing and regression

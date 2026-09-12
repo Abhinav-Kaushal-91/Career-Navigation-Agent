@@ -33,6 +33,49 @@ def client(handler, **kwargs):
     )
 
 
+@pytest.mark.parametrize("target", ["Software Engineering Manager", "Finance Manager"])
+def test_leadership_search_uses_chosen_destination_without_inheriting_current_role(target):
+    requests = []
+
+    def handler(request):
+        requests.append(request)
+        assert request.url.path == "/search-v2"
+        assert dict(request.url.params) == {
+            "query": f"{target} in toronto, canada",
+            "country": "canada",
+            "language": "en",
+            "date_posted": "all",
+            "num_pages": "1",
+        }
+        return httpx.Response(200, json={"status": "OK", "data": []})
+
+    destination = goal().model_copy(update={
+        "goal_type": "LEADERSHIP_PROGRESSION",
+        "target_role": target,
+        "target_seniority": None,
+        "target_location": "Toronto, Canada",
+    })
+    asyncio.run(retrieve_jsearch_market(destination, client(handler), now=NOW))
+    assert len(requests) == 1
+
+
+@pytest.mark.parametrize("target,title,body,priority", [
+    ("Software Engineering Manager", "Software Development Manager", "", 0),
+    ("Software Engineering Manager", "Engineering Manager",
+     "Responsibilities\nLead software delivery and develop engineering teams.", 1),
+    ("Software Engineering Manager", "Manufacturing Engineering Manager",
+     "Responsibilities\nManage factory tooling and manufacturing schedules.", 2),
+    ("Software Engineering Manager", "Engineering Manager",
+     "About the company\nWe sell software to manufacturers.", 2),
+    ("Finance Manager", "Operations Manager",
+     "Requirements\nExperience leading finance teams is required.", 1),
+])
+def test_leadership_domain_ranking_is_generic_and_body_aware(target, title, body, priority):
+    from ai_career_navigator.market.search_plan import leadership_domain_priority
+
+    assert leadership_domain_priority(target, title, body) == priority
+
+
 def test_normalizes_both_endpoint_envelopes_without_assuming_complete():
     for data in ([raw()], {"jobs": [raw()], "cursor": "next"}):
         page = normalize_jsearch_payload({"status": "OK", "data": data})

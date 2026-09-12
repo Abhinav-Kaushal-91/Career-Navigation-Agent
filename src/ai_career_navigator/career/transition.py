@@ -91,11 +91,15 @@ def uses_consolidated_target_assessment(profile, goal):
         profile
         and goal
         and goal.target_role
-        and goal.goal_type in {GoalType.ROLE_TRANSITION, GoalType.TARGET_CAREER_PATH}
+        and goal.goal_type in {
+            GoalType.ROLE_TRANSITION,
+            GoalType.TARGET_CAREER_PATH,
+            GoalType.LEADERSHIP_PROGRESSION,
+        }
     )
 
 
-def transition_reference_issues(reply, sources, lines, evidence):
+def transition_reference_issues(reply, sources, lines, evidence, *, require_development_focus=True):
     issues = reference_issues(reply, sources, lines, evidence)
     for n, strength in enumerate(reply.demonstrated_strengths):
         if not set(strength.candidate_refs) <= evidence.keys():
@@ -103,7 +107,11 @@ def transition_reference_issues(reply, sources, lines, evidence):
     for n, item in enumerate(reply.competencies):
         if item.status == "TRANSFERABLE" and not (item.transfer_explanation or "").strip():
             issues.append(f"competencies[{n}]: explain what transfers and its boundary")
-        if item.remaining_need != "NONE" and not (item.development_focus or "").strip():
+        if (
+            require_development_focus
+            and item.remaining_need != "NONE"
+            and not (item.development_focus or "").strip()
+        ):
             issues.append(f"competencies[{n}]: identify the outstanding need")
     return issues
 
@@ -127,6 +135,10 @@ def build_transition_inputs(profile, goal, evidence):
 
 
 def assess_career_transition(profile, goal, evidence, gateway):
+    if goal.goal_type == GoalType.LEADERSHIP_PROGRESSION:
+        from .leadership import assess_leadership
+
+        return assess_leadership(profile, goal, evidence, gateway)
     result = assess_consolidated(
         profile,
         goal,

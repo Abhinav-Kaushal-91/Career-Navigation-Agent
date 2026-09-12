@@ -57,7 +57,8 @@ async def run(target_role="Senior Java developer", goal_type="CURRENT_MARKET_ANA
     start = previous = time.monotonic()
     print(f"OUTPUT {output.resolve()}", flush=True)
     print(
-        f"MARKET timeout={settings.market_timeout_seconds}s "
+        f"MARKET search_timeout={settings.jsearch_search_timeout_seconds}s "
+        f"detail_timeout={settings.market_timeout_seconds}s "
         f"provider={settings.market_primary_provider}",
         flush=True,
     )
@@ -132,7 +133,10 @@ if __name__ == "__main__":
     parser.add_argument(
         "--goal-type",
         default="CURRENT_MARKET_ANALYSIS",
-        choices=["CURRENT_MARKET_ANALYSIS", "ROLE_TRANSITION", "TARGET_CAREER_PATH"],
+        choices=[
+            "CURRENT_MARKET_ANALYSIS", "ROLE_TRANSITION", "TARGET_CAREER_PATH",
+            "LEADERSHIP_PROGRESSION",
+        ],
     )
     args = parser.parse_args()
     asyncio.run(run(args.target_role, args.goal_type))

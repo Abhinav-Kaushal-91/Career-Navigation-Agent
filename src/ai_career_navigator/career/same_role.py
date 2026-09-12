@@ -24,11 +24,13 @@ from ai_career_navigator.domain import (
     PathType,
     PlanMilestone,
 )
+from ai_career_navigator.market.processing import classify_seniority
 from ai_career_navigator.market.requirement_schemas import PostingTitleMatch
 from ai_career_navigator.market.requirements import _assessment_from_evidence
+from ai_career_navigator.market.search_plan import leadership_domain_priority
 from ai_career_navigator.models import ModelRole
 
-RULE_VERSION = "same-role-assessment-v2-concise-v2-fit-scope"
+RULE_VERSION = "same-role-assessment-v2-concise-v3-fit-scope"
 SYSTEM_PROMPT = (
     """Assess a SAME-ROLE job move using the supplied candidate
 and up to five descriptions.
@@ -212,9 +214,25 @@ def build_inputs(profile, goal, evidence):
             PostingTitleMatch.RELATED_TITLE,
         }:
             candidates.append(assessed)
+
+    def leadership_priority(item):
+        if goal.goal_type != GoalType.LEADERSHIP_PROGRESSION:
+            return (0, 0)
+        desired = classify_seniority(goal.target_seniority or goal.target_role).value
+        observed = item.candidate.seniority_classification or classify_seniority(
+            item.candidate.title
+        ).value
+        return (
+            leadership_domain_priority(
+                goal.target_role, item.candidate.title, item.candidate.posting_text
+            ),
+            0 if observed == desired else 1 if observed == "UNKNOWN" else 2,
+        )
+
     candidates.sort(
         key=lambda item: (
             item.title_match == PostingTitleMatch.RELATED_TITLE,
+            leadership_priority(item),
             -len(item.candidate.posting_text.split()),
         )
     )
@@ -280,6 +298,7 @@ def build_inputs(profile, goal, evidence):
                 for ref, value in candidate_sources.items()
             },
         },
+        "goal_context": {"goal_type": goal.goal_type.value},
         "postings": postings,
     }
     return payload, sources, lines, candidate_sources
@@ -379,7 +398,7 @@ def assess_consolidated(
             output_schema=reply_schema,
             system_prompt=system_prompt,
             user_prompt=json.dumps(request, ensure_ascii=False, default=str),
-            temperature=0,
+            temperature=0.1 if not attempt else 0.0,
             max_tokens=30000,
             max_retries=0,
             metadata={
