@@ -1,0 +1,82 @@
+[
+  {
+    "case_id": "GR-001",
+    "posting_text": "Required Qualifications: University degree in Computer Engineering / Computer Science / Technology, or relevant work experience. 8+ years of Software/Data/ML/AI Engineering experience. 2+ years of technology leadership experience, e.g. as a Senior/Staff Engineer.",
+    "source_quote": "8+ years of Software/Data/ML/AI Engineering experience",
+    "normalized_capability": "8+ years of software/ML/AI engineering experience",
+    "expected_grounded": true,
+    "note": "Verbatim quote from the posting; capability label restates it without adding unsupported claims."
+  },
+  {
+    "case_id": "GR-002",
+    "posting_text": "Required Qualifications: University degree in Computer Engineering / Computer Science / Technology, or relevant work experience. 8+ years of Software/Data/ML/AI Engineering experience. 2+ years of technology leadership experience, e.g. as a Senior/Staff Engineer.",
+    "source_quote": "10+ years of executive leadership in Fortune 500 companies",
+    "normalized_capability": "executive leadership experience",
+    "expected_grounded": false,
+    "note": "Hallucinated quote: this sentence does not appear anywhere in the posting."
+  },
+  {
+    "case_id": "GR-003",
+    "posting_text": "Required Qualifications: University degree in Computer Engineering / Computer Science / Technology, or relevant work experience. 8+ years of Software/Data/ML/AI Engineering experience. 2+ years of technology leadership experience, e.g. as a Senior/Staff Engineer.",
+    "source_quote": "2+ years of technology leadership experience, e.g. as a Senior/Staff Engineer",
+    "normalized_capability": "certified expert people leadership",
+    "expected_grounded": false,
+    "note": "Real quote, but the capability label strengthens it with 'certified' and 'expert' the quote never claims."
+  },
+  {
+    "case_id": "GR-004",
+    "posting_text": "Core Skills & Qualifications: 5+ years of building AI agents or autonomous systems. Strong expertise in Agentic AI frameworks (e.g., LangChain, AutoGen, similar) and Prompt engineering & LLM orchestration. Strong analytical and systems-thinking mindset.",
+    "source_quote": "5+ years of building AI agents or autonomous systems",
+    "normalized_capability": "5+ years building AI agents and autonomous systems experience",
+    "expected_grounded": true,
+    "note": "Verbatim quote; capability restates the same claim."
+  },
+  {
+    "case_id": "GR-005",
+    "posting_text": "Core Skills & Qualifications: 5+ years of building AI agents or autonomous systems. Strong expertise in Agentic AI frameworks (e.g., LangChain, AutoGen, similar) and Prompt engineering & LLM orchestration. Strong analytical and systems-thinking mindset.",
+    "source_quote": "Strong analytical and systems-thinking mindset",
+    "normalized_capability": "expert certified systems thinking",
+    "expected_grounded": false,
+    "note": "Real quote, but 'expert' and 'certified' are not supported by a plain 'strong ... mindset' statement."
+  },
+  {
+    "case_id": "GR-006",
+    "posting_text": "Must-Have Experience: 8+ years of extensive software/data engineering experience in production environments. Advanced expertise in Java or Python, including performance optimization, concurrency, and service-oriented architecture.",
+    "source_quote": "Advanced expertise in Java or Python, including performance optimization, concurrency, and service-oriented architecture",
+    "normalized_capability": "advanced Java or Python expertise",
+    "expected_grounded": true,
+    "note": "Verbatim quote supports the narrower capability label."
+  },
+  {
+    "case_id": "GR-007",
+    "posting_text": "Must-Have Experience: 8+ years of extensive software/data engineering experience in production environments. Advanced expertise in Java or Python, including performance optimization, concurrency, and service-oriented architecture.",
+    "source_quote": "PhD in Computer Science required",
+    "normalized_capability": "PhD in computer science",
+    "expected_grounded": false,
+    "note": "Hallucinated quote: this posting never mentions a PhD requirement."
+  },
+  {
+    "case_id": "GR-008",
+    "posting_text": "On the technical level, you: Have strong full-stack development experience. Can own features from idea to production. Enjoy AI and want to build real AI-powered product features.",
+    "source_quote": "Have strong full-stack development experience",
+    "normalized_capability": "strong full-stack development experience",
+    "expected_grounded": true,
+    "note": "Verbatim quote directly matches the capability label."
+  },
+  {
+    "case_id": "GR-009",
+    "posting_text": "On the technical level, you: Have strong full-stack development experience. Can own features from idea to production. Enjoy AI and want to build real AI-powered product features.",
+    "source_quote": "Enjoy AI and want to build real AI-powered product features",
+    "normalized_capability": "production-certified AI leadership expert",
+    "expected_grounded": false,
+    "note": "Real quote, but the capability label invents production, certification, leadership, and expert claims none of which the quote supports."
+  },
+  {
+    "case_id": "GR-010",
+    "posting_text": "You'll help build and improve our platform using: TypeScript. React. Node.js. Azure. Serverless architecture. AI/LLM-based product features.",
+    "source_quote": "TypeScript",
+    "normalized_capability": "TypeScript",
+    "expected_grounded": true,
+    "note": "Minimal single-token quote and capability label match exactly."
+  }
+]

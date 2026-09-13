@@ -1,0 +1,45 @@
+[
+  {
+    "posting_id": "AI-ENGINEER-1",
+    "source_file": "job-descriptions/AI Engineer/AI Engineer 1.txt",
+    "expected_capabilities": [
+      "8+ years software/data/ml/ai engineering experience",
+      "2+ years technology leadership experience",
+      "machine learning, generative ai, agentic ai, and rag pipeline experience",
+      "cloud-native ai/ml stack experience (gcp/azure/aws) and kubernetes",
+      "ai governance, compliance, and security knowledge"
+    ]
+  },
+  {
+    "posting_id": "AI-ENGINEER-2",
+    "source_file": "job-descriptions/AI Engineer/AI Engineer 2.txt",
+    "expected_capabilities": [
+      "5+ years building ai agents or autonomous systems",
+      "agentic ai framework and prompt engineering / llm orchestration expertise",
+      "familiarity with rpa platforms and workflow automation tools",
+      "strong analytical and systems-thinking mindset"
+    ]
+  },
+  {
+    "posting_id": "SENIOR-SOFTWARE-ENGINEER",
+    "source_file": "job-descriptions/Senior Software Engineer.txt",
+    "expected_capabilities": [
+      "8+ years software/data engineering experience in production environments",
+      "advanced java or python expertise (performance, concurrency, service-oriented architecture)",
+      "scalable data pipeline experience with spark, kafka, databricks, iceberg",
+      "rdbms and sql knowledge plus parquet/big data file format experience",
+      "cloud platform experience with aws or azure"
+    ]
+  },
+  {
+    "posting_id": "SOFTWARE-DEVELOPER",
+    "source_file": "job-descriptions/Software Developer.txt",
+    "expected_capabilities": [
+      "strong full-stack development experience",
+      "ability to own features from idea to production",
+      "clean, maintainable code practices",
+      "typescript, react, and node.js experience",
+      "ai/llm-based product feature experience"
+    ]
+  }
+]

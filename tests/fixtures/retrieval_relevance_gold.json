@@ -1,0 +1,178 @@
+[
+  {
+    "case_id": "RET-001",
+    "target_title": "Senior Java Developer",
+    "result": {
+      "title": "Senior Java Developer",
+      "url": "https://boards.greenhouse.io/examplecorp/jobs/4821093",
+      "snippets": ["Apply now. Job description: Senior Java Developer responsible for backend services."]
+    },
+    "expected_relevant": true,
+    "note": "Exact title match on an individual job-board posting URL."
+  },
+  {
+    "case_id": "RET-002",
+    "target_title": "Senior Java Developer",
+    "result": {
+      "title": "Senior Backend Engineer (Java)",
+      "url": "https://jobs.lever.co/examplecorp/senior-backend-engineer-java-55210",
+      "snippets": ["Apply now. Requirements: 5+ years Java backend experience."]
+    },
+    "expected_relevant": true,
+    "note": "Human-relevant adjacent title, but 'engineer' vs 'developer' share no common ROLE_WORDS token and the software/engineer alias in compatible_role_heading needs both 'software' and 'engineer' present, so the deterministic gate misses this (expected recall gap)."
+  },
+  {
+    "case_id": "RET-003",
+    "target_title": "Senior Java Developer",
+    "result": {
+      "title": "10 Resume Templates for Java Developers",
+      "url": "https://example.com/blog/resume-templates-java-developers",
+      "snippets": ["Free resume template downloads for developers."]
+    },
+    "expected_relevant": false,
+    "note": "Career-content blog post, not a job posting; REJECT_PATTERNS should reject it."
+  },
+  {
+    "case_id": "RET-004",
+    "target_title": "Senior Financial Analyst",
+    "result": {
+      "title": "Warehouse Associate",
+      "url": "https://jobs.example.com/postings/warehouse-associate-8831",
+      "snippets": ["Apply now. Job description: warehouse associate responsibilities include inventory management."]
+    },
+    "expected_relevant": false,
+    "note": "Unrelated occupation; no shared role vocabulary with the target title."
+  },
+  {
+    "case_id": "RET-005",
+    "target_title": "Senior Python Developer",
+    "result": {
+      "title": "Senior Python Developer Salary Guide 2026",
+      "url": "https://example.com/salary-guide/senior-python-developer",
+      "snippets": ["See the average salary guide for Senior Python Developer roles."]
+    },
+    "expected_relevant": false,
+    "note": "Salary-guide content, not a hiring posting."
+  },
+  {
+    "case_id": "RET-006",
+    "target_title": "AI Solutions Architect",
+    "result": {
+      "title": "AI Platform Engineer",
+      "url": "https://jobs.lever.co/examplecorp/ai-platform-engineer-102938",
+      "snippets": ["Apply now. Requirements: build and operate AI platform infrastructure."]
+    },
+    "expected_relevant": true,
+    "note": "Adjacent AI role a human would treat as worth surfacing for exploration, but 'architect' and 'engineer' are different ROLE_WORDS so title_is_relevant's initial shared-role-word gate rejects it before the AI-token fallback ever runs (expected recall gap)."
+  },
+  {
+    "case_id": "RET-007",
+    "target_title": "Senior Java Developer",
+    "result": {
+      "title": "Junior Java Developer",
+      "url": "https://boards.greenhouse.io/examplecorp/jobs/990211",
+      "snippets": ["Apply now. Job description: entry-level Java developer role."]
+    },
+    "expected_relevant": true,
+    "note": "Title matching is seniority-blind by design (a discovery candidate, not proof of level); seniority is filtered in a later stage, not by this gate."
+  },
+  {
+    "case_id": "RET-008",
+    "target_title": "Senior Java Developer",
+    "result": {
+      "title": "Java Programming Tutorial for Beginners",
+      "url": "https://example.com/learn/java-tutorial",
+      "snippets": ["Learn Java programming step by step."]
+    },
+    "expected_relevant": false,
+    "note": "Educational content with no role vocabulary at all."
+  },
+  {
+    "case_id": "RET-009",
+    "target_title": "Product Manager",
+    "result": {
+      "title": "Senior Product Manager, Payments",
+      "url": "https://jobs.lever.co/examplecorp/senior-product-manager-payments-11029",
+      "snippets": ["Apply now. Job description: own the payments product roadmap."]
+    },
+    "expected_relevant": true,
+    "note": "Seniority/specialty-suffixed variant of the target title on an individual posting."
+  },
+  {
+    "case_id": "RET-010",
+    "target_title": "Software Engineer",
+    "result": {
+      "title": "Engineering Director",
+      "url": "https://boards.greenhouse.io/examplecorp/jobs/330120",
+      "snippets": ["Apply now. Job description: lead the engineering organization."]
+    },
+    "expected_relevant": false,
+    "note": "Authority mismatch (director vs. individual contributor); the authority guard should reject this even though both mention engineering."
+  },
+  {
+    "case_id": "RET-011",
+    "target_title": "Senior Java Developer",
+    "result": {
+      "title": "Senior Java Developer - Certification Course Instructor",
+      "url": "https://example.com/careers/java-instructor-77",
+      "snippets": ["Teach our online certification course for Java developers. Apply now."]
+    },
+    "expected_relevant": false,
+    "note": "Course-instructor gig, not a hiring posting for the target role, despite matching title words."
+  },
+  {
+    "case_id": "RET-012",
+    "target_title": "Software Developer",
+    "result": {
+      "title": "Software Engineer II",
+      "url": "https://jobs.lever.co/examplecorp/software-engineer-ii-44215",
+      "snippets": ["Apply now. Requirements: strong software engineering fundamentals."]
+    },
+    "expected_relevant": true,
+    "note": "Developer/software-engineer functional alias on an individual posting."
+  },
+  {
+    "case_id": "RET-013",
+    "target_title": "Senior Java Developer",
+    "result": {
+      "title": "Senior Java Developer",
+      "url": "https://www.linkedin.com/jobs/search/?keywords=senior%20java%20developer",
+      "snippets": ["Explore Senior Java Developer jobs near you."]
+    },
+    "expected_relevant": false,
+    "note": "Search-results listing page with a query string, not an individual posting; the two-segment /jobs/search path still satisfies looks_like_individual_job_url's generic path-length heuristic (expected precision gap)."
+  },
+  {
+    "case_id": "RET-014",
+    "target_title": "Senior Financial Analyst",
+    "result": {
+      "title": "Financial Analyst Intern",
+      "url": "https://boards.greenhouse.io/examplecorp/jobs/771002",
+      "snippets": ["Apply now. Job description: our summer internship program for analysts."]
+    },
+    "expected_relevant": false,
+    "note": "Internship is not a fit for a senior-level job seeker even though title vocabulary overlaps (expected precision gap)."
+  },
+  {
+    "case_id": "RET-015",
+    "target_title": "Senior Financial Analyst",
+    "result": {
+      "title": "Senior Financial Analyst, FP&A",
+      "url": "https://boards.greenhouse.io/examplecorp/jobs/558112",
+      "snippets": ["Apply now. Job description: qualifications include CPA or equivalent experience."]
+    },
+    "expected_relevant": true,
+    "note": "Specialty-suffixed exact-title match on an individual posting with hiring signals."
+  },
+  {
+    "case_id": "RET-016",
+    "target_title": "AI Solutions Architect",
+    "result": {
+      "title": "AI News Roundup: Top Architect Trends",
+      "url": "https://example.com/news/ai-architect-trends",
+      "snippets": ["Our weekly news roundup covers AI architecture trends."]
+    },
+    "expected_relevant": false,
+    "note": "News/editorial content under the /news/ path; REJECT_PATTERNS should reject it despite matching vocabulary."
+  }
+]
